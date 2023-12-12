@@ -1,3 +1,5 @@
+import { ParsedInscription } from "./parsed-inscription";
+
 /**
  * Bitcoin Script Opcodes
  * see https://en.bitcoin.it/wiki/Script
@@ -12,11 +14,6 @@ const OP_PUSHDATA2 = 0x4d; // The next two bytes contain the number of bytes to 
 const OP_PUSHDATA4 = 0x4e; // The next four bytes contain the number of bytes to be pushed onto the stack in little endian order.
 const OP_ENDIF = 0x68; // Ends an if/else block.
 
-export interface ParsedInscription {
-  contentType: string;
-  // fields: { [key: string]: Uint8Array };
-  getDataUri: () => string;
-}
 
 /**
  * Extracts the first inscription from a Bitcoin transaction.
@@ -243,9 +240,13 @@ export class InscriptionParserService {
         contentType,
         // contentString,
         // fields,
+        getData: (): string  => {
+          return window.btoa(InscriptionParserService.uint8ArrayToSingleByteChars(combinedData));
+        },
+
         getDataUri: (): string  => {
-          const base64Data = window.btoa(InscriptionParserService.uint8ArrayToSingleByteChars(combinedData));
-          return `data:${contentType};base64,${base64Data}`;
+          const fullBase64Data = window.btoa(InscriptionParserService.uint8ArrayToSingleByteChars(combinedData));
+          return `data:${contentType};base64,${fullBase64Data}`;
         }
       };
 

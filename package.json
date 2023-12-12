@@ -2,14 +2,16 @@
   "name": "ordpool-parser",
   "version": "0.0.1",
   "description": "The parsing engine that detects inscriptions in Bitcoin transactions.",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
-    "start": "ts-node ./src/index.ts",
-    "test": "jest",
-    "test:watch": "jest --watch",
+    "clean": "rimraf dist",
+    "build": "npm run clean && tsc tsconfig.build.json",
+    "start": "npm run test",
+    "test": "npm run clean && jest",
+    "test:watch": "npm run clean && jest --watch",
     "fetch-tx-testdata": "node fetch-tx-testdata.js",
-    "fetch-inscription-testdata": "node fetch-inscription-testdata.js"
+    "fetch-inscription-testdata": "node fetch-inscription-testdata.js",
+    "prepublishOnly": "npm run test && npm run build"
   },
   "keywords": [
     "bitcoin",
@@ -26,9 +28,10 @@
     "@types/jest": "^29.5.11",
     "@types/node": "^20.10.4",
     "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
     "mime-types": "^2.1.35",
+    "rimraf": "^5.0.5",
     "ts-jest": "^29.1.1",
-    "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
   }
 }
