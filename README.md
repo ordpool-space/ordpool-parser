@@ -1,64 +1,62 @@
 # ordpool-parser
 
 The parsing engine that detects inscriptions in Bitcoin transactions.
-The transpiled code has zero dependencies and works in the Browser out of the box. 
+The transpiled code has zero dependencies and works in the Browser out of the box.
 
 The latest version of this script is used by https://ordpool.space
 
+## Prerequisites
 
-## Install
+Node.js (Version 20 or later)
 
-This code was developed with Node.js 20, install it first.
-Then install and execute the tests like this:
+## Contribute
+
+First, install Node.js version 20. 
+Then, install the dependencies and execute the tests with the following commands:
 
 ```bash
 npm install
 npm test
 ```
 
-Every feature is required to be tested!
-Use a mainnet transaction to create a test-scenario.
-The goal of this parser is to parse byte-perfect inscriptions.
-Ord is always right!
+Every feature must be tested! 
+Use a mainnet transaction to create a test scenario. 
+The goal of this parser is to parse byte-perfect inscriptions that are identical to [ord](https://github.com/ordinals/ord).
 
 Steps:
 
-1. Save the raw transaction JSON to the folder `testdata` by running the following script.
+1. **Fetch Transaction Test Data**: Save the raw transaction JSON to the `testdata` folder.
+    ```bash
+    npm run fetch-tx-testdata
+    ```
+    Enter the `transactionId` (e.g.`78fa9d6e9b2b49fbb9f4838e1792dba7c1ec836f22e3206561e2d52759708251`) and check the results.
 
-   ```bash
-   npm run fetch-tx-testdata
-   ```
+2. **Fetch Inscription Test Data**: Save the reference inscription as a file in the `testdata` folder.
 
-   Enter the `transactionId` (eg.`78fa9d6e9b2b49fbb9f4838e1792dba7c1ec836f22e3206561e2d52759708251`) and check the results!
+    ```bash
+    npm run fetch-inscription-testdata
+    ```
+    Enter the `inscriptionId`, which is the `transactionId` + `i` + the `index` (e.g.`78fa9d6e9b2b49fbb9f4838e1792dba7c1ec836f22e3206561e2d52759708251i0`), and check the results!
 
-2. Save the reference inscription as a file to the `testdata` folder:
+3. **Contribute:** Add your new feature, include a meaningful test, and submit a pull request if all tests pass.
 
-   ```bash
-   npm run fetch-inscription-testdata
-   ```
-
-  Enter the `inscriptionId`, which is the `transactionId` + `i` + the `index` (eg.`78fa9d6e9b2b49fbb9f4838e1792dba7c1ec836f22e3206561e2d52759708251i0`) and check the results!
-
-3. Add your new feature, add a meaningful test, submit a PR if everything is green!
-
-To debug the unit tests, use VS Code. The `launch.json` file is already prepared.
+**Hint:** Debug the unit tests using VS Code. The `launch.json` file is already prepared for this purpose.
 
 ## Build
 
-This builds a version without the tests:
+To build a version without the tests:
 
 ```bash
 npm run build
 ```
 
-This publishes a new version to NPM:
+To publish a new version to NPM:
 
 ```bash
 npm run publish
 ```
 
-----
+## Learn More
 
-Read more here:
 - What is an Inscription "envelope"?: https://blog.ordinalhub.com/what-is-an-envelope/
 - The Cursed Inscriptions Rabbithole: https://youtu.be/cpAh5_KhvMg
