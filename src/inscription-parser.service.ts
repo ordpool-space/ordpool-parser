@@ -22,20 +22,6 @@ export interface ParsedInscription {
  * Extracts the first inscription from a Bitcoin transaction.
  * Advanced envelopes with extra data (eg Quadkey inscriptions) are supported, but the extra data is ignored.
  *
- *
- * ++ Simple envelope:
- * eg. c1e013bdd1434450c6e1155417c81eb888e20cbde2e0cde37ec238d91cf37045 --> some random "Hello, world!" inscription (text/plain;charset=utf-8)
- *
- * OP_FALSE
- * OP_IF
- *   OP_PUSH "ord"                      ---> OP_PUSHBYTES_3 "ord"
- *   OP_PUSH 1                          ---> OP_PUSHBYTES_1 1
- *   OP_PUSH "text/plain;charset=utf-8" ---> OP_PUSHBYTES_24 "text/plain;charset=utf-8"
- *   OP_0
- *   OP_PUSH "Hello, world!"            ---> OP_PUSHBYTES_13 "Hello, world!"
- * OP_ENDIF
- *
- *
  * ++ Larger envelope:
  * eg. 78fa9d6e9b2b49fbb9f4838e1792dba7c1ec836f22e3206561e2d52759708251 --> my html inscription (text/html)
  *
