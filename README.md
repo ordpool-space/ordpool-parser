@@ -63,6 +63,8 @@ You can install it via `npm install axios`. Of course, any other compatible HTTP
 
 Node.js (Version 20 or later) to test & compile the TypeScript code to JavaScript.
 
+### Install
+
 First, install Node.js version 20. 
 Then, install the NPM dependencies and execute the tests with the following commands:
 
@@ -71,11 +73,11 @@ npm install
 npm test
 ```
 
+### How to add a feature
+
 Every feature must be tested in the browser and in the node environment! 
 Use a mainnet transaction to create a test scenario. 
 The goal of this parser is to parse byte-perfect inscriptions that are identical to [ord](https://github.com/ordinals/ord).
-
-### Steps
 
 1. **Fetch Transaction Test Data**: Save the raw transaction JSON to the `testdata` folder.
     ```bash

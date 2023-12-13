@@ -47,6 +47,8 @@
   },
   "files": [
     "dist",
-    "src"
+    "src",
+    "*.js",
+    "*.json"
   ]
 }

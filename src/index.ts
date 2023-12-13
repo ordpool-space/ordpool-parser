@@ -1,3 +1,3 @@
 export * from './inscription-parser.service';
+export * from './parsed-inscription';
 
-export const helloWorld = 'Hello World';
