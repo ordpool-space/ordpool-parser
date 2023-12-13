@@ -7,8 +7,14 @@
     "clean": "rimraf dist",
     "build": "npm run clean && tsc tsconfig.build.json",
     "start": "npm run test",
-    "test": "npm run clean && jest",
-    "test:watch": "npm run clean && jest --watch",
+    "test": "npm run test:node && npm run test:browser",
+
+    "test:node":          "npm run clean && jest --config jest.config.node.js",
+    "test:node:watch":    "npm run clean && jest --config jest.config.node.js --watch ",
+
+    "test:browser":       "npm run clean && jest --config jest.config.js",
+    "test:browser:watch": "npm run clean && jest --config jest.config.js --watch ",
+
     "fetch-tx-testdata": "node fetch-tx-testdata.js",
     "fetch-inscription-testdata": "node fetch-inscription-testdata.js",
     "prepublishOnly": "npm run test && npm run build"

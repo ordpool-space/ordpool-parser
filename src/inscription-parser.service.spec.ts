@@ -80,4 +80,26 @@ describe('Inscription parser', () => {
 
     expect(actualFileData).toEqual(expectedFileData);
   });
+
+  /*
+   * Text inscription with unicode characters were displayed incorrectly,
+   * see https://github.com/haushoppe/ordpool/issues/5
+   */
+  fit('should parse text inscriptions with unicode characters', () => {
+
+    const txn = readTransaction('430901147831e41111aced3895ee4b9742cf72ac3cffa132624bd38c551ef379');
+
+    const parsedInscription = parser.parseInscription(txn);
+    const expectedFileData = readInscriptionAsBase64('430901147831e41111aced3895ee4b9742cf72ac3cffa132624bd38c551ef379i0', 'txt');
+
+    const contentType = parsedInscription?.contentType;
+    const contentString = parsedInscription?.getContentString();
+    const actualFileData = parsedInscription?.getData();
+
+    expect(contentType).toEqual('text/plain;charset=utf-8');
+    expect(contentString).toEqual('ob🤝cpfp');
+    expect(actualFileData).toEqual('b2Lwn6SdY3BmcA=='); // which is ob🤝cpfp
+    expect(expectedFileData).toEqual('b2Lwn6SdY3BmcA=='); // let's ensure that we have read the file correctly!
+    expect(actualFileData).toEqual(expectedFileData);
+  });
 });

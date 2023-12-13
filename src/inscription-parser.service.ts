@@ -25,6 +25,27 @@ export class InscriptionParserService {
   private raw: Uint8Array = new Uint8Array();
 
   /**
+   * Encodes a 'binary' string to Base64.
+   *
+   * This function checks for the environment and uses the appropriate method to encode a string to Base64.
+   * In a browser environment, it uses `window.btoa`. In a Node.js environment, it uses `Buffer`.
+   *
+   * @param {string} str - The string to be encoded.
+   * @returns {string} The Base64 encoded string.
+   */
+  static encodeToBase64(str: string) {
+    if (typeof window !== 'undefined' && window.btoa) {
+      // Browser environment
+      return window.btoa(str);
+    } else if (typeof Buffer !== 'undefined') {
+      // Node.js environment
+      return Buffer.from(str, 'binary').toString('base64');
+    } else {
+      throw new Error('No suitable environment found for Base64 encoding!');
+    }
+  }
+
+  /**
    * Converts a hex string to a Uint8Array.
    *
    * @param {string} hexStr - The hex string to be converted.
@@ -46,10 +67,12 @@ export class InscriptionParserService {
 
   /**
    * Convert a Uint8Array to a string by treating each byte as a character code.
+   * It avoids interpreting bytes as UTF-8 encoded sequences.
+   * --> Again: it ignores UTF-8 encoding, which is necessary for binary content!
    *
    * Note: This method is different from using `String.fromCharCode(...combinedData)` which can
    * cause a "Maximum call stack size exceeded" error for large arrays due to the limitation of
-   * the spread operator in JavaScript. It avoids interpreting bytes as UTF-8 encoded sequences.
+   * the spread operator in JavaScript. (previously the parser broke here, because of large content)
    *
    * @param bytes - The byte array to convert.
    * @returns The resulting string where each byte value is treated as a direct character code.
@@ -132,7 +155,7 @@ export class InscriptionParserService {
   }
 
   /**
-   * Extra function that returns true if an inscriptionMark is found.
+   * Super quick check, that returns true if an inscriptionMark is found.
    * @param witness - witness data from vin[0].
    * @returns True if an inscriptionMark is found.
    */
@@ -144,7 +167,8 @@ export class InscriptionParserService {
 
   /**
    * Main function that parses a inscription or returns null.
-   * @param transaction with witness in vin[0] (only first vin recognized, same as stable ord).
+   * Note: only first vin is recognized, same as stable ord, this might change in the future?
+   * @param transaction with witness in vin[0]
    * @returns The inscription as a data-uri or null.
    */
   parseInscription(transaction: { vin: { witness?: string[] }[] }): ParsedInscription | null {
@@ -176,7 +200,8 @@ export class InscriptionParserService {
 
       // Now we are at the beginning of the body
       // (or at the end of the raw data if there's no body)
-      // --> Question: are empty inscriptions allowed?
+      // --> Question: should we allow empty inscriptions? (where the next byte is OP_ENDIF)
+      // --> TODO: Research what is ord doing in this edge case!
       if (this.pointer < this.raw.length && this.raw[this.pointer] === OP_0) {
         this.pointer++; // skip OP_0
       }
@@ -197,24 +222,32 @@ export class InscriptionParserService {
         idx += segment.length;
       }
 
-      const contentType = InscriptionParserService.uint8ArrayToUtf8String(fields['\u0001']);
-      // const contentString = InscriptionParserService.uint8ArrayToUtf8String(combinedData);
+      // it would make no sense to add UTF-8 to content-type, so no UTF-8 here
+      const contentType = InscriptionParserService.uint8ArrayToSingleByteChars(fields['\u0001']);
 
-      // Let's ignore inscriptions without a contentType, because there is (right now) no good way to display them
+      // Let's ignore inscriptions without a contentType, because there is no good way to display them
+      // we could change this later on, if there are really inscriptions with no contentType but meaningful metadata
       if (!contentType) {
         return null;
       }
 
       return {
         contentType,
-        // contentString,
+
         // fields,
+
+        getContentString() {
+          return InscriptionParserService.uint8ArrayToUtf8String(combinedData);
+        },
+
         getData: (): string  => {
-          return window.btoa(InscriptionParserService.uint8ArrayToSingleByteChars(combinedData));
+          const content = InscriptionParserService.uint8ArrayToSingleByteChars(combinedData);
+          return InscriptionParserService.encodeToBase64(content);
         },
 
         getDataUri: (): string  => {
-          const fullBase64Data = window.btoa(InscriptionParserService.uint8ArrayToSingleByteChars(combinedData));
+          const content = InscriptionParserService.uint8ArrayToSingleByteChars(combinedData);
+          const fullBase64Data = InscriptionParserService.encodeToBase64(content);
           return `data:${contentType};base64,${fullBase64Data}`;
         }
       };

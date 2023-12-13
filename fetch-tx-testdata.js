@@ -30,7 +30,7 @@ rl.question('Please enter the transaction ID: ', (txId) => {
         const filePath = path.join(dir, `tx_${txId}.json`);
         fs.writeFile(filePath, formattedJson, (err) => {
           if (err) throw err;
-          console.log(`The beautified transaction data was saved to ${filePath}`);
+          console.log(`The transaction in beautified JSON format was saved to ${filePath}`);
         });
       } catch (error) {
         console.error('Error parsing JSON:', error);
