@@ -199,14 +199,29 @@ export class InscriptionParserService {
   }
 
   /**
-   * Main function that parses a inscription or returns null.
-   * Note: only first vin is recognized, same as stable ord, this might change in the future?
-   * @param transaction with witness in vin[0]
-   * @returns The inscription as a data-uri or null.
+   * Main function that parses all inscription in a transaction.
+   * @returns The parsed inscriptions or an empty array
    */
-  parseInscription(transaction: { vin: { witness?: string[] }[] }): ParsedInscription | null {
+  parseInscriptions(transaction: { vin: { witness?: string[] }[] }): ParsedInscription[] {
 
-    const witness = transaction.vin[0]?.witness;
+    const inscriptions: ParsedInscription[] = [];
+    for (let i = 0; i < transaction.vin.length; i++) {
+      const inscription = this.parseInscription(transaction.vin[i]);
+      if (inscription) {
+        inscriptions.push(inscription);
+      }
+    }
+    return inscriptions;
+  }
+
+  /**
+   * Parses a single inscription or returns null.
+   * @param witness from vin[i]
+   * @returns The parsed inscription or null
+   */
+  private parseInscription(vin: { witness?: string[] }): ParsedInscription | null {
+
+    const witness = vin.witness;
     if (!witness) {
       return null;
     }

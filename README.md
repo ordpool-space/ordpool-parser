@@ -21,32 +21,32 @@ It expects a transaction from the Mempool API:
 import axios from 'axios';
 import { InscriptionParserService } from 'ordpool-parser';
 
-async function getInscription(txId) {
+async function getInscriptions(txId: string) {
 
   const response = await axios.get(`https://mempool.space/api/tx/${txId}`);
   const transaction = response.data;
 
   const parser = new InscriptionParserService();
-  const parsedInscription = parser.parseInscription(transaction);
+  const parsedInscriptions = parser.parseInscriptions(transaction);
 
-  return parsedInscription;
+  return parsedInscriptions;
 }
 
-const parsedInscription = await getInscription('f1997166547da9784a3e7419d2b248551565211811d4f5e705b685efa244451f');
+const parsedInscriptions = await getInscriptions('f1997166547da9784a3e7419d2b248551565211811d4f5e705b685efa244451f');
 
-if (!parsedInscription) {
-  console.log('No inscription found!');
+if (!parsedInscriptions.length) {
+  console.log('No inscriptions found!');
 } else {
   // Output: text/html;charset=utf-8
-  console.log(parsedInscription.contentType);
+  console.log(parsedInscriptions[0].contentType);
 
   // UTF-8 encoded string (not intended for binary content like images or videos)
   // Output: <html><!--cubes.haushoppe.art--><body> [...]
-  console.log(parsedInscription.getContentString());
+  console.log(parsedInscriptions[0].getContentString());
 
   // Base64 encoded data URI that can be displayed in an iframe
   // Output: data:text/html;charset=utf-8;base64,PGh0bWw+PCEtLWN1YmVzLmhhdXNob3BwZS5hcnQtLT48Ym9keT4 [...]
-  console.log(parsedInscription.getDataUri());
+  console.log(parsedInscriptions[0].getDataUri());
 }
 
 ```
