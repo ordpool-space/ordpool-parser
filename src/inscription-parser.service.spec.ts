@@ -85,7 +85,7 @@ describe('Inscription parser', () => {
    * Text inscription with unicode characters were displayed incorrectly,
    * see https://github.com/haushoppe/ordpool/issues/5
    */
-  fit('should parse text inscriptions with unicode characters', () => {
+  it('should parse text inscriptions with unicode characters', () => {
 
     const txn = readTransaction('430901147831e41111aced3895ee4b9742cf72ac3cffa132624bd38c551ef379');
 
@@ -102,4 +102,24 @@ describe('Inscription parser', () => {
     expect(expectedFileData).toEqual('b2Lwn6SdY3BmcA=='); // let's ensure that we have read the file correctly!
     expect(actualFileData).toEqual(expectedFileData);
   });
+
+  /*
+   * A witness of 0000000000000000000000000000000000000000000000000000000000000000 was causing a match
+   * The new getInitialPosition uses a simple hardcoded approach based on the fixed length of the inscription mark.
+   */
+   it('getInitialPosition should ignore transactions with incompatible witness', () => {
+
+      const txn = readTransaction('afbac5a72d789123b003a0c5b14d1a37301932937d124bab5794201827daf057');
+      const witness = txn.vin[0]?.witness;
+      const txWitness = witness.join('');
+
+      expect(txWitness).toEqual('0000000000000000000000000000000000000000000000000000000000000000');
+
+      const raw = InscriptionParserService.hexStringToUint8Array(txWitness);
+      parser['raw'] = raw;
+
+      const position = parser['getInitialPosition']();
+
+      expect(position).toEqual(-1);
+    });
 });

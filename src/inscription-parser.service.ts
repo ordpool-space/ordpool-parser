@@ -14,6 +14,30 @@ const OP_PUSHDATA2 = 0x4d; // The next two bytes contain the number of bytes to 
 const OP_PUSHDATA4 = 0x4e; // The next four bytes contain the number of bytes to be pushed onto the stack in little endian order.
 const OP_ENDIF = 0x68; // Ends an if/else block.
 
+/**
+ * Inscriptions may include fields before an optional body. Each field consists of two data pushes, a tag and a value.
+ * Currently, there are six defined fields:
+ */
+export const knownFields = {
+  // content_type, with a tag of 1, whose value is the MIME type of the body.
+  content_type: 0x01,
+
+  // pointer, with a tag of 2, see pointer docs: https://docs.ordinals.com/inscriptions/pointer.html
+  pointer: 0x02,
+
+  // parent, with a tag of 3, see provenance: https://docs.ordinals.com/inscriptions/provenance.html
+  parent: 0x03,
+
+  // metadata, with a tag of 5, see metadata: https://docs.ordinals.com/inscriptions/metadata.html
+  metadata: 0x05,
+
+  // metaprotocol, with a tag of 7, whose value is the metaprotocol identifier.
+  metaprotocol: 0x07,
+
+  // content_encoding, with a tag of 9, whose value is the encoding of the body.
+  content_encoding: 0x09
+}
+
 
 /**
  * Extracts the first inscription from a Bitcoin transaction.
@@ -80,7 +104,7 @@ export class InscriptionParserService {
   static uint8ArrayToSingleByteChars(bytes: Uint8Array): string {
     let resultStr = '';
     for (let i = 0; i < bytes.length; i++) {
-        resultStr += String.fromCharCode(bytes[i]);
+      resultStr += String.fromCharCode(bytes[i]);
     }
     return resultStr;
   }
@@ -98,9 +122,15 @@ export class InscriptionParserService {
   }
 
   /**
-   * Identifies the initial position of the ordinal inscription in the raw transaction data.
+   * Searches for the initial position of the ordinal inscription mark within the raw transaction data.
    *
-   * @returns The starting position of the inscription.
+   * This function looks for a specific sequence of 6 bytes that represents the start of an ordinal inscription.
+   * If the sequence is found, the function returns the index immediately following the inscription mark.
+   * If the sequence is not found, the function returns -1, indicating no inscription mark was found.
+   *
+   * Note: This function uses a simple hardcoded approach based on the fixed length of the inscription mark.
+   *
+   * @returns {number} The position immediately after the inscription mark, or -1 if not found.
    */
   private getInitialPosition(): number {
 
@@ -110,15 +140,18 @@ export class InscriptionParserService {
     // 0x6f, 0x72, 0x64: These bytes translate to the ASCII string "ord"
     const inscriptionMark = new Uint8Array([OP_FALSE, OP_IF, OP_PUSHBYTES_3, 0x6f, 0x72, 0x64]);
 
-    const position = this.raw.findIndex((_byte, index) =>
-      this.raw.slice(index, index + inscriptionMark.length).every((val, i) => val === inscriptionMark[i])
-    );
-
-    if (position === -1) {
-      // throw new Error('No ordinal inscription found in transaction');
-      return position;
+    for (let index = 0; index <= this.raw.length - 6; index++) {
+      if (this.raw[index]     === inscriptionMark[0] &&
+          this.raw[index + 1] === inscriptionMark[1] &&
+          this.raw[index + 2] === inscriptionMark[2] &&
+          this.raw[index + 3] === inscriptionMark[3] &&
+          this.raw[index + 4] === inscriptionMark[4] &&
+          this.raw[index + 5] === inscriptionMark[5]) {
+          return index + 6;
+      }
     }
-    return position + inscriptionMark.length;
+
+    return -1;
   }
 
   /**
@@ -190,12 +223,12 @@ export class InscriptionParserService {
     try {
 
       // Process fields until OP_0 is encountered
-      const fields: { [key: string]: Uint8Array } = {};
+      const fields: { tag: Uint8Array; value: Uint8Array }[] = [];
       while (this.pointer < this.raw.length && this.raw[this.pointer] !== OP_0) {
-        const tag = InscriptionParserService.uint8ArrayToUtf8String(this.readPushdata());
+        const tag = this.readPushdata();
         const value = this.readPushdata();
 
-        fields[tag] = value;
+        fields.push({ tag, value });
       }
 
       // Now we are at the beginning of the body
@@ -222,30 +255,32 @@ export class InscriptionParserService {
         idx += segment.length;
       }
 
-      // it would make no sense to add UTF-8 to content-type, so no UTF-8 here
-      const contentType = InscriptionParserService.uint8ArrayToSingleByteChars(fields['\u0001']);
+      const contentTypeField = fields.find(x => x.tag.length === 1 && x.tag[0] === knownFields.content_type);
 
       // Let's ignore inscriptions without a contentType, because there is no good way to display them
       // we could change this later on, if there are really inscriptions with no contentType but meaningful metadata
-      if (!contentType) {
+      if (!contentTypeField) {
         return null;
       }
+
+      // it would make no sense to add UTF-8 to content-type, so no UTF-8 here
+      const contentType = InscriptionParserService.uint8ArrayToSingleByteChars(contentTypeField.value);
 
       return {
         contentType,
 
-        // fields,
+        fields,
 
         getContentString() {
           return InscriptionParserService.uint8ArrayToUtf8String(combinedData);
         },
 
-        getData: (): string  => {
+        getData: (): string => {
           const content = InscriptionParserService.uint8ArrayToSingleByteChars(combinedData);
           return InscriptionParserService.encodeToBase64(content);
         },
 
-        getDataUri: (): string  => {
+        getDataUri: (): string => {
           const content = InscriptionParserService.uint8ArrayToSingleByteChars(combinedData);
           const fullBase64Data = InscriptionParserService.encodeToBase64(content);
           return `data:${contentType};base64,${fullBase64Data}`;

@@ -1,6 +1,7 @@
 export interface ParsedInscription {
   contentType: string;
-  // fields: { [key: string]: Uint8Array };
+
+  fields: { tag: Uint8Array; value: Uint8Array }[];
 
   getContentString: () => string;
 
