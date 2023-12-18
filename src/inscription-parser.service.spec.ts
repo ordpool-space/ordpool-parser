@@ -105,9 +105,9 @@ describe('Inscription parser', () => {
 
   /*
    * A witness of 0000000000000000000000000000000000000000000000000000000000000000 was causing a match
-   * The new getInitialPosition uses a simple hardcoded approach based on the fixed length of the inscription mark.
+   * The new getNextInscriptionMark uses a simple hardcoded approach based on the fixed length of the inscription mark.
    */
-  it('getInitialPosition should ignore transactions with incompatible witness', () => {
+  it('getNextInscriptionMark should ignore transactions with incompatible witness', () => {
 
     const txn = readTransaction('afbac5a72d789123b003a0c5b14d1a37301932937d124bab5794201827daf057');
     const witness = txn.vin[0]?.witness;
@@ -118,7 +118,7 @@ describe('Inscription parser', () => {
     const raw = InscriptionParserService.hexStringToUint8Array(txWitness);
     parser['raw'] = raw;
 
-    const position = parser['getInitialPosition']();
+    const position = parser['getNextInscriptionMark'](0);
 
     expect(position).toEqual(-1);
   });

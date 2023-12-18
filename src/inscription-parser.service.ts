@@ -122,7 +122,8 @@ export class InscriptionParserService {
   }
 
   /**
-   * Searches for the initial position of the ordinal inscription mark within the raw transaction data.
+   * Searches for the next position of the ordinal inscription mark within the raw transaction data,
+   * starting from a given position.
    *
    * This function looks for a specific sequence of 6 bytes that represents the start of an ordinal inscription.
    * If the sequence is found, the function returns the index immediately following the inscription mark.
@@ -132,7 +133,7 @@ export class InscriptionParserService {
    *
    * @returns {number} The position immediately after the inscription mark, or -1 if not found.
    */
-  private getInitialPosition(): number {
+  private getNextInscriptionMark(startPosition: number): number {
 
     // OP_FALSE
     // OP_IF
@@ -140,7 +141,7 @@ export class InscriptionParserService {
     // 0x6f, 0x72, 0x64: These bytes translate to the ASCII string "ord"
     const inscriptionMark = new Uint8Array([OP_FALSE, OP_IF, OP_PUSHBYTES_3, 0x6f, 0x72, 0x64]);
 
-    for (let index = 0; index <= this.raw.length - 6; index++) {
+    for (let index = startPosition; index <= this.raw.length - 6; index++) {
       if (this.raw[index]     === inscriptionMark[0] &&
           this.raw[index + 1] === inscriptionMark[1] &&
           this.raw[index + 2] === inscriptionMark[2] &&
@@ -206,34 +207,50 @@ export class InscriptionParserService {
 
     const inscriptions: ParsedInscription[] = [];
     for (let i = 0; i < transaction.vin.length; i++) {
-      const inscription = this.parseInscription(transaction.vin[i]);
-      if (inscription) {
-        inscriptions.push(inscription);
+      const vin = transaction.vin[i];
+      if (vin.witness) {
+        const vinInscriptions = this.parseInscriptionsWithinWitness(vin.witness);
+        if (vinInscriptions) {
+          inscriptions.push(...vinInscriptions);
+        }
       }
     }
     return inscriptions;
   }
 
   /**
-   * Parses a single inscription or returns null.
-   * @param witness from vin[i]
+   * Parses all inscriptions within a given witness.
+   * @param {string[]} witness - The witness data from a vin[i].
+   * @returns {ParsedInscription[] | null} An array of parsed inscriptions, or null if no valid inscriptions are found.
+   */
+  private parseInscriptionsWithinWitness(witness: string[]): ParsedInscription[] | null {
+
+    const inscriptions: ParsedInscription[] = [];
+    this.raw = InscriptionParserService.hexStringToUint8Array(witness.join(''));
+    let startPosition = 0;
+
+    while (true) {
+      this.pointer = this.getNextInscriptionMark(startPosition);
+      if (this.pointer === -1) break; // No more inscriptions found
+
+      // Parse the inscription at the current position
+      const inscription = this.extractInscriptionData();
+      if (inscription) {
+        inscriptions.push(inscription);
+      }
+
+      // Update startPosition for the next iteration
+      startPosition = this.pointer;
+    }
+
+    return inscriptions.length > 0 ? inscriptions : null;
+  }
+
+  /**
+   * Extracts inscription data starting from the current pointer.
    * @returns The parsed inscription or null
    */
-  private parseInscription(vin: { witness?: string[] }): ParsedInscription | null {
-
-    const witness = vin.witness;
-    if (!witness) {
-      return null;
-    }
-
-    const txWitness = witness.join('');
-    this.raw = InscriptionParserService.hexStringToUint8Array(txWitness);
-    this.pointer = this.getInitialPosition();
-
-    if (this.pointer === -1) {
-      // console.log('No Inscription found! ' + txWitness);
-      return null;
-    }
+  private extractInscriptionData(): ParsedInscription | null {
 
     try {
 
