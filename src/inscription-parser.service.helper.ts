@@ -37,21 +37,26 @@ export const knownFields = {
 }
 
 /**
- * Encodes a 'binary' string to Base64.
+ * Encodes a string to Base64.
  *
- * This function checks for the environment and uses the appropriate method to encode a string to Base64.
+ * This function is designed to encode strings that represent binary data, including both actual binary
+ * data (like images) and text that has been encoded to a binary format (e.g., UTF-8 encoded text).
+ *
+ * It checks for the environment and uses the appropriate method for Base64 encoding.
  * In a browser environment, it uses `window.btoa`. In a Node.js environment, it uses `Buffer`.
  *
- * @param str - The string to be encoded.
+ * Note: The input string should represent binary data, where each character corresponds to a byte.
+ *
+ * @param dataStr - The string representing binary data to be encoded.
  * @returns The Base64 encoded string.
  */
-export function encodeToBase64(str: string) {
+export function encodeToBase64(binaryStr: string) {
   if (typeof window !== 'undefined' && window.btoa) {
     // Browser environment
-    return window.btoa(str);
+    return window.btoa(binaryStr);
   } else if (typeof Buffer !== 'undefined') {
     // Node.js environment
-    return Buffer.from(str, 'binary').toString('base64');
+    return Buffer.from(binaryStr, 'binary').toString('base64');
   } else {
     throw new Error('No suitable environment found for Base64 encoding!');
   }
@@ -111,8 +116,8 @@ export function readBytes(raw: Uint8Array, pointer: number, n: number): [Uint8Ar
 }
 
 /**
- * Searches for the next position of the ordinal inscription mark within the raw transaction data,
- * starting from a given position.
+ * Searches for the next position of the ordinal inscription mark (0063036f7264)
+ * within the raw transaction data, starting from a given position.
  *
  * This function looks for a specific sequence of 6 bytes that represents the start of an ordinal inscription.
  * If the sequence is found, the function returns the index immediately following the inscription mark.
@@ -142,6 +147,26 @@ export function getNextInscriptionMark(raw: Uint8Array, startPosition: number): 
   }
 
   return -1;
+}
+
+/**
+ * Calculates the size of data to be read from a raw transaction array based on the given size bytes.
+ *
+ * This function interprets the size bytes in little-endian format, meaning the least significant byte comes first.
+ * It constructs an integer value representing the size of the data to be read next from the raw transaction data.
+ *
+ * @param dataSizeArray - An array containing the bytes that specify the size of the data.
+ *                        The length of this array (1, 2, or 4 bytes) depends on the Bitcoin script pushdata opcode.
+ * @returns The calculated size of the data as a number.
+ */
+export function calculateDataSize(dataSizeArray: Uint8Array): number {
+  let dataSize = 0;
+  for (let i = 0; i < dataSizeArray.length; i++) {
+    // Extract each byte from dataSizeArray, shift it to the left by 8 * i bits, and combine it with dataSize.
+    // The shifting accounts for the little-endian format where the least significant byte comes first.
+    dataSize |= dataSizeArray[i] << (8 * i);
+  }
+  return dataSize;
 }
 
 /**
@@ -177,10 +202,7 @@ export function readPushdata(raw: Uint8Array, pointer: number): [Uint8Array, num
   }
 
   let [dataSizeArray, nextPointer] = readBytes(raw, newPointer, numBytes);
-  let dataSize = 0;
-  for (let i = 0; i < numBytes; i++) {
-    dataSize |= dataSizeArray[i] << (8 * i);
-  }
+  let dataSize = calculateDataSize(dataSizeArray);
   return readBytes(raw, nextPointer, dataSize);
 }
 
