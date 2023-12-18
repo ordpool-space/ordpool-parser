@@ -1,13 +1,8 @@
 import { InscriptionParserService } from './inscription-parser.service';
+import { getNextInscriptionMark, hexStringToUint8Array } from './inscription-parser.service.helper';
 import { readInscriptionAsBase64, readTransaction } from './test.helper';
 
 describe('Inscription parser', () => {
-
-  let parser: InscriptionParserService;
-
-  beforeEach(() => {
-    parser = new InscriptionParserService();
-  });
 
   /*
    * ++ Simple envelope:
@@ -26,7 +21,7 @@ describe('Inscription parser', () => {
 
     const txn = readTransaction('c1e013bdd1434450c6e1155417c81eb888e20cbde2e0cde37ec238d91cf37045');
 
-    const actualFileData = parser.parseInscriptions(txn)[0].getData();
+    const actualFileData = InscriptionParserService.parseInscriptions(txn)[0].getData();
     const expectedFileData = readInscriptionAsBase64('c1e013bdd1434450c6e1155417c81eb888e20cbde2e0cde37ec238d91cf37045i0', 'txt');
 
     expect(actualFileData).toEqual(expectedFileData);
@@ -50,7 +45,7 @@ describe('Inscription parser', () => {
 
     const txn = readTransaction('78fa9d6e9b2b49fbb9f4838e1792dba7c1ec836f22e3206561e2d52759708251');
 
-    const actualFileData = parser.parseInscriptions(txn)[0].getData();
+    const actualFileData = InscriptionParserService.parseInscriptions(txn)[0].getData();
     const expectedFileData = readInscriptionAsBase64('78fa9d6e9b2b49fbb9f4838e1792dba7c1ec836f22e3206561e2d52759708251i0', 'html');
 
     expect(actualFileData).toEqual(expectedFileData);
@@ -75,7 +70,7 @@ describe('Inscription parser', () => {
 
     const txn = readTransaction('f531eea03671ac17100a9887d5212532250d5eae09e7c8873cdd2efa6f7fab57');
 
-    const actualFileData = parser.parseInscriptions(txn)[0].getData();
+    const actualFileData = InscriptionParserService.parseInscriptions(txn)[0].getData();
     const expectedFileData = readInscriptionAsBase64('f531eea03671ac17100a9887d5212532250d5eae09e7c8873cdd2efa6f7fab57i0', 'html');
 
     expect(actualFileData).toEqual(expectedFileData);
@@ -89,7 +84,7 @@ describe('Inscription parser', () => {
 
     const txn = readTransaction('430901147831e41111aced3895ee4b9742cf72ac3cffa132624bd38c551ef379');
 
-    const parsedInscription = parser.parseInscriptions(txn)[0];
+    const parsedInscription = InscriptionParserService.parseInscriptions(txn)[0];
     const expectedFileData = readInscriptionAsBase64('430901147831e41111aced3895ee4b9742cf72ac3cffa132624bd38c551ef379i0', 'txt');
 
     const contentType = parsedInscription?.contentType;
@@ -115,10 +110,8 @@ describe('Inscription parser', () => {
 
     expect(txWitness).toEqual('0000000000000000000000000000000000000000000000000000000000000000');
 
-    const raw = InscriptionParserService.hexStringToUint8Array(txWitness);
-    parser['raw'] = raw;
-
-    const position = parser['getNextInscriptionMark'](0);
+    const raw = hexStringToUint8Array(txWitness);
+    const position = getNextInscriptionMark(raw, 0);
 
     expect(position).toEqual(-1);
   });

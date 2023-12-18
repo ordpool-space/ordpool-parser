@@ -26,10 +26,7 @@ async function getInscriptions(txId: string) {
   const response = await axios.get(`https://mempool.space/api/tx/${txId}`);
   const transaction = response.data;
 
-  const parser = new InscriptionParserService();
-  const parsedInscriptions = parser.parseInscriptions(transaction);
-
-  return parsedInscriptions;
+  return InscriptionParserService.parseInscriptions(transaction);
 }
 
 const parsedInscriptions = await getInscriptions('f1997166547da9784a3e7419d2b248551565211811d4f5e705b685efa244451f');
