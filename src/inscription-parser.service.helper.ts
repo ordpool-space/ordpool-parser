@@ -98,16 +98,16 @@ export function uint8ArrayToSingleByteChars(bytes: Uint8Array): string {
 }
 
 /**
- * Reads n bytes from the raw data starting from the pointer.
- * Also updates the pointer after reading.
- * @param raw - The raw data to read.
- * @param pointer - The current pointer where the reading starts.
+ * Reads a specified number of bytes from a Uint8Array starting from a given pointer.
+ *
+ * @param raw - The Uint8Array from which bytes are to be read.
+ * @param pointer - The position in the array from where to start reading.
  * @param n - The number of bytes to read.
- * @returns Slice: The read bytes as Uint8Array. Pointer: the updated pointer
+ * @returns A tuple containing the read bytes as Uint8Array and the updated pointer position.
  */
-export function readBytes(raw: Uint8Array, pointer: number, n: number): { slice: Uint8Array, pointer: number } {
+export function readBytes(raw: Uint8Array, pointer: number, n: number): [Uint8Array, number] {
   const slice = raw.slice(pointer, pointer + n);
-  return { slice, pointer: pointer + n };
+  return [slice, pointer + n];
 }
 
 /**
@@ -145,25 +145,26 @@ export function getNextInscriptionMark(raw: Uint8Array, startPosition: number): 
 }
 
 /**
- * Reads the data using the starting opcode
+ * Reads data based on the Bitcoin script push opcode starting from a specified pointer in the raw data.
  *
- * @param raw - The raw data to read.
- * @param pointer - The current pointer where the reading starts.
- * @returns The data extracted based on the opcode.
+ * This function handles different opcodes (OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4)
+ * and the direct push (where the opcode itself signifies the number of bytes to push).
+ *
+ * @param raw - The raw transaction data as a Uint8Array.
+ * @param pointer - The current position in the raw data array.
+ * @returns A tuple containing the read data as Uint8Array and the updated pointer position.
  */
-export function readPushdata(raw: Uint8Array, pointer: number): { slice: Uint8Array, pointer: number } {
+export function readPushdata(raw: Uint8Array, pointer: number): [Uint8Array, number] {
 
-  let current: { slice: Uint8Array, pointer: number } = { slice: new Uint8Array(), pointer };
-  current = readBytes(raw, current.pointer, 1)
-
-  const opcode = current.slice[0];
+  let [opcodeSlice, newPointer] = readBytes(raw, pointer, 1);
+  const opcode = opcodeSlice[0];
 
   // Opcodes from 0x01 to 0x4b (decimal values 1 to 75) are special opcodes that indicate a data push is happening.
   // Specifically, they indicate the number of bytes to be pushed onto the stack.
   // This checks if the current opcode represents a direct data push of 1 to 75 bytes.
   // If this condition is true, then read the next opcode number of bytes and treat them as data
   if (0x01 <= opcode && opcode <= 0x4b) {
-    return readBytes(raw, current.pointer, opcode);
+    return readBytes(raw, newPointer, opcode);
   }
 
   let numBytes: number;
@@ -175,13 +176,12 @@ export function readPushdata(raw: Uint8Array, pointer: number): { slice: Uint8Ar
       throw new Error(`Invalid push opcode ${opcode.toString(16)} at position ${pointer}`);
   }
 
-  current = readBytes(raw, current.pointer, numBytes);
-  const dataSizeArray =current.slice;
+  let [dataSizeArray, nextPointer] = readBytes(raw, newPointer, numBytes);
   let dataSize = 0;
   for (let i = 0; i < numBytes; i++) {
     dataSize |= dataSizeArray[i] << (8 * i);
   }
-  return readBytes(raw, current.pointer, dataSize);
+  return readBytes(raw, nextPointer, dataSize);
 }
 
 /**

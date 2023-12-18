@@ -67,19 +67,19 @@ export class InscriptionParserService {
    */
   private static extractInscriptionData(raw: Uint8Array, pointer: number): ParsedInscription | null {
 
-    let current: { slice: Uint8Array, pointer: number } = { slice: new Uint8Array(), pointer };
-
     try {
 
       // Process fields until OP_0 is encountered
       const fields: { tag: Uint8Array; value: Uint8Array }[] = [];
-      while (current.pointer < raw.length && raw[current.pointer] !== OP_0) {
+      let newPointer = pointer;
+      let slice;
 
-        current = readPushdata(raw, current.pointer);
-        const tag = current.slice;
+      while (newPointer < raw.length && raw[newPointer] !== OP_0) {
+        [slice, newPointer] = readPushdata(raw, newPointer);
+        const tag = slice;
 
-        current = readPushdata(raw, current.pointer);
-        const value = current.slice;
+        [slice, newPointer] = readPushdata(raw, newPointer);
+        const value = slice;
 
         fields.push({ tag, value });
       }
@@ -88,15 +88,15 @@ export class InscriptionParserService {
       // (or at the end of the raw data if there's no body)
       // --> Question: should we allow empty inscriptions? (where the next byte is OP_ENDIF)
       // --> TODO: Research what is ord doing in this edge case!
-      if (current.pointer < raw.length && raw[current.pointer] === OP_0) {
-        current = { slice: new Uint8Array(), pointer: current.pointer + 1 }; // skip OP_0
+      if (newPointer < raw.length && raw[newPointer] === OP_0) {
+        newPointer++; // Skip OP_0
       }
 
       // Collect body data until OP_ENDIF
       const data: Uint8Array[] = [];
-      while (current.pointer < raw.length && raw[current.pointer] !== OP_ENDIF) {
-        current = readPushdata(raw, current.pointer);
-        data.push(current.slice);
+      while (newPointer < raw.length && raw[newPointer] !== OP_ENDIF) {
+        [slice, newPointer] = readPushdata(raw, newPointer);
+        data.push(slice);
       }
 
       const combinedLengthOfAllArrays = data.reduce((acc, curr) => acc + curr.length, 0);
