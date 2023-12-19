@@ -69,15 +69,19 @@ export function encodeToBase64(binaryStr: string) {
  * @returns The resulting Uint8Array.
  */
 export function hexStringToUint8Array(hex: string): Uint8Array {
+  if (hex.length === 0) {
+    throw new Error('Input string is empty. Hex string expected.');
+  }
   return new Uint8Array(hex.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16)));
 }
 
 /**
- * Convert a Uint8Array to a UTF8 string.
- * @param bytes - The byte array to convert.
- * @returns The corresponding UTF8 string.
+ * Converts a Uint8Array containing UTF-8 encoded data to a normal a UTF-16 encoded string.
+ *
+ * @param bytes - The Uint8Array containing UTF-8 encoded data.
+ * @returns The corresponding UTF-16 encoded JavaScript string.
  */
-export function uint8ArrayToUtf8String(bytes: Uint8Array): string {
+export function utf8BytesToUtf16String(bytes: Uint8Array): string {
   const decoder = new TextDecoder('utf-8');
   return decoder.decode(bytes);
 }

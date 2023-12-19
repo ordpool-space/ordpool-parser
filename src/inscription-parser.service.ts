@@ -1,4 +1,4 @@
-import { OP_0, OP_ENDIF, encodeToBase64, getNextInscriptionMark, hexStringToUint8Array, knownFields, readPushdata, uint8ArrayToSingleByteChars, uint8ArrayToUtf8String } from "./inscription-parser.service.helper";
+import { OP_0, OP_ENDIF, encodeToBase64, getNextInscriptionMark, hexStringToUint8Array, knownFields, readPushdata, uint8ArrayToSingleByteChars, utf8BytesToUtf16String } from "./inscription-parser.service.helper";
 import { ParsedInscription } from "./parsed-inscription";
 
 
@@ -126,7 +126,7 @@ export class InscriptionParserService {
         fields,
 
         getContentString() {
-          return uint8ArrayToUtf8String(combinedData);
+          return utf8BytesToUtf16String(combinedData);
         },
 
         getData: (): string => {
