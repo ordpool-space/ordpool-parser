@@ -1,4 +1,4 @@
-import { OP_0, OP_ENDIF, encodeToBase64, getNextInscriptionMark, hexStringToUint8Array, knownFields, readPushdata, uint8ArrayToSingleByteChars, utf8BytesToUtf16String } from "./inscription-parser.service.helper";
+import { OP_0, OP_ENDIF, encodeToBase64, getKnownField, getNextInscriptionMark, hexStringToUint8Array, knownFields, readPushdata, uint8ArrayToSingleByteChars, utf8BytesToUtf16String } from "./inscription-parser.service.helper";
 import { ParsedInscription } from "./parsed-inscription";
 
 
@@ -109,7 +109,7 @@ export class InscriptionParserService {
         idx += segment.length;
       }
 
-      const contentTypeField = fields.find(x => x.tag.length === 1 && x.tag[0] === knownFields.content_type);
+      const contentTypeField = getKnownField(fields, knownFields.content_type);
 
       // Let's ignore inscriptions without a contentType, because there is no good way to display them
       // we could change this later on, if there are really inscriptions with no contentType but meaningful metadata
@@ -117,7 +117,7 @@ export class InscriptionParserService {
         return null;
       }
 
-      // it would make no sense to add UTF-8 to content-type, so no UTF-8 here
+      // it would make no sense to add UTF-8 to content-type, so assuming no UTF-8 here
       const contentType = uint8ArrayToSingleByteChars(contentTypeField.value);
 
       return {
@@ -138,7 +138,27 @@ export class InscriptionParserService {
           const content = uint8ArrayToSingleByteChars(combinedData);
           const fullBase64Data = encodeToBase64(content);
           return `data:${contentType};base64,${fullBase64Data}`;
+        },
+
+        getMetadata: (): string | undefined => {
+          const metadata = getKnownField(fields, knownFields.metadata)
+
+          if (!metadata) {
+            return undefined;
+          }
+          return utf8BytesToUtf16String(metadata.value);
+        },
+
+        getMetaprotocol: (): string | undefined => {
+          const metaprotocol = getKnownField(fields, knownFields.metaprotocol)
+
+          if (!metaprotocol) {
+            return undefined;
+          }
+          return utf8BytesToUtf16String(metaprotocol.value);
         }
+
+
       };
 
     } catch (ex) {

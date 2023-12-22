@@ -3,6 +3,9 @@ export interface ParsedInscription {
 
   fields: { tag: Uint8Array; value: Uint8Array }[];
 
+  /**
+   * UTF-8 encoded string (not intended for binary content like images or videos)
+   */
   getContentString: () => string;
 
   /**
@@ -11,7 +14,18 @@ export interface ParsedInscription {
   getData: () => string;
 
   /**
-   * Full data URI with contentType + content (base64 encoded)
+   * Base64 encoded data URI that can be displayed in an iframe
    */
   getDataUri: () => string;
+
+  /**
+   * Get Metadata, from tag 5
+   * see metadata: https://docs.ordinals.com/inscriptions/metadata.html
+   */
+  getMetadata: () => string | undefined;
+
+  /**
+   * Get Metaprotocol, from tag 7
+   */
+  getMetaprotocol: () => string | undefined;
 }

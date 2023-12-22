@@ -36,6 +36,12 @@ export const knownFields = {
   content_encoding: 0x09
 }
 
+export function getKnownField(fields: { tag: Uint8Array; value: Uint8Array }[], field: number) {
+  return fields.find(x =>
+    x.tag.length === 1 &&
+    x.tag[0] === field)
+}
+
 /**
  * Encodes a string to Base64.
  *
