@@ -1,4 +1,5 @@
-// updated version from https://github.com/code4fukui/CBOR-es
+// + updated version from https://github.com/code4fukui/CBOR-es
+// + modified to basic TypeScript by Johannes
 /*
  * The MIT License (MIT)
  *
@@ -24,17 +25,29 @@
  * SOFTWARE.
  */
 
-const POW_2_24 = 5.960464477539063e-8;
-const POW_2_32 = 4294967296;
-const POW_2_53 = 9007199254740992;
+const POW_2_24 = Math.pow(2, -24);
+const POW_2_32 = Math.pow(2, 32);
+const POW_2_53 = Math.pow(2, 53);
 
-function encode(value) {
+/**
+ * Encodes a given value into CBOR (Concise Binary Object Representation) format.
+ * This function takes a wide range of JavaScript data types and serializes them into
+ * a compact binary format. It supports numbers, strings, arrays, objects, and more.
+ *
+ * @param value - The value to be encoded into CBOR format.
+ *                This can be any type that is supported by the CBOR format,
+ *                including primitives, arrays, and objects.
+ * @returns A Uint8Array containing the CBOR-encoded data.
+ *          This binary representation can be transmitted or stored
+ *          and later decoded back into its original format.
+ */
+function encode(value: any): Uint8Array {
   let data = new ArrayBuffer(256);
   let dataView = new DataView(data);
-  let lastLength;
+  let lastLength: number;
   let offset = 0;
 
-  function prepareWrite(length) {
+  function prepareWrite(length: number): DataView {
     let newByteLength = data.byteLength;
     const requiredLength = offset + length;
     while (newByteLength < requiredLength)
@@ -51,28 +64,35 @@ function encode(value) {
     lastLength = length;
     return dataView;
   }
-  function commitWrite() {
+
+  function commitWrite(notUsed?: any) {
     offset += lastLength;
   }
-  function writeFloat64(value) {
+
+  function writeFloat64(value: number): void {
     commitWrite(prepareWrite(8).setFloat64(offset, value));
   }
-  function writeUint8(value) {
+
+  function writeUint8(value: number) {
     commitWrite(prepareWrite(1).setUint8(offset, value));
   }
-  function writeUint8Array(value) {
+
+  function writeUint8Array(value: Uint8Array): void {
     const dataView = prepareWrite(value.length);
     for (let i = 0; i < value.length; ++i)
       dataView.setUint8(offset + i, value[i]);
     commitWrite();
   }
-  function writeUint16(value) {
+
+  function writeUint16(value: number): void {
     commitWrite(prepareWrite(2).setUint16(offset, value));
   }
-  function writeUint32(value) {
+
+  function writeUint32(value: number): void {
     commitWrite(prepareWrite(4).setUint32(offset, value));
   }
-  function writeUint64(value) {
+
+  function writeUint64(value: number): void {
     const low = value % POW_2_32;
     const high = (value - low) / POW_2_32;
     const dataView = prepareWrite(8);
@@ -80,7 +100,8 @@ function encode(value) {
     dataView.setUint32(offset + 4, low);
     commitWrite();
   }
-  function writeTypeAndLength(type, length) {
+
+  function writeTypeAndLength(type: number, length: number): void {
     if (length < 24) {
       writeUint8(type << 5 | length);
     } else if (length < 0x100) {
@@ -98,7 +119,7 @@ function encode(value) {
     }
   }
 
-  function encodeItem(value) {
+  function encodeItem(value: any): void {
     if (value === false)
       return writeUint8(0xf4);
     if (value === true)
@@ -152,7 +173,21 @@ function encode(value) {
   return new Uint8Array(data, 0, offset);
 }
 
-function decode(data, tagger, simpleValue, decodeFirstFlag = false) {
+/**
+ * Decodes CBOR formatted data.
+ *
+ * @param data - The binary data to be decoded in CBOR format.
+ * @param tagger - A function to process tagged values. It takes a tag number and its associated value, returning a processed value.
+ * @param simpleValue - A function to handle CBOR's simple values. If not a function, it is interpreted as undefined.
+ * @param decodeFirstFlag - If set to true, only the first element will be decoded.
+ * @returns Returns the decoded value.
+ */
+function decode(
+  data: Uint8Array,
+  tagger?: (tag: number, value: any) => any,
+  simpleValue?: ((value: any) => any),
+  decodeFirstFlag: boolean = false
+): any {
   const dataByteLength = data.length;
   const dataView = new DataView(data.buffer, data.byteOffset, data.byteLength);
   let offset = 0;
@@ -162,14 +197,16 @@ function decode(data, tagger, simpleValue, decodeFirstFlag = false) {
   if (typeof simpleValue !== "function")
     simpleValue = function() { return undefined; };
 
-  function commitRead(length, value) {
+  function commitRead(length: number, value: any): any {
     offset += length;
     return value;
   }
-  function readArrayBuffer(length) {
+
+  function readArrayBuffer(length: number): Uint8Array {
     return commitRead(length, new Uint8Array(data.buffer, data.byteOffset + offset, length));
   }
-  function readFloat16() {
+
+  function readFloat16(): number {
     const tempArrayBuffer = new ArrayBuffer(4);
     const tempDataView = new DataView(tempArrayBuffer);
     const value = readUint16();
@@ -188,31 +225,39 @@ function decode(data, tagger, simpleValue, decodeFirstFlag = false) {
     tempDataView.setUint32(0, sign << 16 | exponent << 13 | fraction << 13);
     return tempDataView.getFloat32(0);
   }
+
   function readFloat32() {
     return commitRead(4, dataView.getFloat32(offset));
   }
+
   function readFloat64() {
     return commitRead(8, dataView.getFloat64(offset));
   }
+
   function readUint8() {
     return commitRead(1, dataView.getUint8(offset));
   }
+
   function readUint16() {
     return commitRead(2, dataView.getUint16(offset));
   }
+
   function readUint32() {
     return commitRead(4, dataView.getUint32(offset));
   }
+
   function readUint64() {
     return readUint32() * POW_2_32 + readUint32();
   }
+
   function readBreak() {
     if (dataView.getUint8(offset) !== 0xff)
       return false;
     offset += 1;
     return true;
   }
-  function readLength(additionalInformation) {
+
+  function readLength(additionalInformation: number): number {
     if (additionalInformation < 24)
       return additionalInformation;
     if (additionalInformation === 24)
@@ -227,7 +272,8 @@ function decode(data, tagger, simpleValue, decodeFirstFlag = false) {
       return -1;
     throw "Invalid length encoding";
   }
-  function readIndefiniteStringLength(majorType) {
+
+  function readIndefiniteStringLength(majorType: number): number {
     const initialByte = readUint8();
     if (initialByte === 0xff)
       return -1;
@@ -236,7 +282,8 @@ function decode(data, tagger, simpleValue, decodeFirstFlag = false) {
       throw "Invalid indefinite length element";
     return length;
   }
-  function decodeItem() {
+
+  function decodeItem(): any {
     const initialByte = readUint8();
     const majorType = initialByte >> 5;
     const additionalInformation = initialByte & 0x1f;
@@ -312,14 +359,14 @@ function decode(data, tagger, simpleValue, decodeFirstFlag = false) {
         }
         return retArray;
       case 5:
-        const retObject = {};
+        const retObject = {} as any;
         for (let i = 0; i < length || length < 0 && !readBreak(); ++i) {
           const key = decodeItem();
           retObject[key] = decodeItem();
         }
         return retObject;
       case 6:
-        return tagger(decodeItem(), length);
+        return tagger!(decodeItem(), length);
       case 7:
         switch (length) {
           case 20:
@@ -331,7 +378,7 @@ function decode(data, tagger, simpleValue, decodeFirstFlag = false) {
           case 23:
             return undefined;
           default:
-            return simpleValue(length);
+            return simpleValue!(length);
         }
     }
   }
@@ -343,7 +390,22 @@ function decode(data, tagger, simpleValue, decodeFirstFlag = false) {
   return ret;
 }
 
-function decodeFirst(data, tagger, simpleValue) {
+
+/**
+ * Decodes the first element from a given CBOR (Concise Binary Object Representation) encoded data.
+ * This function is particularly useful when dealing with CBOR data that contains multiple elements,
+ * but only the first element is needed. It utilizes the 'decode' function internally but stops
+ * after decoding the first element.
+ * @param data - The binary data to be decoded in CBOR format.
+ * @param tagger - A function to process tagged values. It takes a tag number and its associated value, returning a processed value.
+ * @param simpleValue- A function to handle CBOR's simple values. If not a function, it is interpreted as undefined.
+ * @returns Returns the decoded value.
+ */
+function decodeFirst(
+  data: Uint8Array,
+  tagger?: (tag: number, value: any) => any,
+  simpleValue?: ((value: any) => any),
+): any {
   return decode(data, tagger, simpleValue, true);
 }
 

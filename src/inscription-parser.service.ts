@@ -1,10 +1,6 @@
 import { OP_0, OP_ENDIF, encodeToBase64, getKnownField, getNextInscriptionMark, hexStringToUint8Array, knownFields, readPushdata, uint8ArrayToSingleByteChars, utf8BytesToUtf16String } from "./inscription-parser.service.helper";
 import { ParsedInscription } from "./parsed-inscription";
-
-
-// private pointer = 0;
-// private raw: Uint8Array = new Uint8Array();
-
+import { CBOR } from "./cbor";
 
 /**
  * Extracts the first inscription from a Bitcoin transaction.
@@ -146,7 +142,9 @@ export class InscriptionParserService {
           if (!metadata) {
             return undefined;
           }
-          return utf8BytesToUtf16String(metadata.value);
+
+          const value = CBOR.decode(metadata.value);
+          return value;
         },
 
         getMetaprotocol: (): string | undefined => {
