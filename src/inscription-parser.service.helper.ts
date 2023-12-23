@@ -228,6 +228,18 @@ export function hasInscription(witness: string[]): boolean {
 }
 
 /**
+ * Converts a byte array to a hexadecimal string.
+ *
+ * @param byteArray - The array of bytes to convert.
+ * @returns The hexadecimal string representation of the byte array.
+ */
+export function byteArrayToHex(byteArray: Uint8Array): string {
+  return Array.from(byteArray)
+              .map(byte => byte.toString(16).padStart(2, '0'))
+              .join('');
+}
+
+/**
  * Extracts the parent inscription ID from a field in an inscription.
  * The parent field value consists of a 32-byte transaction ID (TXID) followed by a four-byte little-endian index.
  * The TXID part is reversed in order, and trailing zeroes are omitted.
@@ -243,14 +255,11 @@ export function extractParent(value: Uint8Array | undefined): string | undefined
 
   // Reverse the TXID part and convert it to hexadecimal
   const txid = value.slice(0, 32).reverse();
-  const txidHex = Array.from(txid).map(byte => byte.toString(16).padStart(2, '0')).join('');
+  const txidHex = byteArrayToHex(txid);
 
   // Convert the 4-byte little-endian index to a decimal number
   const indexBytes = value.slice(32, 36); // Get the index part
-  let index = 0;
-  for (let i = 0; i < indexBytes.length; i++) {
-    index |= indexBytes[i] << (8 * i);
-  }
+  const index = calculateDataSize(indexBytes);
 
   // Combine TXID and index to form the parent inscription ID
   const parentInscriptionId = txidHex + 'i' + index;

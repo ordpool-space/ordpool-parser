@@ -1,4 +1,4 @@
-import { OP_FALSE, OP_IF, OP_PUSHBYTES_3, calculateDataSize, encodeToBase64, extractParent, getNextInscriptionMark, hexStringToUint8Array, readBytes, uint8ArrayToSingleByteChars, utf8BytesToUtf16String } from './inscription-parser.service.helper';
+import { OP_FALSE, OP_IF, OP_PUSHBYTES_3, byteArrayToHex, calculateDataSize, encodeToBase64, extractParent, getNextInscriptionMark, hexStringToUint8Array, readBytes, uint8ArrayToSingleByteChars, utf8BytesToUtf16String } from './inscription-parser.service.helper';
 
 /**
  * Converts a UTF-16 encoded JavaScript string to a Uint8Array representing UTF-8 encoded bytes.
@@ -208,6 +208,40 @@ describe('calculateDataSize', () => {
   });
 });
 
+describe('byteArrayToHex', () => {
+
+  it('should correctly convert a byte array to a hexadecimal string', () => {
+    const byteArray = new Uint8Array([0x01, 0xAB, 0x3F]);
+    const expectedHex = '01ab3f';
+    expect(byteArrayToHex(byteArray)).toEqual(expectedHex);
+  });
+
+  it('should correctly convert a byte array with the inscription mark to a hexadecimal string', () => {
+    const byteArray = new Uint8Array([OP_FALSE, OP_IF, OP_PUSHBYTES_3, 0x6f, 0x72, 0x64]);
+    const expectedHex = '0063036f7264';
+    expect(byteArrayToHex(byteArray)).toEqual(expectedHex);
+  });
+
+  it('should handle an empty byte array', () => {
+    const byteArray = new Uint8Array([]);
+    const expectedHex = '';
+    expect(byteArrayToHex(byteArray)).toEqual(expectedHex);
+  });
+
+  it('should handle a single byte correctly', () => {
+    const byteArray = new Uint8Array([0x00]);
+    const expectedHex = '00';
+    expect(byteArrayToHex(byteArray)).toEqual(expectedHex);
+  });
+
+  it('should pad single digit hex values with a leading zero', () => {
+    const byteArray = new Uint8Array([0x1, 0x2, 0xA]);
+    const expectedHex = '01020a';
+    expect(byteArrayToHex(byteArray)).toEqual(expectedHex);
+  });
+
+  // Additional tests can be added here, for example, testing with larger arrays.
+});
 
 /*
 Provenance
