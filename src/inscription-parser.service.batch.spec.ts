@@ -62,5 +62,15 @@ describe('Inscription parser', () => {
     expect(actualFileData0).toEqual(expectedFileData0);
     expect(actualFileData1).toEqual(expectedFileData1);
     expect(actualFileData2).toEqual(expectedFileData2);
+
+    // let's also check the metadata
+    expect(inscriptions[0].getMetadata()).toEqual({ id: 1, pattern: 'Mempool', mode: 'Dark' });
+    expect(inscriptions[1].getMetadata()).toEqual({ id: 2, pattern: 'Riley',   mode: 'Light' });
+    expect(inscriptions[2].getMetadata()).toEqual({ id: 3, pattern: 'Fractal', mode: 'Dark' });
+
+    // and also check the parent inscription
+    expect(inscriptions[0].getParent()).toEqual('2593027c930e08446af96cb3e94be579024d35ed0d381e83789bfc6aca5e3550i0');
+    expect(inscriptions[1].getParent()).toEqual('2593027c930e08446af96cb3e94be579024d35ed0d381e83789bfc6aca5e3550i0');
+    expect(inscriptions[2].getParent()).toEqual('2593027c930e08446af96cb3e94be579024d35ed0d381e83789bfc6aca5e3550i0');
   });
 });

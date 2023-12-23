@@ -1,4 +1,4 @@
-import { OP_0, OP_ENDIF, encodeToBase64, getKnownField, getNextInscriptionMark, hexStringToUint8Array, knownFields, readPushdata, uint8ArrayToSingleByteChars, utf8BytesToUtf16String } from "./inscription-parser.service.helper";
+import { OP_0, OP_ENDIF, encodeToBase64, extractParent, getKnownField, getNextInscriptionMark, hexStringToUint8Array, knownFields, readPushdata, uint8ArrayToSingleByteChars, utf8BytesToUtf16String } from "./inscription-parser.service.helper";
 import { ParsedInscription } from "./parsed-inscription";
 import { CBOR } from "./cbor";
 
@@ -82,8 +82,7 @@ export class InscriptionParserService {
 
       // Now we are at the beginning of the body
       // (or at the end of the raw data if there's no body)
-      // --> Question: should we allow empty inscriptions? (where the next byte is OP_ENDIF)
-      // --> TODO: Research what is ord doing in this edge case!
+      // --> Question: should we also allow empty inscriptions? (where the next byte is OP_ENDIF)
       if (newPointer < raw.length && raw[newPointer] === OP_0) {
         newPointer++; // Skip OP_0
       }
@@ -136,6 +135,16 @@ export class InscriptionParserService {
           return `data:${contentType};base64,${fullBase64Data}`;
         },
 
+        getParent: (): string | undefined => {
+          const parent = getKnownField(fields, knownFields.parent)
+
+          if (!parent) {
+            return undefined;
+          }
+
+          return extractParent(parent.value);
+        },
+
         getMetadata: (): string | undefined => {
           const metadata = getKnownField(fields, knownFields.metadata)
 
@@ -143,8 +152,7 @@ export class InscriptionParserService {
             return undefined;
           }
 
-          const value = CBOR.decode(metadata.value);
-          return value;
+          return CBOR.decode(metadata.value);
         },
 
         getMetaprotocol: (): string | undefined => {

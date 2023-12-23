@@ -19,6 +19,13 @@ export interface ParsedInscription {
   getDataUri: () => string;
 
   /**
+   * Get Parent inscription, from tag 3
+   * see provenance: https://docs.ordinals.com/inscriptions/provenance.html
+   * OWNERSHIP OF THE PARENT IS NOT VALIDATED!
+   */
+  getParent: () => string | undefined;
+
+  /**
    * Get Metadata, from tag 5
    * see metadata: https://docs.ordinals.com/inscriptions/metadata.html
    */
