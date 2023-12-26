@@ -1,12 +1,6 @@
-// source: https://raw.githubusercontent.com/google/brotli/master/js/decode_test.ts
-
-/* Copyright 2023 Google Inc. All Rights Reserved.
-
-   Distributed under MIT license.
-   See file LICENSE for detail or copy at https://opensource.org/licenses/MIT
-*/
-
 import { brotliDecode } from './brotli-decode';
+import { brotliDecodeUint8Array } from './inscription-parser.service.helper';
+import { readBinaryFileAsUint8Array } from './test.helper';
 
 function bytesToString(bytes: Int8Array): string {
   const chars: number[] = new Uint16Array(bytes) as unknown as number[];
@@ -19,7 +13,7 @@ function stringToBytes(str: string): Int8Array {
   return out;
 }
 
-describe('DecodeTest', () => {
+describe('brotliDecode', () => {
 
   it('testMetadata', () => {
     expect('').toEqual(bytesToString(brotliDecode(Int8Array.from([1, 11, 0, 42, 3]))));
@@ -33,4 +27,9 @@ describe('DecodeTest', () => {
     const options = {'customDictionary': dictionary};
     expect(txt).toEqual(bytesToString(brotliDecode(Int8Array.from(compressed), options)));
   });
+
+  it('should survive a decompression bomb', () => {
+    const bomb = readBinaryFileAsUint8Array('brotli-decompression-bomb.txt.br');
+    expect(() => brotliDecodeUint8Array(bomb)).toThrow('Decompressed size exceeds allowed limit');
+  })
 });
