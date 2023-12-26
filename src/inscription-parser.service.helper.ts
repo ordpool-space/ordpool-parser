@@ -1,3 +1,5 @@
+import { brotliDecode } from "./brotli-decode";
+
 /**
  * Bitcoin Script Opcodes
  * see https://en.bitcoin.it/wiki/Script
@@ -36,10 +38,16 @@ export const knownFields = {
   content_encoding: 0x09
 }
 
-export function getKnownField(fields: { tag: Uint8Array; value: Uint8Array }[], field: number) {
-  return fields.find(x =>
+export function getKnownFieldValue(fields: { tag: Uint8Array; value: Uint8Array }[], field: number) {
+  const knownField = fields.find(x =>
     x.tag.length === 1 &&
-    x.tag[0] === field)
+    x.tag[0] === field);
+
+  if (knownField === undefined) {
+    return undefined;
+  }
+
+  return knownField.value;
 }
 
 /**
@@ -87,7 +95,12 @@ export function hexStringToUint8Array(hex: string): Uint8Array {
  * @param bytes - The Uint8Array containing UTF-8 encoded data.
  * @returns The corresponding UTF-16 encoded JavaScript string.
  */
-export function utf8BytesToUtf16String(bytes: Uint8Array): string {
+export function utf8BytesToUtf16String(bytes: Uint8Array | undefined): string | undefined {
+
+  if (bytes === undefined) {
+    return undefined;
+  }
+
   const decoder = new TextDecoder('utf-8');
   return decoder.decode(bytes);
 }
@@ -248,7 +261,7 @@ export function byteArrayToHex(byteArray: Uint8Array): string {
  */
 export function extractParent(value: Uint8Array | undefined): string | undefined {
 
-  if (!value) {
+  if (value === undefined) {
     return undefined;
   }
 
@@ -273,10 +286,36 @@ export function extractParent(value: Uint8Array | undefined): string | undefined
  */
 export function extractPointer(value: Uint8Array | undefined): number | undefined {
 
-  if (!value) {
+  if (value === undefined) {
     return undefined;
   }
 
   // Interpret the pointerField value as a little-endian integer
   return littleEndianBytesToNumber(value);
+}
+
+/**
+ * Decompresses a Uint8Array using the Brotli algorithm.
+ *
+ * This function first converts the Uint8Array to an Int8Array (since Brotli decoding expects an Int8Array)
+ * and then performs the Brotli decompression. The decompressed data is then returned as a Uint8Array.
+ *
+ * Note: The conversion between Uint8Array and Int8Array does not copy the data but creates a new view over the same memory.
+ *
+ * @param bytes - The Uint8Array containing compressed data.
+ * @returns A Uint8Array containing the decompressed data.
+ */
+export function brotliDecodeUint8Array(bytes: Uint8Array): Uint8Array {
+
+  // Creating an Int8Array view over the same buffer as the original Uint8Array.
+  // The Int8Array view is necessary because brotliDecode expects data in Int8Array format.
+  const int8View = new Int8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+
+  // Perform Brotli decompression using the Int8Array view.
+  // The brotliDecode function returns decompressed data as an Int8Array.
+  const decompressedInt8Array = brotliDecode(int8View);
+
+  // Creating a Uint8Array view over the buffer of the decompressed data.
+  // This conversion is required to return the data in the original Uint8Array format.
+  return new Uint8Array(decompressedInt8Array.buffer, decompressedInt8Array.byteOffset, decompressedInt8Array.byteLength);
 }

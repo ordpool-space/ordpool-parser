@@ -1,4 +1,4 @@
-import { OP_0, OP_ENDIF, encodeToBase64, extractParent, extractPointer, getKnownField, getNextInscriptionMark, hexStringToUint8Array, knownFields, readPushdata, uint8ArrayToSingleByteChars, utf8BytesToUtf16String } from "./inscription-parser.service.helper";
+import { OP_0, OP_ENDIF, brotliDecodeUint8Array, encodeToBase64, extractParent, extractPointer, getKnownFieldValue, getNextInscriptionMark, hexStringToUint8Array, knownFields, readPushdata, uint8ArrayToSingleByteChars, utf8BytesToUtf16String } from "./inscription-parser.service.helper";
 import { ParsedInscription } from "./parsed-inscription";
 import { CBOR } from "./cbor";
 
@@ -95,7 +95,7 @@ export class InscriptionParserService {
       }
 
       const combinedLengthOfAllArrays = data.reduce((acc, curr) => acc + curr.length, 0);
-      const combinedData = new Uint8Array(combinedLengthOfAllArrays);
+      let combinedData = new Uint8Array(combinedLengthOfAllArrays);
 
       // Copy all segments from data into combinedData, forming a single contiguous Uint8Array
       let idx = 0;
@@ -104,16 +104,28 @@ export class InscriptionParserService {
         idx += segment.length;
       }
 
-      const contentTypeField = getKnownField(fields, knownFields.content_type);
+      const contentTypeRaw = getKnownFieldValue(fields, knownFields.content_type);
 
       // Let's ignore inscriptions without a contentType, because there is no good way to display them
       // we could change this later on, if there are really inscriptions with no contentType but meaningful metadata
-      if (!contentTypeField) {
+      if (!contentTypeRaw) {
         return null;
       }
 
       // it would make no sense to add UTF-8 to content-type, so assuming no UTF-8 here
-      const contentType = uint8ArrayToSingleByteChars(contentTypeField.value);
+      const contentType = uint8ArrayToSingleByteChars(contentTypeRaw);
+
+      // figure out of the body is encoded via brotli
+      const contentEncodingRaw = getKnownFieldValue(fields, knownFields.content_encoding);
+
+      let contentEncoding: string | undefined = undefined;
+      if (contentEncodingRaw) {
+        contentEncoding = uint8ArrayToSingleByteChars(contentEncodingRaw);
+      }
+
+      if (contentEncoding === 'br') {
+        combinedData = brotliDecodeUint8Array(combinedData);
+      }
 
       return {
         contentType,
@@ -121,7 +133,7 @@ export class InscriptionParserService {
         fields,
 
         getContentString() {
-          return utf8BytesToUtf16String(combinedData);
+          return utf8BytesToUtf16String(combinedData) + ''; // never return undefined here
         },
 
         getData: (): string => {
@@ -136,45 +148,33 @@ export class InscriptionParserService {
         },
 
         getPointer: (): number | undefined => {
-          const pointer = getKnownField(fields, knownFields.pointer)
-
-          if (pointer === undefined) {
-            return undefined;
-          }
-
-          return extractPointer(pointer.value);
+          const pointerRaw = getKnownFieldValue(fields, knownFields.pointer)
+          return extractPointer(pointerRaw);
         },
 
         getParent: (): string | undefined => {
-          const parent = getKnownField(fields, knownFields.parent)
-
-          if (!parent) {
-            return undefined;
-          }
-
-          return extractParent(parent.value);
+          const parentRaw = getKnownFieldValue(fields, knownFields.parent)
+          return extractParent(parentRaw);
         },
 
         getMetadata: (): string | undefined => {
-          const metadata = getKnownField(fields, knownFields.metadata)
+          const metadataRaw = getKnownFieldValue(fields, knownFields.metadata)
 
-          if (!metadata) {
+          if (!metadataRaw) {
             return undefined;
           }
 
-          return CBOR.decode(metadata.value);
+          return CBOR.decode(metadataRaw);
         },
 
         getMetaprotocol: (): string | undefined => {
-          const metaprotocol = getKnownField(fields, knownFields.metaprotocol)
+          const metaprotocolRaw = getKnownFieldValue(fields, knownFields.metaprotocol)
+          return utf8BytesToUtf16String(metaprotocolRaw);
+        },
 
-          if (!metaprotocol) {
-            return undefined;
-          }
-          return utf8BytesToUtf16String(metaprotocol.value);
+        getContentEncoding: (): string | undefined => {
+          return contentEncoding;
         }
-
-
       };
 
     } catch (ex) {

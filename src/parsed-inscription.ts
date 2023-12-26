@@ -44,4 +44,9 @@ export interface ParsedInscription {
    * Get Metaprotocol, from tag 7
    */
   getMetaprotocol: () => string | undefined;
+
+  /**
+   * Get Content encoding, from tag 9
+   */
+  getContentEncoding: () => string | undefined;
 }
