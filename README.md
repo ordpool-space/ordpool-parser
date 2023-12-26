@@ -104,11 +104,5 @@ npm run build
 To publish a new version to NPM:
 
 ```bash
-npm run publish
+npm publish
 ```
-
-## 📙 Learn More
-
-- Ordpool: https://ordpool.space
-- What is an Inscription "envelope"?: https://blog.ordinalhub.com/what-is-an-envelope/
-- The Cursed Inscriptions Rabbithole: https://youtu.be/cpAh5_KhvMg

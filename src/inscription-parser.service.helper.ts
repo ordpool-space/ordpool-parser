@@ -302,8 +302,12 @@ export function extractPointer(value: Uint8Array | undefined): number | undefine
  *
  * Note: The conversion between Uint8Array and Int8Array does not copy the data but creates a new view over the same memory.
  *
+ * If decompression succeeds, returns the decompressed data as Uint8Array.
+ * If decompression fails due to size exceeding the allowed limit, returns
+ * 'Decompressed size exceeds allowed limit' as Uint8Array.
+ *
  * @param bytes - The Uint8Array containing compressed data.
- * @returns A Uint8Array containing the decompressed data.
+ * @returns A Uint8Array containing the decompressed data or an error message as Uint8Array.
  */
 export function brotliDecodeUint8Array(bytes: Uint8Array): Uint8Array {
 
