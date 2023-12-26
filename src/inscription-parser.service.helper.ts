@@ -1,4 +1,4 @@
-import { brotliDecode } from "./brotli-decode";
+import { MAX_DECOMPRESSED_SIZE_MESSAGE, brotliDecode } from "./brotli-decode";
 
 /**
  * Bitcoin Script Opcodes
@@ -311,11 +311,19 @@ export function brotliDecodeUint8Array(bytes: Uint8Array): Uint8Array {
   // The Int8Array view is necessary because brotliDecode expects data in Int8Array format.
   const int8View = new Int8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength);
 
-  // Perform Brotli decompression using the Int8Array view.
-  // The brotliDecode function returns decompressed data as an Int8Array.
-  const decompressedInt8Array = brotliDecode(int8View);
+  try {
+    // Perform Brotli decompression using the Int8Array view.
+    // The brotliDecode function returns decompressed data as an Int8Array.
+    const decompressedInt8Array = brotliDecode(int8View);
 
-  // Creating a Uint8Array view over the buffer of the decompressed data.
-  // This conversion is required to return the data in the original Uint8Array format.
-  return new Uint8Array(decompressedInt8Array.buffer, decompressedInt8Array.byteOffset, decompressedInt8Array.byteLength);
+    // Creating a Uint8Array view over the buffer of the decompressed data.
+    // This conversion is required to return the data in the original Uint8Array format.
+    return new Uint8Array(decompressedInt8Array.buffer, decompressedInt8Array.byteOffset, decompressedInt8Array.byteLength);
+
+  } catch (error) {
+    if (error instanceof Error && error.message === MAX_DECOMPRESSED_SIZE_MESSAGE) {
+      return new TextEncoder().encode(MAX_DECOMPRESSED_SIZE_MESSAGE);
+    }
+    throw error;
+  }
 }

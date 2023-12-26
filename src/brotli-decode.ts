@@ -1752,7 +1752,8 @@ function toUsAsciiBytes(src: string): Int8Array {
 type ByteBuffer = Int8Array;
 
 // hacked by Johannes
-const MAX_DECOMPRESSED_SIZE = 1 * 1024 * 1024 // 1 MB in bytes
+export const MAX_DECOMPRESSED_SIZE = 1 * 1024 * 1024 // 1 MB in bytes
+export const MAX_DECOMPRESSED_SIZE_MESSAGE = 'Decompressed size exceeds allowed limit';
 
 /**
  * Decodes brotli stream.
@@ -1780,7 +1781,7 @@ export function brotliDecode(
 
     // hacked by Johannes
     if (totalOutput > MAX_DECOMPRESSED_SIZE) {
-      throw new Error('Decompressed size exceeds allowed limit');
+      throw new Error(MAX_DECOMPRESSED_SIZE_MESSAGE);
     }
 
     if (s.outputUsed < 16384) break;
