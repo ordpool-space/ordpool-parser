@@ -23,10 +23,10 @@ export const knownFields = {
   // pointer, with a tag of 2, see pointer docs: https://docs.ordinals.com/inscriptions/pointer.html
   pointer: 0x02,
 
-  // parent, with a tag of 3, see provenance: https://docs.ordinals.com/inscriptions/provenance.html
+  // parent, with a tag of 3, see provenance docs: https://docs.ordinals.com/inscriptions/provenance.html
   parent: 0x03,
 
-  // metadata, with a tag of 5, see metadata: https://docs.ordinals.com/inscriptions/metadata.html
+  // metadata, with a tag of 5, see metadata docs: https://docs.ordinals.com/inscriptions/metadata.html
   metadata: 0x05,
 
   // metaprotocol, with a tag of 7, whose value is the metaprotocol identifier.
@@ -160,23 +160,22 @@ export function getNextInscriptionMark(raw: Uint8Array, startPosition: number): 
 }
 
 /**
- * Calculates the size of data to be read from a raw transaction array based on the given size bytes.
+ * Converts a little-endian byte array to a JavaScript number.
  *
- * This function interprets the size bytes in little-endian format, meaning the least significant byte comes first.
- * It constructs an integer value representing the size of the data to be read next from the raw transaction data.
+ * This function interprets the provided bytes in little-endian format, where the least significant byte comes first.
+ * It constructs an integer value representing the number encoded by the bytes.
  *
- * @param dataSizeArray - An array containing the bytes that specify the size of the data.
- *                        The length of this array (1, 2, or 4 bytes) depends on the Bitcoin script pushdata opcode.
- * @returns The calculated size of the data as a number.
+ * @param byteArray - An array containing the bytes in little-endian format.
+ * @returns The number represented by the byte array.
  */
-export function calculateDataSize(dataSizeArray: Uint8Array): number {
-  let dataSize = 0;
-  for (let i = 0; i < dataSizeArray.length; i++) {
-    // Extract each byte from dataSizeArray, shift it to the left by 8 * i bits, and combine it with dataSize.
+export function littleEndianBytesToNumber(byteArray: Uint8Array): number {
+  let number = 0;
+  for (let i = 0; i < byteArray.length; i++) {
+    // Extract each byte from byteArray, shift it to the left by 8 * i bits, and combine it with number.
     // The shifting accounts for the little-endian format where the least significant byte comes first.
-    dataSize |= dataSizeArray[i] << (8 * i);
+    number |= byteArray[i] << (8 * i);
   }
-  return dataSize;
+  return number;
 }
 
 /**
@@ -212,7 +211,7 @@ export function readPushdata(raw: Uint8Array, pointer: number): [Uint8Array, num
   }
 
   let [dataSizeArray, nextPointer] = readBytes(raw, newPointer, numBytes);
-  let dataSize = calculateDataSize(dataSizeArray);
+  let dataSize = littleEndianBytesToNumber(dataSizeArray);
   return readBytes(raw, nextPointer, dataSize);
 }
 
@@ -254,15 +253,30 @@ export function extractParent(value: Uint8Array | undefined): string | undefined
   }
 
   // Reverse the TXID part and convert it to hexadecimal
-  const txid = value.slice(0, 32).reverse();
-  const txidHex = byteArrayToHex(txid);
+  const txId = value.slice(0, 32).reverse();
+  const txIdHex = byteArrayToHex(txId);
 
   // Convert the 4-byte little-endian index to a decimal number
   const indexBytes = value.slice(32, 36); // Get the index part
-  const index = calculateDataSize(indexBytes);
+  const index = littleEndianBytesToNumber(indexBytes);
 
   // Combine TXID and index to form the parent inscription ID
-  const parentInscriptionId = txidHex + 'i' + index;
+  return txIdHex + 'i' + index;
+}
 
-  return parentInscriptionId;
+/**
+ * Extracts the pointer value from a given field in an inscription.
+ * The pointer value is a little-endian encoded integer specifying the sat position in the outputs.
+ *
+ * @param pointerField - The field containing the pointer data.
+ * @returns The pointer value as a number, or undefined if the pointer field is not provided.
+ */
+export function extractPointer(value: Uint8Array | undefined): number | undefined {
+
+  if (!value) {
+    return undefined;
+  }
+
+  // Interpret the pointerField value as a little-endian integer
+  return littleEndianBytesToNumber(value);
 }

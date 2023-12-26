@@ -1,4 +1,4 @@
-import { OP_FALSE, OP_IF, OP_PUSHBYTES_3, byteArrayToHex, calculateDataSize, encodeToBase64, extractParent, getNextInscriptionMark, hexStringToUint8Array, readBytes, uint8ArrayToSingleByteChars, utf8BytesToUtf16String } from './inscription-parser.service.helper';
+import { OP_FALSE, OP_IF, OP_PUSHBYTES_3, byteArrayToHex, littleEndianBytesToNumber, encodeToBase64, extractParent, extractPointer, getNextInscriptionMark, hexStringToUint8Array, readBytes, uint8ArrayToSingleByteChars, utf8BytesToUtf16String } from './inscription-parser.service.helper';
 
 /**
  * Converts a UTF-16 encoded JavaScript string to a Uint8Array representing UTF-8 encoded bytes.
@@ -177,34 +177,34 @@ describe('getNextInscriptionMark', () => {
   });
 });
 
-// calculateDataSize is essentially reading a binary representation of a number
+// littleEndianBytesToNumber is essentially reading a binary representation of a number
 // (in little-endian format) from a Uint8Array and converting it into a JavaScript number.
-describe('calculateDataSize', () => {
+describe('littleEndianBytesToNumber', () => {
 
   it('should calculate size for single byte correctly', () => {
     const dataSizeArray = new Uint8Array([0x12]); // 18 in decimal
-    const size = calculateDataSize(dataSizeArray);
+    const size = littleEndianBytesToNumber(dataSizeArray);
     expect(size).toEqual(0x12);
     expect(size).toEqual(18);
   });
 
   it('should calculate size for two bytes correctly in little-endian format', () => {
     const dataSizeArray = new Uint8Array([0x34, 0x12]); // 0x1234 in hexadecimal
-    const size = calculateDataSize(dataSizeArray);
+    const size = littleEndianBytesToNumber(dataSizeArray);
     expect(size).toEqual(0x1234);
     expect(size).toEqual(4660);
   });
 
   it('should calculate size for four bytes correctly in little-endian format', () => {
     const dataSizeArray = new Uint8Array([0x78, 0x56, 0x34, 0x12]); // 0x12345678 in hexadecimal
-    const size = calculateDataSize(dataSizeArray);
+    const size = littleEndianBytesToNumber(dataSizeArray);
     expect(size).toEqual(0x12345678);
     expect(size).toEqual(305419896);
   });
 
   it('should handle an empty array', () => {
     const dataSizeArray = new Uint8Array([]);
-    expect(calculateDataSize(dataSizeArray)).toEqual(0);
+    expect(littleEndianBytesToNumber(dataSizeArray)).toEqual(0);
   });
 });
 
@@ -343,5 +343,97 @@ describe('extractParent', () => {
 
   it('should return undefined for undefined parent field', () => {
     expect(extractParent(undefined)).toBeUndefined();
+  });
+});
+
+
+/*
+Pointer
+=======
+
+In order to make an inscription on a sat other than the first of its input, a
+zero-based integer, called the "pointer", can be provided with tag `2`, causing
+the inscription to be made on the sat at the given position in the outputs. If
+the pointer is equal to or greater than the number of total sats in the outputs
+of the inscribe transaction, it is ignored, and the inscription is made as
+usual. The value of the pointer field is a little endian integer, with trailing
+zeroes ignored.
+
+An even tag is used, so that old versions of `ord` consider the inscription to
+be unbound, instead of assigning it, incorrectly, to the first sat.
+
+This can be used to create multiple inscriptions in a single transaction on
+different sats, when otherwise they would be made on the same sat.
+
+Examples
+--------
+
+An inscription with pointer 255:
+
+```
+OP_FALSE
+OP_IF
+  OP_PUSH "ord"
+  OP_PUSH 1
+  OP_PUSH "text/plain;charset=utf-8"
+  OP_PUSH 2
+  OP_PUSH 0xff
+  OP_PUSH 0
+  OP_PUSH "Hello, world!"
+OP_ENDIF
+```
+
+An inscription with pointer 256:
+
+```
+OP_FALSE
+OP_IF
+  OP_PUSH "ord"
+  OP_PUSH 1
+  OP_PUSH "text/plain;charset=utf-8"
+  OP_PUSH 2
+  OP_PUSH 0x0001
+  OP_PUSH 0
+  OP_PUSH "Hello, world!"
+OP_ENDIF
+```
+
+An inscription with pointer 256, with trailing zeroes, which are ignored:
+
+```
+OP_FALSE
+OP_IF
+  OP_PUSH "ord"
+  OP_PUSH 1
+  OP_PUSH "text/plain;charset=utf-8"
+  OP_PUSH 2
+  OP_PUSH 0x000100
+  OP_PUSH 0
+  OP_PUSH "Hello, world!"
+OP_ENDIF
+```
+*/
+describe('extractPointer', () => {
+
+  // An inscription with pointer 255:
+  it('should correctly extract a one-byte pointer value', () => {
+    const pointer = extractPointer(new Uint8Array([0xff]));
+    expect(pointer).toEqual(255);
+  });
+
+  // An inscription with pointer 256:
+  it('should correctly extract a multi-byte pointer value', () => {
+    const pointer = new Uint8Array([0x00, 0x01]);
+    expect(extractPointer(pointer)).toEqual(256);
+  });
+
+  // An inscription with pointer 256, with trailing zeroes, which are ignored:
+  it('should handle a pointer value with trailing zeroes', () => {
+    const pointer = new Uint8Array([0x00, 0x01, 0x00]);
+    expect(extractPointer(pointer)).toEqual(256);
+  });
+
+  it('should return undefined for undefined pointer value', () => {
+    expect(extractPointer(undefined)).toBeUndefined();
   });
 });

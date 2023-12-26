@@ -19,15 +19,24 @@ export interface ParsedInscription {
   getDataUri: () => string;
 
   /**
+   * Get Pointer, from tag 2
+   * see pointer docs: https://docs.ordinals.com/inscriptions/pointer.html
+   *
+   * TODO: The pointer is not displayed anywhere on ordinals.com,
+   * so I have no indication of whether these numbers are really correct
+   */
+  getPointer: () => number | undefined;
+
+  /**
    * Get Parent inscription, from tag 3
-   * see provenance: https://docs.ordinals.com/inscriptions/provenance.html
+   * see provenance docs: https://docs.ordinals.com/inscriptions/provenance.html
    * OWNERSHIP OF THE PARENT IS NOT VALIDATED!
    */
   getParent: () => string | undefined;
 
   /**
    * Get Metadata, from tag 5
-   * see metadata: https://docs.ordinals.com/inscriptions/metadata.html
+   * see metadata docs: https://docs.ordinals.com/inscriptions/metadata.html
    */
   getMetadata: () => string | undefined;
 
