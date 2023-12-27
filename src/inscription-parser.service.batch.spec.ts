@@ -29,6 +29,10 @@ describe('Inscription parser', () => {
     expect(actualFileData0).toEqual(expectedFileData0);
     expect(actualFileData1).toEqual(expectedFileData1);
     expect(actualFileData2).toEqual(expectedFileData2);
+
+    expect(inscriptions[0].inscriptionId).toEqual('092111e882a8025f3f05ab791982e8cc7fd7395afe849a5949fd56255b5c41cci0');
+    expect(inscriptions[1].inscriptionId).toEqual('092111e882a8025f3f05ab791982e8cc7fd7395afe849a5949fd56255b5c41cci1');
+    expect(inscriptions[2].inscriptionId).toEqual('092111e882a8025f3f05ab791982e8cc7fd7395afe849a5949fd56255b5c41cci2');
   })
 
   /*
@@ -79,5 +83,9 @@ describe('Inscription parser', () => {
     expect(inscriptions[0].getPointer()).toEqual(697);
     expect(inscriptions[1].getPointer()).toEqual(1363);
     expect(inscriptions[2].getPointer()).toEqual(2029);
+
+    expect(inscriptions[0].inscriptionId).toEqual('11d3f4b39e8ab97995bab1eacf7dcbf1345ec59c07261c0197e18bf29b88d8dai0');
+    expect(inscriptions[1].inscriptionId).toEqual('11d3f4b39e8ab97995bab1eacf7dcbf1345ec59c07261c0197e18bf29b88d8dai1');
+    expect(inscriptions[2].inscriptionId).toEqual('11d3f4b39e8ab97995bab1eacf7dcbf1345ec59c07261c0197e18bf29b88d8dai2');
   });
 });

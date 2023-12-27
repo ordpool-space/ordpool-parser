@@ -3,8 +3,7 @@ import { ParsedInscription } from "./parsed-inscription";
 import { CBOR } from "./cbor";
 
 /**
- * Extracts the first inscription from a Bitcoin transaction.
- * Advanced envelopes with extra data (eg Quadkey inscriptions) are supported, but the extra data is ignored.
+ * Extracts all Ordinal inscriptions from a Bitcoin transaction.
  */
 export class InscriptionParserService {
 
@@ -12,15 +11,25 @@ export class InscriptionParserService {
    * Main function that parses all inscription in a transaction.
    * @returns The parsed inscriptions or an empty array
    */
-  static parseInscriptions(transaction: { vin: { witness?: string[] }[] }): ParsedInscription[] {
+  static parseInscriptions(transaction: {
+    txid: string;
+    vin: { witness?: string[] }[]
+  }): ParsedInscription[] {
 
     const inscriptions: ParsedInscription[] = [];
+    let counter = 0;
+
     for (let i = 0; i < transaction.vin.length; i++) {
       const vin = transaction.vin[i];
       if (vin.witness) {
         const vinInscriptions = InscriptionParserService.parseInscriptionsWithinWitness(vin.witness);
         if (vinInscriptions) {
-          inscriptions.push(...vinInscriptions);
+          for (let n = 0; n < vinInscriptions.length; n++) {
+            const inscription = vinInscriptions[n];
+            inscription.inscriptionId = `${transaction.txid}i${counter}`;
+            inscriptions.push(inscription);
+            counter++;
+          }
         }
       }
     }
@@ -115,7 +124,7 @@ export class InscriptionParserService {
       // it would make no sense to add UTF-8 to content-type, so assuming no UTF-8 here
       const contentType = uint8ArrayToSingleByteChars(contentTypeRaw);
 
-      // figure out of the body is encoded via brotli
+      // figure out if the body is encoded via brotli
       const contentEncodingRaw = getKnownFieldValue(fields, knownFields.content_encoding);
 
       let contentEncoding: string | undefined = undefined;
@@ -128,6 +137,8 @@ export class InscriptionParserService {
       }
 
       return {
+        inscriptionId: 'ERROR', // will be overridden
+
         contentType,
 
         fields,

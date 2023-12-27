@@ -1,4 +1,7 @@
 export interface ParsedInscription {
+
+  inscriptionId: string;
+
   contentType: string;
 
   fields: { tag: Uint8Array; value: Uint8Array }[];
