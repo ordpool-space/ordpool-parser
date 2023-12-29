@@ -1,4 +1,4 @@
-import { extractPubkeys, hexToString, stringToHex } from "./src20-parser.service.helper";
+import { extractPubkeys } from './src20-parser.service.helper';
 
 var rc4 = require('arc4');
 
@@ -58,28 +58,12 @@ export function decodeSrc20Transaction(transaction: {
     const cipher = rc4('arc4', arc4Key);
     const decrypted: string = cipher.decodeString(concatenatedPubkeys);
 
-    // Convert the decrypted string to a hexadecimal format
-    const decryptedHex = stringToHex(decrypted);
-
-    // Extract the first two bytes to determine the length
-    // The first two bytes, is the expected length of the decoded data in hex
-    // (less any trailing zeros) for data validation.
-    const expectedLengthHex = decryptedHex.substring(0, 4);
-    const expectedLength = parseInt(expectedLengthHex, 16);
-
-    // Remove the first two bytes from the decryptedHex
-    // Remove all trailing zeros by cutting away everything after the expectedLength
-    const dataHex = decryptedHex.substring(4, 4 + expectedLength * 2);
-
-    // Convert the hex string back to UTF-8
-    let result = hexToString(dataHex);
-
     // the txn it is not valid, if it has not the Bitcoin Stamp transaction prefixed 'stamp:'
-    if (!result.includes('stamp:')) {
+    if (!decrypted.includes('stamp:')) {
       return null;
     }
 
-    return result.replace('stamp:', '');
+    return decrypted.split('stamp:')[1];
 
   } catch {
     return null;

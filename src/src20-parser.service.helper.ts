@@ -70,33 +70,3 @@ export function extractPubkeys(redeemScriptHex: string) {
 
   return pubkeys;
 }
-
-/**
- * Converts a string to its hexadecimal representation.
- * Each character in the string is converted to its corresponding two-digit hexadecimal code.
- *
- * @param str - The string to be converted to hexadecimal.
- * @returns The hexadecimal representation of the input string.
- */
-export function stringToHex(str: string) {
-  let hex = '';
-  for (let i = 0; i < str.length; i++) {
-      hex += str.charCodeAt(i).toString(16).padStart(2, '0');
-  }
-  return hex;
-}
-
-/**
- * Converts a hexadecimal string to its string representation.
- * Each pair of hexadecimal digits is converted to the corresponding character.
- *
- * @param hex - The hexadecimal string to be converted.
- * @returns The string representation of the hexadecimal input.
- */
-export function hexToString(hex: string) {
-  let str = '';
-  for (let i = 0; i < hex.length; i += 2) {
-      str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
-  }
-  return str;
-}

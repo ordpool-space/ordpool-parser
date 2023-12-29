@@ -16,7 +16,10 @@ describe('SRC20 parser', () => {
     const txn = readTransaction('5ba7f995341b9eb70c0cec4f893912f1d853d25d43ade4d3d7739d43bda85a87');
     const result = decodeSrc20Transaction(txn);
 
-    console.log(result);
-    expect(result).toEqual('{"p":"src-20","op":"transfer","tick":"STEVE","amt":"100000000"}')
+    console.log(result!.length)
+
+    console.log('{"p":"src-20","op":"mint","tick":"💎🙌🏽","amt":"420"}'.length)
+
+    expect(result).toEqual('{"p":"src-20","op":"mint","tick":"💎🙌🏽","amt":"420"}')
   });
 });
