@@ -1,99 +1,6 @@
+import { extractPubkeys, fromHex } from "./src20-parser.service.helper";
+
 var rc4 = require('arc4');
-
-interface Transaction {
-  vin: Array<{ txid: string }>;
-  vout: Array<{
-    scriptpubkey: string,
-    scriptpubkey_type: string
-  }>;
-}
-
-
-function hexToBytes(a: string): number[] {
-  for (var b = [], c = 0; c < a.length; c += 2)
-      b.push(parseInt(a.substr(c, 2), 16));
-  return b;
-}
-
-function bytesToHex(a: number[]): string {
-  for (var b = [], c = 0; c < a.length; c++)
-      b.push((a[c] >>> 4).toString(16)),
-      b.push((a[c] & 15).toString(16));
-  return b.join("")
-}
-
-function parseScript (buffer:  number[]): Array<number | number[]> {
-
-  const chunks: Array<number | number[]> = [];
-  var i = 0;
-
-  function readChunk(n: number) {
-    chunks.push(buffer.slice(i, i + n));
-    i += n;
-  };
-
-  while (i < buffer.length) {
-    var opcode = buffer[i++];
-    if (opcode >= 0xF0) {
-        opcode = (opcode << 8) | buffer[i++];
-    }
-
-    var len;
-    if (opcode > 0 && opcode < 76) { //OP_PUSHDATA1
-      readChunk(opcode);
-    } else if (opcode == 76) { //OP_PUSHDATA1
-      len = buffer[i++];
-      readChunk(len);
-    } else if (opcode == 77) { //
-      len = (buffer[i++] << 8) | buffer[i++];
-      readChunk(len);
-    } else if (opcode == 78) { //OP_PUSHDATA4
-      len = (buffer[i++] << 24) | (buffer[i++] << 16) | (buffer[i++] << 8) | buffer[i++];
-      readChunk(len);
-    } else {
-      chunks.push(opcode);
-    }
-
-    if(i<0x00){
-      break;
-    }
-  }
-
-  return chunks;
-};
-
-
-/**
- * decodes some parts of the redeemscript of a multisignature transaction
- * but only for OP_CHECKMULTISIG
- * see: https://github.com/OutCast3k/coinbin/blob/cda4559cfd5948dbb18dc078c48a3e62121218e5/js/coin.js#L868
- */
-function extractPubkeys(redeemScriptHex: string) {
-
-  // Split the redeem script into chunks
-  const bytes = hexToBytes(redeemScriptHex);
-  const chunks = parseScript(bytes);
-
-  var pubkeys = [];
-  for(var i=1;i < chunks.length-2; i++){
-    pubkeys.push(bytesToHex(chunks[i] as number[]));
-  }
-
-  return pubkeys;
-}
-
-// https://github.com/okx/js-wallet-sdk/blob/05f696a1f9b9577f99d42bccb260ee7107802712/packages/crypto-lib/src/base/hex.ts#L6
-export function fromHex(data: string): Buffer {
-  if(data.startsWith("0x")) {
-      data = data.substring(2)
-  }
-  return Buffer.from(data, "hex")
-}
-
-export function toHex(data: Uint8Array | Buffer | number[], addPrefix: boolean = false): string {
-  const buffer = Buffer.from(data)
-  return addPrefix? "0x" + buffer.toString("hex") : buffer.toString("hex")
-}
 
 /**
  * Decodes a SRC-20 Bitcoin Transaction
@@ -116,33 +23,71 @@ export function toHex(data: Uint8Array | Buffer | number[], addPrefix: boolean =
  * 4. Decrypt using RC4, Expected result:
  *    00457374616d703a7b2270223a227372632d3230222c226f70223a227472616e73666572222c227469636b223a225354455645222c22616d74223a22313030303030303030227d0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
  *    which is decoded: --> Estamp:{"p":"src-20","op":"transfer","tick":"STEVE","amt":"100000000"}
+ * --> E is the length of the data
  *
  * full docs here https://github.com/hydren-crypto/stampchain/blob/main/docs/src20.md#src-20-btc-transaction-specifications
  */
-export function decodeSrc20Transaction(transaction: Transaction): string | null {
+export function decodeSrc20Transaction(transaction: {
+  vin: { txid: string }[];
+  vout: {
+    scriptpubkey: string,
+    scriptpubkey_type: string
+  }[];
+}): string | null {
 
-  // 1. The transaction ID is the ARC4 key
-  const arc4Key = fromHex(transaction.vin[0].txid);
+  try {
+    // 1. The transaction ID is the ARC4 key
+    const arc4Key = fromHex(transaction.vin[0].txid);
 
-  const pubkeys = transaction.vout
-    // 2. Extract the first two pubkeys from multisig scripts
-    .filter(vout => vout.scriptpubkey_type === 'multisig')
-    .map(vout => {
-      const pubkeys = extractPubkeys(vout.scriptpubkey);
-      return [pubkeys[0], pubkeys[1]];
-    })
-    .flat()
-    // 3. We strip the sign and nonce bytes (first and last bytes from each string)
-    .map(key => key.substring(2, 64))
-    .join('');
+    const pubkeys = transaction.vout
+      // 2. Extract the first two pubkeys from multisig scripts
+      .filter(vout => vout.scriptpubkey_type === 'multisig')
+      .map(vout => {
+        const pubkeys = extractPubkeys(vout.scriptpubkey);
+        return [pubkeys[0], pubkeys[1]];
+      })
+      .flat()
+      // 3. We strip the sign and nonce bytes (first and last bytes from each string)
+      .map(key => key.substring(2, 64))
+      .join('');
 
-  // Convert concatenated pubkeys to Buffer
-  const pubkeysBuffer = fromHex(pubkeys);
+    // Convert concatenated pubkeys to Buffer
+    const pubkeysBuffer = fromHex(pubkeys);
 
-  // 4. Decrypt using RC4
-  const cipher = rc4('arc4', arc4Key);
-  const decrypted = cipher.decodeString(pubkeysBuffer.toString('hex'));
+    // 4. Decrypt using RC4
+    const cipher = rc4('arc4', arc4Key);
+    const decrypted = cipher.decodeString(pubkeysBuffer.toString('hex'));
 
-  return decrypted;
+    // Convert the decrypted string to a hexadecimal format
+    let decryptedHex = '';
+    for (let i = 0; i < decrypted.length; i++) {
+      decryptedHex += decrypted.charCodeAt(i).toString(16).padStart(2, '0');
+    }
+
+    // Extract the first two bytes to determine the length
+    // The first two bytes, is the expected length of the decoded data in hex
+    // (less any trailing zeros) for data validation.
+    const expectedLengthHex = decryptedHex.substring(0, 4);
+    const expectedLength = parseInt(expectedLengthHex, 16);
+
+    // Remove the first two bytes from the decryptedHex
+    // Remove all trailing zeros by cutting away everything after the expectedLength
+    const dataHex = decryptedHex.substring(4, 4 + expectedLength * 2);
+
+    // Convert the hex string back to UTF-8
+    let result = '';
+    for (let i = 0; i < dataHex.length; i += 2) {
+      result += String.fromCharCode(parseInt(dataHex.substr(i, 2), 16));
+    }
+
+    // the txn it is not valid, if it has not the Bitcoin Stamp transaction prefixed 'stamp:'
+    if (!result.includes('stamp:')) {
+      return null;
+    }
+
+    return result.replace('stamp:', '');
+
+  } catch {
+    return null;
+  }
 }
-

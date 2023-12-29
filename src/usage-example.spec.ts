@@ -2,7 +2,7 @@ import axios from 'axios';
 import { InscriptionParserService } from './inscription-parser.service';
 
 
-describe('Real data usage example (see README)', () => {
+describe.skip('Real data usage example (see README)', () => {
   it('shows you how to use the parser with axios', async () => {
 
     async function getInscriptions(txId: string) {
