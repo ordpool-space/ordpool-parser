@@ -1,14 +1,20 @@
-import { extractPubkeys, fromHex } from "./src20-parser.service.helper";
+import { extractPubkeys, hexToString, stringToHex } from "./src20-parser.service.helper";
 
 var rc4 = require('arc4');
 
 /**
  * Decodes a SRC-20 Bitcoin Transaction
  *
- * see tx_50aeb77245a9483a5b077e4e7506c331dc2f628c22046e7d2b4c6ad6c6236ae1.json as a referene
+ * The full offical specification can be found here:
+ * https://github.com/hydren-crypto/stampchain/blob/main/docs/src20.md#src-20-btc-transaction-specifications
  *
- * Steps:
+ * The offical specification uses the following transaction as an example!
+ * see tx_50aeb77245a9483a5b077e4e7506c331dc2f628c22046e7d2b4c6ad6c6236ae1.json
+ *
+ * Important Steps:
  * 1. The transaction ID is the ARC4 key. Warning: it must NOT be reversed!
+ *    Hint: this code helped me to figure this out:
+ *    https://github.com/okx/js-wallet-sdk/blob/f32a5d7675637a9e53a26ae844427ec654ffd4f8/packages/coin-bitcoin/src/src20.ts#L77
  * 2. Extract the relevant pubkeys:
  *    03c46b73fe2ff939bea5d0a577950dc8876e863bed11c887d681417dfd70533e51
  *    039036c8182c70770f8f6bd702a25c7179bfff1ccb3a844297a717226b88b976cc
@@ -23,9 +29,6 @@ var rc4 = require('arc4');
  * 4. Decrypt using RC4, Expected result:
  *    00457374616d703a7b2270223a227372632d3230222c226f70223a227472616e73666572222c227469636b223a225354455645222c22616d74223a22313030303030303030227d0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
  *    which is decoded: --> Estamp:{"p":"src-20","op":"transfer","tick":"STEVE","amt":"100000000"}
- * --> E is the length of the data
- *
- * full docs here https://github.com/hydren-crypto/stampchain/blob/main/docs/src20.md#src-20-btc-transaction-specifications
  */
 export function decodeSrc20Transaction(transaction: {
   vin: { txid: string }[];
@@ -37,9 +40,9 @@ export function decodeSrc20Transaction(transaction: {
 
   try {
     // 1. The transaction ID is the ARC4 key
-    const arc4Key = fromHex(transaction.vin[0].txid);
+    const arc4Key = Buffer.from(transaction.vin[0].txid, 'hex');
 
-    const pubkeys = transaction.vout
+    const concatenatedPubkeys = transaction.vout
       // 2. Extract the first two pubkeys from multisig scripts
       .filter(vout => vout.scriptpubkey_type === 'multisig')
       .map(vout => {
@@ -51,18 +54,12 @@ export function decodeSrc20Transaction(transaction: {
       .map(key => key.substring(2, 64))
       .join('');
 
-    // Convert concatenated pubkeys to Buffer
-    const pubkeysBuffer = fromHex(pubkeys);
-
     // 4. Decrypt using RC4
     const cipher = rc4('arc4', arc4Key);
-    const decrypted = cipher.decodeString(pubkeysBuffer.toString('hex'));
+    const decrypted: string = cipher.decodeString(concatenatedPubkeys);
 
     // Convert the decrypted string to a hexadecimal format
-    let decryptedHex = '';
-    for (let i = 0; i < decrypted.length; i++) {
-      decryptedHex += decrypted.charCodeAt(i).toString(16).padStart(2, '0');
-    }
+    const decryptedHex = stringToHex(decrypted);
 
     // Extract the first two bytes to determine the length
     // The first two bytes, is the expected length of the decoded data in hex
@@ -75,10 +72,7 @@ export function decodeSrc20Transaction(transaction: {
     const dataHex = decryptedHex.substring(4, 4 + expectedLength * 2);
 
     // Convert the hex string back to UTF-8
-    let result = '';
-    for (let i = 0; i < dataHex.length; i += 2) {
-      result += String.fromCharCode(parseInt(dataHex.substr(i, 2), 16));
-    }
+    let result = hexToString(dataHex);
 
     // the txn it is not valid, if it has not the Bitcoin Stamp transaction prefixed 'stamp:'
     if (!result.includes('stamp:')) {

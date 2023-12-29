@@ -71,15 +71,32 @@ export function extractPubkeys(redeemScriptHex: string) {
   return pubkeys;
 }
 
-// https://github.com/okx/js-wallet-sdk/blob/05f696a1f9b9577f99d42bccb260ee7107802712/packages/crypto-lib/src/base/hex.ts#L6
-export function fromHex(data: string): Buffer {
-  if(data.startsWith("0x")) {
-      data = data.substring(2)
+/**
+ * Converts a string to its hexadecimal representation.
+ * Each character in the string is converted to its corresponding two-digit hexadecimal code.
+ *
+ * @param str - The string to be converted to hexadecimal.
+ * @returns The hexadecimal representation of the input string.
+ */
+export function stringToHex(str: string) {
+  let hex = '';
+  for (let i = 0; i < str.length; i++) {
+      hex += str.charCodeAt(i).toString(16).padStart(2, '0');
   }
-  return Buffer.from(data, "hex")
+  return hex;
 }
 
-export function toHex(data: Uint8Array | Buffer | number[], addPrefix: boolean = false): string {
-  const buffer = Buffer.from(data)
-  return addPrefix? "0x" + buffer.toString("hex") : buffer.toString("hex")
+/**
+ * Converts a hexadecimal string to its string representation.
+ * Each pair of hexadecimal digits is converted to the corresponding character.
+ *
+ * @param hex - The hexadecimal string to be converted.
+ * @returns The string representation of the hexadecimal input.
+ */
+export function hexToString(hex: string) {
+  let str = '';
+  for (let i = 0; i < hex.length; i += 2) {
+      str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+  }
+  return str;
 }
