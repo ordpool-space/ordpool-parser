@@ -192,6 +192,26 @@ export function littleEndianBytesToNumber(byteArray: Uint8Array): number {
 }
 
 /**
+ * Converts a big-endian byte array to a number.
+ *
+ * In big-endian format, the most significant byte (MSB) comes first. This function
+ * reads each byte from the array and combines them to form a number, with the first
+ * byte in the array being the MSB.
+ *
+ * @param byteArray - The byte array in big-endian format.
+ * @returns The number represented by the byte array.
+ */
+export function bigEndianBytesToNumber(byteArray: Uint8Array): number {
+  let number = 0;
+  for (let i = 0; i < byteArray.length; i++) {
+    // Shift the current total to the left by 8 bits to make room for the next byte,
+    // and add the next byte to the total.
+    number = (number << 8) | byteArray[i];
+  }
+  return number;
+}
+
+/**
  * Reads data based on the Bitcoin script push opcode starting from a specified pointer in the raw data.
  *
  * This function handles different opcodes (OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4)

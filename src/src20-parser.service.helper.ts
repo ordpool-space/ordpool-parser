@@ -79,8 +79,8 @@ export function toHex(data: Uint8Array | Buffer | number[]): string {
 /**
  * Converts a string to a Uint8Array.
  *
- * @param {string} str - The string to convert.
- * @returns {Uint8Array} - The Uint8Array representation of the string.
+ * @param str - The string to convert.
+ * @returns The Uint8Array representation of the string.
  */
 export function stringToUint8Array(str: string): Uint8Array {
   const encoder = new TextEncoder();

@@ -1,4 +1,4 @@
-import { OP_FALSE, OP_IF, OP_PUSHBYTES_3, byteArrayToHex, littleEndianBytesToNumber, encodeToBase64, extractParent, extractPointer, getNextInscriptionMark, hexStringToUint8Array, readBytes, uint8ArrayToSingleByteChars, utf8BytesToUtf16String } from './inscription-parser.service.helper';
+import { OP_FALSE, OP_IF, OP_PUSHBYTES_3, byteArrayToHex, littleEndianBytesToNumber, encodeToBase64, extractParent, extractPointer, getNextInscriptionMark, hexStringToUint8Array, readBytes, uint8ArrayToSingleByteChars, utf8BytesToUtf16String, bigEndianBytesToNumber } from './inscription-parser.service.helper';
 
 /**
  * Converts a UTF-16 encoded JavaScript string to a Uint8Array representing UTF-8 encoded bytes.
@@ -205,6 +205,37 @@ describe('littleEndianBytesToNumber', () => {
   it('should handle an empty array', () => {
     const dataSizeArray = new Uint8Array([]);
     expect(littleEndianBytesToNumber(dataSizeArray)).toEqual(0);
+  });
+});
+
+// bigEndianBytesToNumber is essentially reading a binary representation of a number
+// (in big-endian format) from a Uint8Array and converting it into a JavaScript number.
+describe('bigEndianBytesToNumber', () => {
+
+  it('should calculate size for single byte correctly', () => {
+    const dataSizeArray = new Uint8Array([0x12]); // 18 in decimal
+    const size = bigEndianBytesToNumber(dataSizeArray);
+    expect(size).toEqual(0x12);
+    expect(size).toEqual(18);
+  });
+
+  it('should calculate size for two bytes correctly in big-endian format', () => {
+    const dataSizeArray = new Uint8Array([0x12, 0x34]); // 0x1234 in hexadecimal
+    const size = bigEndianBytesToNumber(dataSizeArray);
+    expect(size).toEqual(0x1234);
+    expect(size).toEqual(4660);
+  });
+
+  it('should calculate size for four bytes correctly in big-endian format', () => {
+    const dataSizeArray = new Uint8Array([0x12, 0x34, 0x56, 0x78]); // 0x12345678 in hexadecimal
+    const size = bigEndianBytesToNumber(dataSizeArray);
+    expect(size).toEqual(0x12345678);
+    expect(size).toEqual(305419896);
+  });
+
+  it('should handle an empty array', () => {
+    const dataSizeArray = new Uint8Array([]);
+    expect(bigEndianBytesToNumber(dataSizeArray)).toEqual(0);
   });
 });
 

@@ -1,5 +1,5 @@
-import { hexStringToUint8Array, utf8BytesToUtf16String } from './inscription-parser.service.helper';
-import { extractPubkeys, stringToUint8Array, toHex } from './src20-parser.service.helper';
+import { bigEndianBytesToNumber, utf8BytesToUtf16String } from './inscription-parser.service.helper';
+import { extractPubkeys, stringToUint8Array } from './src20-parser.service.helper';
 
 var rc4 = require('arc4');
 
@@ -57,28 +57,21 @@ export function decodeSrc20Transaction(transaction: {
 
     // 4. Decrypt using RC4
     const cipher = rc4('arc4', arc4Key);
-    const decrypted: string = cipher.decodeString(concatenatedPubkeys);
+    const decryptedStr: string = cipher.decodeString(concatenatedPubkeys);
 
+    // This is finally in hex:
     // 00457374616d703a7b2270223a227372632d3230222c226f70223a227472616e73666572222c227469636b223a225354455645222c22616d74223a22313030303030303030227d0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-    // Convert the decrypted string to a hexadecimal format
-    const decryptedArray = stringToUint8Array(decrypted);
-    const decryptedHex = toHex(decryptedArray);
+    const decrypted = stringToUint8Array(decryptedStr);
 
     // Extract the first two bytes to determine the length
     // The first two bytes, is the expected length of the decoded data in hex
     // (less any trailing zeros) for data validation.
-    const expectedLengthHex = decryptedHex.substring(0, 4);
-    const expectedLength = parseInt(expectedLengthHex, 16);
+    // const expectedLength = decrypted[1] | (decrypted[0] << 8);
+    const expectedLength = bigEndianBytesToNumber(decrypted.slice(0, 2));
 
-    // Remove the first two bytes from the decryptedHex
-    // Remove all trailing zeros by cutting away everything after the expectedLength
-    const dataHex = decryptedHex.substring(4, 4 + expectedLength * 2);
+    const data = decrypted.slice(2, 2 + expectedLength);
 
-    // Convert the hex string back to UTF-8
-    const bytes = hexStringToUint8Array(dataHex);
-    const result = utf8BytesToUtf16String(bytes);
-
-    // the txn it is not valid, if it has not the Bitcoin Stamp transaction prefixed 'stamp:'
+    const result = utf8BytesToUtf16String(data);
     if (!result || !result.includes('stamp:')) {
       return null;
     }
