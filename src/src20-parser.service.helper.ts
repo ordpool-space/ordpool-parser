@@ -70,3 +70,19 @@ export function extractPubkeys(redeemScriptHex: string) {
 
   return pubkeys;
 }
+
+export function toHex(data: Uint8Array | Buffer | number[]): string {
+  const buffer = Buffer.from(data)
+  return buffer.toString("hex")
+}
+
+/**
+ * Converts a string to a Uint8Array.
+ *
+ * @param {string} str - The string to convert.
+ * @returns {Uint8Array} - The Uint8Array representation of the string.
+ */
+export function stringToUint8Array(str: string): Uint8Array {
+  const encoder = new TextEncoder();
+  return encoder.encode(str);
+}

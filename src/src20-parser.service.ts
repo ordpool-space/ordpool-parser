@@ -1,4 +1,5 @@
-import { extractPubkeys } from './src20-parser.service.helper';
+import { hexStringToUint8Array, utf8BytesToUtf16String } from './inscription-parser.service.helper';
+import { extractPubkeys, stringToUint8Array, toHex } from './src20-parser.service.helper';
 
 var rc4 = require('arc4');
 
@@ -28,7 +29,7 @@ var rc4 = require('arc4');
  *    932b35a45d21395ac8bb54b8f9dae3fd2dbc309c24e550cf2211fe6aa897e5
  * 4. Decrypt using RC4, Expected result:
  *    00457374616d703a7b2270223a227372632d3230222c226f70223a227472616e73666572222c227469636b223a225354455645222c22616d74223a22313030303030303030227d0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
- *    which is decoded: --> Estamp:{"p":"src-20","op":"transfer","tick":"STEVE","amt":"100000000"}
+ *    which is decoded: --> stamp:{"p":"src-20","op":"transfer","tick":"STEVE","amt":"100000000"}
  */
 export function decodeSrc20Transaction(transaction: {
   vin: { txid: string }[];
@@ -58,12 +59,31 @@ export function decodeSrc20Transaction(transaction: {
     const cipher = rc4('arc4', arc4Key);
     const decrypted: string = cipher.decodeString(concatenatedPubkeys);
 
+    // 00457374616d703a7b2270223a227372632d3230222c226f70223a227472616e73666572222c227469636b223a225354455645222c22616d74223a22313030303030303030227d0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+    // Convert the decrypted string to a hexadecimal format
+    const decryptedArray = stringToUint8Array(decrypted);
+    const decryptedHex = toHex(decryptedArray);
+
+    // Extract the first two bytes to determine the length
+    // The first two bytes, is the expected length of the decoded data in hex
+    // (less any trailing zeros) for data validation.
+    const expectedLengthHex = decryptedHex.substring(0, 4);
+    const expectedLength = parseInt(expectedLengthHex, 16);
+
+    // Remove the first two bytes from the decryptedHex
+    // Remove all trailing zeros by cutting away everything after the expectedLength
+    const dataHex = decryptedHex.substring(4, 4 + expectedLength * 2);
+
+    // Convert the hex string back to UTF-8
+    const bytes = hexStringToUint8Array(dataHex);
+    const result = utf8BytesToUtf16String(bytes);
+
     // the txn it is not valid, if it has not the Bitcoin Stamp transaction prefixed 'stamp:'
-    if (!decrypted.includes('stamp:')) {
+    if (!result || !result.includes('stamp:')) {
       return null;
     }
 
-    return decrypted.split('stamp:')[1];
+    return result.replace('stamp:', '');
 
   } catch {
     return null;
