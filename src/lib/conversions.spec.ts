@@ -2,7 +2,7 @@ import { OP_FALSE, OP_IF, OP_PUSHBYTES_3 } from '../inscription-parser.service.h
 import {
   binaryStringToBase64,
   byteArrayToHex,
-  hexStringToUint8Array,
+  hexToUint8Array,
   uint8ArrayToSingleByteChars,
   utf16StringToUint8Array,
   utf8BytesToUtf16String,
@@ -66,23 +66,23 @@ describe('Conversions between UTF-8 encoded data and UTF-16 encoded strings', ()
   });
 });
 
-describe('hexStringToUint8Array', () => {
+describe('hexToUint8Array', () => {
 
   it('should convert a simple hex string to an Uint8Array', () => {
     const orangeColorFromBitcoinLogo = 'ff9900';
-    const result = hexStringToUint8Array(orangeColorFromBitcoinLogo);
+    const result = hexToUint8Array(orangeColorFromBitcoinLogo);
     expect(result).toEqual(new Uint8Array([255, 153, 0])); // RGB (255, 153, 0)
   });
 
   it('should convert the inscriptionMark 0063036f7264 hex string to an Uint8Array', () => {
     const hexString = '0063036f7264';
-    const result = hexStringToUint8Array(hexString);
+    const result = hexToUint8Array(hexString);
     expect(result).toEqual(new Uint8Array([OP_FALSE, OP_IF, OP_PUSHBYTES_3, 0x6f, 0x72, 0x64]));
   });
 
   it('should throw an error for an empty string', () => {
     const hexString = '';
-    expect(() => hexStringToUint8Array(hexString)).toThrow('Input string is empty. Hex string expected.');
+    expect(() => hexToUint8Array(hexString)).toThrow('Input string is empty. Hex string expected.');
   });
 });
 

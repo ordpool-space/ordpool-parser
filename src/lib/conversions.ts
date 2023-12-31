@@ -67,14 +67,13 @@ export function utf16StringToUint8Array(str: string) {
   return new Uint8Array(utf8);
 }
 
-
 /**
  * Converts a hex string to a Uint8Array.
  *
  * @param hexStr - The hex string to be converted.
  * @returns The resulting Uint8Array.
  */
-export function hexStringToUint8Array(hex: string): Uint8Array {
+export function hexToUint8Array(hex: string): Uint8Array {
   if (hex.length === 0) {
     throw new Error('Input string is empty. Hex string expected.');
   }
@@ -87,12 +86,7 @@ export function hexStringToUint8Array(hex: string): Uint8Array {
  * @param bytes - The Uint8Array containing UTF-8 encoded data.
  * @returns The corresponding UTF-16 encoded JavaScript string.
  */
-export function utf8BytesToUtf16String(bytes: Uint8Array | undefined): string | undefined {
-
-  if (bytes === undefined) {
-    return undefined;
-  }
-
+export function utf8BytesToUtf16String(bytes: Uint8Array): string {
   const decoder = new TextDecoder('utf-8');
   return decoder.decode(bytes);
 }
@@ -123,7 +117,6 @@ export function uint8ArrayToSingleByteChars(bytes: Uint8Array): string {
  * @param byteArray - The array of bytes to convert.
  * @returns The hexadecimal string representation of the byte array.
  */
-
 export function byteArrayToHex(byteArray: Uint8Array): string {
   return Array.from(byteArray)
     .map(byte => byte.toString(16).padStart(2, '0'))
