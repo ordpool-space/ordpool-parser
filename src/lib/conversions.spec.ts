@@ -1,8 +1,8 @@
 import { OP_FALSE, OP_IF, OP_PUSHBYTES_3 } from '../inscription-parser.service.helper';
 import {
   binaryStringToBase64,
-  byteArrayToHex,
-  hexToUint8Array,
+  bytesToHex,
+  hexToBytes,
   uint8ArrayToSingleByteChars,
   utf16StringToUint8Array,
   utf8BytesToUtf16String,
@@ -66,57 +66,56 @@ describe('Conversions between UTF-8 encoded data and UTF-16 encoded strings', ()
   });
 });
 
-describe('hexToUint8Array', () => {
+describe('hexToBytes', () => {
 
-  it('should convert a simple hex string to an Uint8Array', () => {
+  it('should convert a hex string (ff9900) to an byte array', () => {
     const orangeColorFromBitcoinLogo = 'ff9900';
-    const result = hexToUint8Array(orangeColorFromBitcoinLogo);
+    const result = hexToBytes(orangeColorFromBitcoinLogo);
     expect(result).toEqual(new Uint8Array([255, 153, 0])); // RGB (255, 153, 0)
   });
 
-  it('should convert the inscriptionMark 0063036f7264 hex string to an Uint8Array', () => {
+  it('should convert the inscriptionMark hex string (0063036f7264) to an byte array', () => {
     const hexString = '0063036f7264';
-    const result = hexToUint8Array(hexString);
+    const result = hexToBytes(hexString);
     expect(result).toEqual(new Uint8Array([OP_FALSE, OP_IF, OP_PUSHBYTES_3, 0x6f, 0x72, 0x64]));
   });
 
-  it('should throw an error for an empty string', () => {
+  it('should handle an empty string', () => {
     const hexString = '';
-    expect(() => hexToUint8Array(hexString)).toThrow('Input string is empty. Hex string expected.');
+    const result = hexToBytes(hexString);
+    expect(result).toEqual(new Uint8Array([]));
   });
 });
 
-describe('byteArrayToHex', () => {
+describe('bytesToHex', () => {
 
-  it('should correctly convert a byte array to a hexadecimal string', () => {
-    const byteArray = new Uint8Array([0x01, 0xAB, 0x3F]);
-    const expectedHex = '01ab3f';
-    expect(byteArrayToHex(byteArray)).toEqual(expectedHex);
+  it('should correctly convert a byte array to a hex string (ff9900)', () => {
+    const byteArray = new Uint8Array([255, 153, 0]);
+    const orangeColorFromBitcoinLogo = 'ff9900';
+    expect(bytesToHex(byteArray)).toEqual(orangeColorFromBitcoinLogo);
   });
 
   it('should correctly convert a byte array with the inscription mark to a hexadecimal string', () => {
     const byteArray = new Uint8Array([OP_FALSE, OP_IF, OP_PUSHBYTES_3, 0x6f, 0x72, 0x64]);
     const expectedHex = '0063036f7264';
-    expect(byteArrayToHex(byteArray)).toEqual(expectedHex);
+    expect(bytesToHex(byteArray)).toEqual(expectedHex);
   });
 
   it('should handle an empty byte array', () => {
     const byteArray = new Uint8Array([]);
     const expectedHex = '';
-    expect(byteArrayToHex(byteArray)).toEqual(expectedHex);
+    expect(bytesToHex(byteArray)).toEqual(expectedHex);
   });
 
   it('should handle a single byte correctly', () => {
     const byteArray = new Uint8Array([0x00]);
     const expectedHex = '00';
-    expect(byteArrayToHex(byteArray)).toEqual(expectedHex);
+    expect(bytesToHex(byteArray)).toEqual(expectedHex);
   });
 
   it('should pad single digit hex values with a leading zero', () => {
     const byteArray = new Uint8Array([0x1, 0x2, 0xA]);
     const expectedHex = '01020a';
-    expect(byteArrayToHex(byteArray)).toEqual(expectedHex);
+    expect(bytesToHex(byteArray)).toEqual(expectedHex);
   });
-
-  // Additional tests can be added here, for example, testing with larger arrays.
 });

@@ -1,5 +1,5 @@
 import { MAX_DECOMPRESSED_SIZE_MESSAGE, brotliDecode } from "./brotli-decode";
-import { byteArrayToHex } from "./lib/conversions";
+import { bytesToHex } from "./lib/conversions";
 
 /**
  * Bitcoin Script Opcodes
@@ -255,7 +255,7 @@ export function extractParent(value: Uint8Array | undefined): string | undefined
 
   // Reverse the TXID part and convert it to hexadecimal
   const txId = value.slice(0, 32).reverse();
-  const txIdHex = byteArrayToHex(txId);
+  const txIdHex = bytesToHex(txId);
 
   // Convert the 4-byte little-endian index to a decimal number
   const indexBytes = value.slice(32, 36); // Get the index part

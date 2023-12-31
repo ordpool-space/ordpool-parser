@@ -1,6 +1,6 @@
 import { OP_0, OP_ENDIF, brotliDecodeUint8Array, extractPointer, getKnownFieldValue, getNextInscriptionMark, knownFields, readPushdata } from "./inscription-parser.service.helper";
 import { extractParent } from "./inscription-parser.service.helper";
-import { binaryStringToBase64, hexToUint8Array, uint8ArrayToSingleByteChars, utf8BytesToUtf16String } from "./lib/conversions";
+import { binaryStringToBase64, hexToBytes, uint8ArrayToSingleByteChars, utf8BytesToUtf16String } from "./lib/conversions";
 import { ParsedInscription } from "./parsed-inscription";
 import { CBOR } from "./cbor";
 
@@ -46,7 +46,7 @@ export class InscriptionParserService {
   private static parseInscriptionsWithinWitness(witness: string[]): ParsedInscription[] | null {
 
     const inscriptions: ParsedInscription[] = [];
-    const raw = hexToUint8Array(witness.join(''));
+    const raw = hexToBytes(witness.join(''));
     let startPosition = 0;
 
     while (true) {

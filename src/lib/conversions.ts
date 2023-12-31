@@ -68,19 +68,6 @@ export function utf16StringToUint8Array(str: string) {
 }
 
 /**
- * Converts a hex string to a Uint8Array.
- *
- * @param hexStr - The hex string to be converted.
- * @returns The resulting Uint8Array.
- */
-export function hexToUint8Array(hex: string): Uint8Array {
-  if (hex.length === 0) {
-    throw new Error('Input string is empty. Hex string expected.');
-  }
-  return new Uint8Array(hex.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16)));
-}
-
-/**
  * Converts a Uint8Array containing UTF-8 encoded data to a normal a UTF-16 encoded string.
  *
  * @param bytes - The Uint8Array containing UTF-8 encoded data.
@@ -112,14 +99,25 @@ export function uint8ArrayToSingleByteChars(bytes: Uint8Array): string {
 }
 
 /**
- * Converts a byte array to a hexadecimal string.
+ * Converts a hexadecimal string to a Uint8Array.
  *
- * @param byteArray - The array of bytes to convert.
- * @returns The hexadecimal string representation of the byte array.
+ * @param {string} hexStr - A string of hexadecimal characters.
+ * @returns {Uint8Array} A Uint8Array representing the hex string.
  */
-export function byteArrayToHex(byteArray: Uint8Array): string {
-  return Array.from(byteArray)
-    .map(byte => byte.toString(16).padStart(2, '0'))
-    .join('');
+export function hexToBytes(hexStr: string): Uint8Array {
+  const bytes = new Uint8Array(hexStr.length / 2);
+  for (let i = 0, j = 0; i < hexStr.length; i += 2, j++) {
+    bytes[j] = parseInt(hexStr.substr(i, 2), 16);
+  }
+  return bytes;
 }
 
+/**
+ * Converts a Uint8Array to a hexadecimal string.
+ *
+ * @param {Uint8Array} byteArray - A Uint8Array to convert.
+ * @returns {string} A string of hexadecimal characters representing the byte array.
+ */
+export function bytesToHex(byteArray: Uint8Array): string {
+  return Array.from(byteArray, byte => byte.toString(16).padStart(2, '0')).join('');
+}

@@ -1,7 +1,7 @@
 import { OP_FALSE, OP_IF, OP_PUSHBYTES_3, littleEndianBytesToNumber, extractPointer, getNextInscriptionMark, readBytes, bigEndianBytesToNumber } from './inscription-parser.service.helper';
-import { byteArrayToHex } from "./lib/conversions";
+import { bytesToHex } from "./lib/conversions";
 import { extractParent } from "./inscription-parser.service.helper";
-import { hexToUint8Array } from './lib/conversions';
+import { hexToBytes } from './lib/conversions';
 
 describe('readBytes', () => {
 
@@ -210,13 +210,13 @@ which guarantees that no more items in the collection can be issued.
 describe('extractParent', () => {
 
   it('should correctly extract parent inscription ID (000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fi255)', () => {
-    const value = hexToUint8Array('1f1e1d1c1b1a191817161514131211100f0e0d0c0b0a09080706050403020100ff');
+    const value = hexToBytes('1f1e1d1c1b1a191817161514131211100f0e0d0c0b0a09080706050403020100ff');
     const expected = '000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fi255';
     expect(extractParent(value)).toEqual(expected);
   });
 
   it('should correctly extract parent inscription ID (000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fi256)', () => {
-    const value = hexToUint8Array('1f1e1d1c1b1a191817161514131211100f0e0d0c0b0a090807060504030201000001');
+    const value = hexToBytes('1f1e1d1c1b1a191817161514131211100f0e0d0c0b0a090807060504030201000001');
     const expected = '000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fi256';
     expect(extractParent(value)).toEqual(expected);
   });
