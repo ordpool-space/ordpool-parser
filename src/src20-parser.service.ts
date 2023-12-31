@@ -1,4 +1,5 @@
-import { bigEndianBytesToNumber, utf8BytesToUtf16String } from './inscription-parser.service.helper';
+import { bigEndianBytesToNumber } from './inscription-parser.service.helper';
+import { utf8BytesToUtf16String } from './lib/conversions';
 import { extractPubkeys, stringToUint8Array } from './src20-parser.service.helper';
 
 var rc4 = require('arc4');

@@ -1,6 +1,7 @@
 import { MAX_DECOMPRESSED_SIZE_MESSAGE } from './brotli-decode';
 import { InscriptionParserService } from './inscription-parser.service';
-import { brotliDecodeUint8Array, uint8ArrayToSingleByteChars } from './inscription-parser.service.helper';
+import { brotliDecodeUint8Array } from './inscription-parser.service.helper';
+import { uint8ArrayToSingleByteChars } from './lib/conversions';
 import { readBinaryFileAsUint8Array, readInscriptionAsBase64, readTransaction } from './test.helper';
 
 describe('Inscription parser', () => {
