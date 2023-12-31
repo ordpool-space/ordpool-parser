@@ -1,3 +1,4 @@
+
 /**
  * Encodes a string to Base64.
  *
@@ -115,3 +116,17 @@ export function uint8ArrayToSingleByteChars(bytes: Uint8Array): string {
   }
   return resultStr;
 }
+
+/**
+ * Converts a byte array to a hexadecimal string.
+ *
+ * @param byteArray - The array of bytes to convert.
+ * @returns The hexadecimal string representation of the byte array.
+ */
+
+export function byteArrayToHex(byteArray: Uint8Array): string {
+  return Array.from(byteArray)
+    .map(byte => byte.toString(16).padStart(2, '0'))
+    .join('');
+}
+

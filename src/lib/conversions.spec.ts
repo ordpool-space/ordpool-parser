@@ -1,6 +1,7 @@
 import { OP_FALSE, OP_IF, OP_PUSHBYTES_3 } from '../inscription-parser.service.helper';
 import {
   binaryStringToBase64,
+  byteArrayToHex,
   hexStringToUint8Array,
   uint8ArrayToSingleByteChars,
   utf16StringToUint8Array,
@@ -83,4 +84,39 @@ describe('hexStringToUint8Array', () => {
     const hexString = '';
     expect(() => hexStringToUint8Array(hexString)).toThrow('Input string is empty. Hex string expected.');
   });
+});
+
+describe('byteArrayToHex', () => {
+
+  it('should correctly convert a byte array to a hexadecimal string', () => {
+    const byteArray = new Uint8Array([0x01, 0xAB, 0x3F]);
+    const expectedHex = '01ab3f';
+    expect(byteArrayToHex(byteArray)).toEqual(expectedHex);
+  });
+
+  it('should correctly convert a byte array with the inscription mark to a hexadecimal string', () => {
+    const byteArray = new Uint8Array([OP_FALSE, OP_IF, OP_PUSHBYTES_3, 0x6f, 0x72, 0x64]);
+    const expectedHex = '0063036f7264';
+    expect(byteArrayToHex(byteArray)).toEqual(expectedHex);
+  });
+
+  it('should handle an empty byte array', () => {
+    const byteArray = new Uint8Array([]);
+    const expectedHex = '';
+    expect(byteArrayToHex(byteArray)).toEqual(expectedHex);
+  });
+
+  it('should handle a single byte correctly', () => {
+    const byteArray = new Uint8Array([0x00]);
+    const expectedHex = '00';
+    expect(byteArrayToHex(byteArray)).toEqual(expectedHex);
+  });
+
+  it('should pad single digit hex values with a leading zero', () => {
+    const byteArray = new Uint8Array([0x1, 0x2, 0xA]);
+    const expectedHex = '01020a';
+    expect(byteArrayToHex(byteArray)).toEqual(expectedHex);
+  });
+
+  // Additional tests can be added here, for example, testing with larger arrays.
 });
