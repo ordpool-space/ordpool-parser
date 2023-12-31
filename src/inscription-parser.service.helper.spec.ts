@@ -1,4 +1,4 @@
-import { OP_FALSE, OP_IF, OP_PUSHBYTES_3, byteArrayToHex, littleEndianBytesToNumber, encodeToBase64, extractParent, extractPointer, getNextInscriptionMark, hexStringToUint8Array, readBytes, uint8ArrayToSingleByteChars, utf8BytesToUtf16String, bigEndianBytesToNumber } from './inscription-parser.service.helper';
+import { OP_FALSE, OP_IF, OP_PUSHBYTES_3, byteArrayToHex, littleEndianBytesToNumber, extractParent, extractPointer, getNextInscriptionMark, hexStringToUint8Array, readBytes, uint8ArrayToSingleByteChars, utf8BytesToUtf16String, bigEndianBytesToNumber } from './inscription-parser.service.helper';
 
 /**
  * Converts a UTF-16 encoded JavaScript string to a Uint8Array representing UTF-8 encoded bytes.
@@ -42,21 +42,7 @@ function utf16StringToUint8Array(str: string) {
   return new Uint8Array(utf8);
 }
 
-describe('Base64 encoding and decoding', () => {
 
-  it('encodeToBase64 should correctly encode a basic ASCII string', () => {
-    const input = 'Hello World';
-    const expectedOutput = 'SGVsbG8gV29ybGQ='; // Base64 encoded string of 'Hello World'
-    expect(encodeToBase64(input)).toEqual(expectedOutput);
-  });
-
-  it('encodeToBase64 should correctly encode an UTF-8 encoded string containing special characters', () => {
-    const utf8String = 'obð¤cpfp';
-    const expectedOutput = 'b2Lwn6SdY3BmcA==';
-    expect(encodeToBase64(utf8String)).toEqual(expectedOutput);
-  });
-
-});
 
 describe('Conversions between UTF-8 encoded data and UTF-16 encoded strings', () => {
 

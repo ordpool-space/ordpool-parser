@@ -1,4 +1,5 @@
-import { OP_0, OP_ENDIF, brotliDecodeUint8Array, encodeToBase64, extractParent, extractPointer, getKnownFieldValue, getNextInscriptionMark, hexStringToUint8Array, knownFields, readPushdata, uint8ArrayToSingleByteChars, utf8BytesToUtf16String } from "./inscription-parser.service.helper";
+import { OP_0, OP_ENDIF, brotliDecodeUint8Array, extractParent, extractPointer, getKnownFieldValue, getNextInscriptionMark, hexStringToUint8Array, knownFields, readPushdata, uint8ArrayToSingleByteChars, utf8BytesToUtf16String } from "./inscription-parser.service.helper";
+import { binaryStringToBase64 } from "./lib/conversions";
 import { ParsedInscription } from "./parsed-inscription";
 import { CBOR } from "./cbor";
 
@@ -149,12 +150,12 @@ export class InscriptionParserService {
 
         getData: (): string => {
           const content = uint8ArrayToSingleByteChars(combinedData);
-          return encodeToBase64(content);
+          return binaryStringToBase64(content);
         },
 
         getDataUri: (): string => {
           const content = uint8ArrayToSingleByteChars(combinedData);
-          const fullBase64Data = encodeToBase64(content);
+          const fullBase64Data = binaryStringToBase64(content);
           return `data:${contentType};base64,${fullBase64Data}`;
         },
 
