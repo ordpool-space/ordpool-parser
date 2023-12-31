@@ -1,4 +1,4 @@
-import { binaryStringToBase64 } from "./conversions";
+import { binaryStringToBase64 } from "./binaryStringToBase64";
 
 describe('Base64 encoding and decoding', () => {
 
