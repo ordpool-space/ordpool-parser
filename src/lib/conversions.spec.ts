@@ -3,9 +3,9 @@ import {
   binaryStringToBase64,
   bytesToHex,
   hexToBytes,
-  uint8ArrayToSingleByteChars,
-  utf16StringToUint8Array,
-  utf8BytesToUtf16String,
+  bytesToBinaryString,
+  unicodeStringToBytes,
+  bytesToUnicodeString,
 } from './conversions';
 
 describe('Base64 encoding and decoding', () => {
@@ -26,7 +26,7 @@ describe('Base64 encoding and decoding', () => {
 
 describe('Conversions between UTF-8 encoded data and UTF-16 encoded strings', () => {
 
-  it('uint8ArrayToSingleByteChars should return the expected UTF-8 encoded string', () => {
+  it('bytesToBinaryString should return the expected UTF-8 encoded string', () => {
 
     // UTF-8 Encoding: UTF-8 is a variable-length encoding system for Unicode,
     // capable of representing every character in the Unicode character set.
@@ -34,7 +34,7 @@ describe('Conversions between UTF-8 encoded data and UTF-16 encoded strings', ()
     const utf8EncodedBytes = new Uint8Array([111, 98, 240, 159, 164, 157, 99, 112, 102, 112]); //  'ob🤝cpfp';
 
     // Convert Uint8Array to a 'binary' string
-    const utf8String: string = uint8ArrayToSingleByteChars(utf8EncodedBytes);
+    const utf8String: string = bytesToBinaryString(utf8EncodedBytes);
 
     expect(utf8String).toEqual('obð¤cpfp');
   });
@@ -48,11 +48,11 @@ describe('Conversions between UTF-8 encoded data and UTF-16 encoded strings', ()
     // UTF-8 Encoding: UTF-8 is a variable-length encoding system for Unicode,
     // capable of representing every character in the Unicode character set.
     // It uses one to four 8-bit bytes.
-    const binaryData = utf16StringToUint8Array(input);
+    const binaryData = unicodeStringToBytes(input);
     expect(binaryData).toEqual(new Uint8Array([111, 98, 240, 159, 164, 157, 99, 112, 102, 112]));
   });
 
-  it('utf8BytesToUtf16String decodes back to UTF-16', () => {
+  it('bytesToUnicodeString decodes back to UTF-16', () => {
 
     // UTF-8 Encoding: UTF-8 is a variable-length encoding system for Unicode,
     // capable of representing every character in the Unicode character set.
@@ -60,7 +60,7 @@ describe('Conversions between UTF-8 encoded data and UTF-16 encoded strings', ()
     const binaryData = new Uint8Array([111, 98, 240, 159, 164, 157, 99, 112, 102, 112]);
 
     // Convert Uint8Array to a binary string
-    const normalUtf16String = utf8BytesToUtf16String(binaryData);
+    const normalUtf16String = bytesToUnicodeString(binaryData);
 
     expect(normalUtf16String).toEqual('ob🤝cpfp');
   });

@@ -1,6 +1,6 @@
 import { OP_0, OP_ENDIF, brotliDecodeUint8Array, extractPointer, getKnownFieldValue, getNextInscriptionMark, knownFields, readPushdata } from "./inscription-parser.service.helper";
 import { extractParent } from "./inscription-parser.service.helper";
-import { binaryStringToBase64, hexToBytes, uint8ArrayToSingleByteChars, utf8BytesToUtf16String } from "./lib/conversions";
+import { binaryStringToBase64, hexToBytes, bytesToBinaryString, bytesToUnicodeString } from "./lib/conversions";
 import { ParsedInscription } from "./parsed-inscription";
 import { CBOR } from "./cbor";
 
@@ -124,14 +124,14 @@ export class InscriptionParserService {
       }
 
       // it would make no sense to add UTF-8 to content-type, so assuming no UTF-8 here
-      const contentType = uint8ArrayToSingleByteChars(contentTypeRaw);
+      const contentType = bytesToBinaryString(contentTypeRaw);
 
       // figure out if the body is encoded via brotli
       const contentEncodingRaw = getKnownFieldValue(fields, knownFields.content_encoding);
 
       let contentEncoding: string | undefined = undefined;
       if (contentEncodingRaw) {
-        contentEncoding = uint8ArrayToSingleByteChars(contentEncodingRaw);
+        contentEncoding = bytesToBinaryString(contentEncodingRaw);
       }
 
       if (contentEncoding === 'br') {
@@ -146,16 +146,16 @@ export class InscriptionParserService {
         fields,
 
         getContentString() {
-          return utf8BytesToUtf16String(combinedData) + ''; // never return undefined here
+          return bytesToUnicodeString(combinedData) + ''; // never return undefined here
         },
 
         getData: (): string => {
-          const content = uint8ArrayToSingleByteChars(combinedData);
+          const content = bytesToBinaryString(combinedData);
           return binaryStringToBase64(content);
         },
 
         getDataUri: (): string => {
-          const content = uint8ArrayToSingleByteChars(combinedData);
+          const content = bytesToBinaryString(combinedData);
           const fullBase64Data = binaryStringToBase64(content);
           return `data:${contentType};base64,${fullBase64Data}`;
         },
@@ -186,7 +186,7 @@ export class InscriptionParserService {
             return undefined;
           }
 
-          return utf8BytesToUtf16String(metaprotocolRaw);
+          return bytesToUnicodeString(metaprotocolRaw);
         },
 
         getContentEncoding: (): string | undefined => {

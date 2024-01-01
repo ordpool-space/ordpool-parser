@@ -1,5 +1,5 @@
 import { bigEndianBytesToNumber } from './inscription-parser.service.helper';
-import { utf8BytesToUtf16String } from './lib/conversions';
+import { bytesToUnicodeString } from './lib/conversions';
 import { extractPubkeys, stringToUint8Array } from './src20-parser.service.helper';
 
 var rc4 = require('arc4');
@@ -72,7 +72,7 @@ export function decodeSrc20Transaction(transaction: {
 
     const data = decrypted.slice(2, 2 + expectedLength);
 
-    const result = utf8BytesToUtf16String(data);
+    const result = bytesToUnicodeString(data);
     if (!result || !result.includes('stamp:')) {
       return null;
     }
