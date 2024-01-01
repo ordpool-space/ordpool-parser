@@ -6,6 +6,8 @@ import {
   bytesToBinaryString,
   unicodeStringToBytes,
   bytesToUnicodeString,
+  littleEndianBytesToNumber,
+  bigEndianBytesToNumber,
 } from './conversions';
 
 describe('Base64 encoding and decoding', () => {
@@ -117,5 +119,67 @@ describe('bytesToHex', () => {
     const byteArray = new Uint8Array([0x1, 0x2, 0xA]);
     const expectedHex = '01020a';
     expect(bytesToHex(byteArray)).toEqual(expectedHex);
+  });
+});
+
+// littleEndianBytesToNumber is essentially reading a binary representation of a number
+// (in little-endian format) from a Uint8Array and converting it into a JavaScript number.
+describe('littleEndianBytesToNumber', () => {
+
+  it('should calculate size for single byte correctly', () => {
+    const dataSizeArray = new Uint8Array([0x12]); // 18 in decimal
+    const size = littleEndianBytesToNumber(dataSizeArray);
+    expect(size).toEqual(0x12);
+    expect(size).toEqual(18);
+  });
+
+  it('should calculate size for two bytes correctly in little-endian format', () => {
+    const dataSizeArray = new Uint8Array([0x34, 0x12]); // 0x1234 in hexadecimal
+    const size = littleEndianBytesToNumber(dataSizeArray);
+    expect(size).toEqual(0x1234);
+    expect(size).toEqual(4660);
+  });
+
+  it('should calculate size for four bytes correctly in little-endian format', () => {
+    const dataSizeArray = new Uint8Array([0x78, 0x56, 0x34, 0x12]); // 0x12345678 in hexadecimal
+    const size = littleEndianBytesToNumber(dataSizeArray);
+    expect(size).toEqual(0x12345678);
+    expect(size).toEqual(305419896);
+  });
+
+  it('should handle an empty array', () => {
+    const dataSizeArray = new Uint8Array([]);
+    expect(littleEndianBytesToNumber(dataSizeArray)).toEqual(0);
+  });
+});
+
+// bigEndianBytesToNumber is essentially reading a binary representation of a number
+// (in big-endian format) from a Uint8Array and converting it into a JavaScript number.
+describe('bigEndianBytesToNumber', () => {
+
+  it('should calculate size for single byte correctly', () => {
+    const dataSizeArray = new Uint8Array([0x12]); // 18 in decimal
+    const size = bigEndianBytesToNumber(dataSizeArray);
+    expect(size).toEqual(0x12);
+    expect(size).toEqual(18);
+  });
+
+  it('should calculate size for two bytes correctly in big-endian format', () => {
+    const dataSizeArray = new Uint8Array([0x12, 0x34]); // 0x1234 in hexadecimal
+    const size = bigEndianBytesToNumber(dataSizeArray);
+    expect(size).toEqual(0x1234);
+    expect(size).toEqual(4660);
+  });
+
+  it('should calculate size for four bytes correctly in big-endian format', () => {
+    const dataSizeArray = new Uint8Array([0x12, 0x34, 0x56, 0x78]); // 0x12345678 in hexadecimal
+    const size = bigEndianBytesToNumber(dataSizeArray);
+    expect(size).toEqual(0x12345678);
+    expect(size).toEqual(305419896);
+  });
+
+  it('should handle an empty array', () => {
+    const dataSizeArray = new Uint8Array([]);
+    expect(bigEndianBytesToNumber(dataSizeArray)).toEqual(0);
   });
 });

@@ -1,4 +1,4 @@
-import { bigEndianBytesToNumber } from './inscription-parser.service.helper';
+import { bigEndianBytesToNumber } from "./lib/conversions";
 import { bytesToUnicodeString } from './lib/conversions';
 import { extractPubkeys, stringToUint8Array } from './src20-parser.service.helper';
 

@@ -83,7 +83,7 @@ export function bytesToUnicodeString(bytes: Uint8Array): string {
  * It avoids interpreting bytes as UTF-8 encoded sequences.
  * --> Again: it ignores UTF-8 encoding, which is necessary for binary content!
  *
- * Note: This method is different from using `String.fromCharCode(...combinedData)` which can
+ * Note: This method is different from just using `String.fromCharCode(...combinedData)` which can
  * cause a "Maximum call stack size exceeded" error for large arrays due to the limitation of
  * the spread operator in JavaScript. (previously the parser broke here, because of large content)
  *
@@ -120,4 +120,43 @@ export function hexToBytes(hex: string): Uint8Array {
  */
 export function bytesToHex(bytes: Uint8Array): string {
   return Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * Converts a little-endian byte array to a JavaScript number.
+ *
+ * This function interprets the provided bytes in little-endian format, where the least significant byte comes first.
+ * It constructs an integer value representing the number encoded by the bytes.
+ *
+ * @param byteArray - An array containing the bytes in little-endian format.
+ * @returns The number represented by the byte array.
+ */
+export function littleEndianBytesToNumber(byteArray: Uint8Array): number {
+  let number = 0;
+  for (let i = 0; i < byteArray.length; i++) {
+    // Extract each byte from byteArray, shift it to the left by 8 * i bits, and combine it with number.
+    // The shifting accounts for the little-endian format where the least significant byte comes first.
+    number |= byteArray[i] << (8 * i);
+  }
+  return number;
+}
+
+/**
+ * Converts a big-endian byte array to a number.
+ *
+ * In big-endian format, the most significant byte (MSB) comes first. This function
+ * reads each byte from the array and combines them to form a number, with the first
+ * byte in the array being the MSB.
+ *
+ * @param byteArray - The byte array in big-endian format.
+ * @returns The number represented by the byte array.
+ */
+export function bigEndianBytesToNumber(byteArray: Uint8Array): number {
+  let number = 0;
+  for (let i = 0; i < byteArray.length; i++) {
+    // Shift the current total to the left by 8 bits to make room for the next byte,
+    // and add the next byte to the total.
+    number = (number << 8) | byteArray[i];
+  }
+  return number;
 }

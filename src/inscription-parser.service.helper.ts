@@ -1,4 +1,5 @@
 import { MAX_DECOMPRESSED_SIZE_MESSAGE, brotliDecode } from "./brotli-decode";
+import { littleEndianBytesToNumber } from "./lib/conversions";
 import { bytesToHex } from "./lib/conversions";
 
 /**
@@ -97,45 +98,6 @@ export function getNextInscriptionMark(raw: Uint8Array, startPosition: number): 
   }
 
   return -1;
-}
-
-/**
- * Converts a little-endian byte array to a JavaScript number.
- *
- * This function interprets the provided bytes in little-endian format, where the least significant byte comes first.
- * It constructs an integer value representing the number encoded by the bytes.
- *
- * @param byteArray - An array containing the bytes in little-endian format.
- * @returns The number represented by the byte array.
- */
-export function littleEndianBytesToNumber(byteArray: Uint8Array): number {
-  let number = 0;
-  for (let i = 0; i < byteArray.length; i++) {
-    // Extract each byte from byteArray, shift it to the left by 8 * i bits, and combine it with number.
-    // The shifting accounts for the little-endian format where the least significant byte comes first.
-    number |= byteArray[i] << (8 * i);
-  }
-  return number;
-}
-
-/**
- * Converts a big-endian byte array to a number.
- *
- * In big-endian format, the most significant byte (MSB) comes first. This function
- * reads each byte from the array and combines them to form a number, with the first
- * byte in the array being the MSB.
- *
- * @param byteArray - The byte array in big-endian format.
- * @returns The number represented by the byte array.
- */
-export function bigEndianBytesToNumber(byteArray: Uint8Array): number {
-  let number = 0;
-  for (let i = 0; i < byteArray.length; i++) {
-    // Shift the current total to the left by 8 bits to make room for the next byte,
-    // and add the next byte to the total.
-    number = (number << 8) | byteArray[i];
-  }
-  return number;
 }
 
 /**
