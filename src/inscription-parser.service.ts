@@ -1,4 +1,5 @@
-import { OP_0, OP_ENDIF, brotliDecodeUint8Array, extractPointer, getKnownFieldValue, getNextInscriptionMark, knownFields, readPushdata } from "./inscription-parser.service.helper";
+import { OP_0, OP_ENDIF, brotliDecodeUint8Array, extractPointer, getKnownFieldValue, getNextInscriptionMark, knownFields } from "./inscription-parser.service.helper";
+import { readPushdata } from "./lib/reader";
 import { extractParent } from "./inscription-parser.service.helper";
 import { binaryStringToBase64, hexToBytes, bytesToBinaryString, bytesToUnicodeString } from "./lib/conversions";
 import { ParsedInscription } from "./parsed-inscription";

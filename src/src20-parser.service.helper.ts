@@ -1,4 +1,5 @@
-import { OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4, readPushdata } from "./inscription-parser.service.helper";
+import { OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4 } from "./inscription-parser.service.helper";
+import { readPushdata } from "./lib/reader";
 
 /**
  * Converts a hexadecimal string to an array of numbers.
@@ -67,7 +68,6 @@ export function parseScript(buffer: number[]): Array<number | number[]> {
     const opcode = buffer[i];
 
     if (isDataPushOpcode(opcode)) {
-      // Use readPushdata for handling data push opcodes
       const [data, newPointer] = readPushdata(new Uint8Array(buffer), i);
       chunks.push(Array.from(data)); // Convert Uint8Array back to number[]
       i = newPointer;
