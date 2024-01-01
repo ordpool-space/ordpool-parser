@@ -70,13 +70,4 @@ export function extractPubkeys(hex: string): string[] {
   return pubkeys;
 }
 
-/**
- * Converts a string to a Uint8Array.
- *
- * @param str - The string to convert.
- * @returns The Uint8Array representation of the string.
- */
-export function stringToUint8Array(str: string): Uint8Array {
-  const encoder = new TextEncoder();
-  return encoder.encode(str);
-}
+

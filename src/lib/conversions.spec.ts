@@ -51,7 +51,11 @@ describe('Conversions between UTF-8 encoded data and UTF-16 encoded strings', ()
     // capable of representing every character in the Unicode character set.
     // It uses one to four 8-bit bytes.
     const binaryData = unicodeStringToBytes(input);
-    expect(binaryData).toEqual(new Uint8Array([111, 98, 240, 159, 164, 157, 99, 112, 102, 112]));
+
+    // this gives me a strange `serializes to the same string` error - but only when emulating a browser!?
+    // expect(binaryData).toEqual(new Uint8Array([111, 98, 240, 159, 164, 157, 99, 112, 102, 112]));
+    // workaround:
+    expect(JSON.stringify(binaryData)).toEqual(JSON.stringify(new Uint8Array([111, 98, 240, 159, 164, 157, 99, 112, 102, 112])));
   });
 
   it('bytesToUnicodeString decodes back to UTF-16', () => {

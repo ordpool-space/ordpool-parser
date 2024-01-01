@@ -1,6 +1,5 @@
-import { bigEndianBytesToNumber } from "./lib/conversions";
-import { bytesToUnicodeString } from './lib/conversions';
-import { extractPubkeys, stringToUint8Array } from './src20-parser.service.helper';
+import { bigEndianBytesToNumber, bytesToUnicodeString, unicodeStringToBytes } from './lib/conversions';
+import { extractPubkeys } from './src20-parser.service.helper';
 
 var rc4 = require('arc4');
 
@@ -62,12 +61,11 @@ export function decodeSrc20Transaction(transaction: {
 
     // This is finally in hex:
     // 00457374616d703a7b2270223a227372632d3230222c226f70223a227472616e73666572222c227469636b223a225354455645222c22616d74223a22313030303030303030227d0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-    const decrypted = stringToUint8Array(decryptedStr);
+    const decrypted = unicodeStringToBytes(decryptedStr);
 
     // Extract the first two bytes to determine the length
     // The first two bytes, is the expected length of the decoded data in hex
     // (less any trailing zeros) for data validation.
-    // const expectedLength = decrypted[1] | (decrypted[0] << 8);
     const expectedLength = bigEndianBytesToNumber(decrypted.slice(0, 2));
 
     const data = decrypted.slice(2, 2 + expectedLength);
