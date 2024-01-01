@@ -4,12 +4,22 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Debug Jest Tests",
+      "name": "Debug Jest Tests (Browser env)",
       "program": "${workspaceFolder}/node_modules/.bin/jest",
       "args": [
         "--runInBand",
         "--config",
         "jest.config.js"
+      ]
+    }, {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug Jest Tests (Node env)",
+      "program": "${workspaceFolder}/node_modules/.bin/jest",
+      "args": [
+        "--runInBand",
+        "--config",
+        "jest.config.node.js"
       ]
     }
   ]

@@ -1,5 +1,6 @@
 import { InscriptionParserService } from './inscription-parser.service';
-import { getNextInscriptionMark, hexStringToUint8Array } from './inscription-parser.service.helper';
+import { getNextInscriptionMark } from './inscription-parser.service.helper';
+import { hexToBytes } from './lib/conversions';
 import { readInscriptionAsBase64, readTransaction } from './test.helper';
 
 describe('Inscription parser', () => {
@@ -116,7 +117,7 @@ describe('Inscription parser', () => {
 
     expect(txWitness).toEqual('0000000000000000000000000000000000000000000000000000000000000000');
 
-    const raw = hexStringToUint8Array(txWitness);
+    const raw = hexToBytes(txWitness);
     const position = getNextInscriptionMark(raw, 0);
 
     expect(position).toEqual(-1);

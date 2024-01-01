@@ -1,5 +1,5 @@
 import { MAX_DECOMPRESSED_SIZE_MESSAGE, brotliDecode } from './brotli-decode';
-import { readBinaryFileAsUint8Array } from './test.helper';
+import { readBinaryFileAsUint8Array } from '../test.helper';
 
 function bytesToString(bytes: Int8Array): string {
   const chars: number[] = new Uint16Array(bytes) as unknown as number[];

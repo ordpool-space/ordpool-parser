@@ -1,6 +1,9 @@
-import { OP_0, OP_ENDIF, brotliDecodeUint8Array, encodeToBase64, extractParent, extractPointer, getKnownFieldValue, getNextInscriptionMark, hexStringToUint8Array, knownFields, readPushdata, uint8ArrayToSingleByteChars, utf8BytesToUtf16String } from "./inscription-parser.service.helper";
+import { OP_0, OP_ENDIF, brotliDecodeUint8Array, extractPointer, getKnownFieldValue, getNextInscriptionMark, knownFields } from "./inscription-parser.service.helper";
+import { readPushdata } from "./lib/reader";
+import { extractParent } from "./inscription-parser.service.helper";
+import { binaryStringToBase64, hexToBytes, bytesToBinaryString, bytesToUnicodeString } from "./lib/conversions";
 import { ParsedInscription } from "./parsed-inscription";
-import { CBOR } from "./cbor";
+import { CBOR } from "./lib/cbor";
 
 /**
  * Extracts all Ordinal inscriptions from a Bitcoin transaction.
@@ -44,7 +47,7 @@ export class InscriptionParserService {
   private static parseInscriptionsWithinWitness(witness: string[]): ParsedInscription[] | null {
 
     const inscriptions: ParsedInscription[] = [];
-    const raw = hexStringToUint8Array(witness.join(''));
+    const raw = hexToBytes(witness.join(''));
     let startPosition = 0;
 
     while (true) {
@@ -122,14 +125,14 @@ export class InscriptionParserService {
       }
 
       // it would make no sense to add UTF-8 to content-type, so assuming no UTF-8 here
-      const contentType = uint8ArrayToSingleByteChars(contentTypeRaw);
+      const contentType = bytesToBinaryString(contentTypeRaw);
 
       // figure out if the body is encoded via brotli
       const contentEncodingRaw = getKnownFieldValue(fields, knownFields.content_encoding);
 
       let contentEncoding: string | undefined = undefined;
       if (contentEncodingRaw) {
-        contentEncoding = uint8ArrayToSingleByteChars(contentEncodingRaw);
+        contentEncoding = bytesToBinaryString(contentEncodingRaw);
       }
 
       if (contentEncoding === 'br') {
@@ -144,17 +147,17 @@ export class InscriptionParserService {
         fields,
 
         getContentString() {
-          return utf8BytesToUtf16String(combinedData) + ''; // never return undefined here
+          return bytesToUnicodeString(combinedData) + ''; // never return undefined here
         },
 
         getData: (): string => {
-          const content = uint8ArrayToSingleByteChars(combinedData);
-          return encodeToBase64(content);
+          const content = bytesToBinaryString(combinedData);
+          return binaryStringToBase64(content);
         },
 
         getDataUri: (): string => {
-          const content = uint8ArrayToSingleByteChars(combinedData);
-          const fullBase64Data = encodeToBase64(content);
+          const content = bytesToBinaryString(combinedData);
+          const fullBase64Data = binaryStringToBase64(content);
           return `data:${contentType};base64,${fullBase64Data}`;
         },
 
@@ -179,8 +182,12 @@ export class InscriptionParserService {
         },
 
         getMetaprotocol: (): string | undefined => {
-          const metaprotocolRaw = getKnownFieldValue(fields, knownFields.metaprotocol)
-          return utf8BytesToUtf16String(metaprotocolRaw);
+          const metaprotocolRaw = getKnownFieldValue(fields, knownFields.metaprotocol);
+          if (!metaprotocolRaw) {
+            return undefined;
+          }
+
+          return bytesToUnicodeString(metaprotocolRaw);
         },
 
         getContentEncoding: (): string | undefined => {

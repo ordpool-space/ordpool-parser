@@ -14,14 +14,14 @@ describe('Inscription parser', () => {
     const inscriptions = InscriptionParserService.parseInscriptions(txn);
 
     const actualFileData = inscriptions[0].getData();
-    const metadataprotocol = inscriptions[0].getMetaprotocol();
+    const metaprotocol = inscriptions[0].getMetaprotocol();
     const metadata = inscriptions[0].getMetadata();
     const expectedFileData = readInscriptionAsBase64('49cbc5cbac92cf917dd4539d62720a3e528d17e22ef5fc47070a17ec0d3cf307i0', 'txt');
 
     expect(inscriptions.length).toBe(1);
     expect(actualFileData).toEqual(expectedFileData);
 
-    expect(metadataprotocol).toEqual("cbrc-20:deploy");
+    expect(metaprotocol).toEqual("cbrc-20:deploy");
     expect(metadata).toEqual({
       tick: 'SYMM',
       max: '21000000',
