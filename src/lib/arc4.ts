@@ -6,7 +6,7 @@
  * @author hex7c0 <hex7c0@gmail.com>
  * @copyright hex7c0 2014
  * @license GPLv3
- *  --> core functionality extracted abd modified to TypeScript by Johannes
+ *  --> core functionality extracted and modified to TypeScript by Johannes
  */
 
 
@@ -15,50 +15,7 @@ const box = [...Array(256).keys()];
 
 
 /**
- * generate ksa
- *
- * @function gKsa
- * @param {Array} key - user key
- * @return {Array}
- */
-function gKsa(key: number[]): number[] {
-
-  var j = 0;
-  var s = box.slice();
-  var len = key.length;
-  for (var i = 0; i < 256; ++i) {
-    j = (j + s[i] + key[i % len]) % 256;
-    s[j] = [ s[i], s[i] = s[j] ][0];
-  }
-  return s;
-}
-
-/**
- * body cipher
- *
- * @function body
- * @param {Array|Buffer} inp - input
- * @param {Array} gksa - ksa box
- * @param {Array|Buffer} container - out container
- * @param {Integer} length - limit
- * @return {Array|Buffer}
- */
-function body(inp: number[] | Buffer, gksa: number[], container: number[] | Buffer, length: number): number[] | Buffer {
-
-  var i = 0, j = 0;
-  var out = container;
-  var ksa = gksa.slice();
-  for (var y = 0; y < length; ++y) {
-    i = (i + 1) % 256;
-    j = (j + ksa[i]) % 256;
-    ksa[j] = [ ksa[i], ksa[i] = ksa[j] ][0];
-    out[y] = inp[y] ^ ksa[(ksa[i] + ksa[j]) % 256];
-  }
-  return out;
-}
-
-/**
- * Arc4 class / TypeScript version
+ * Arc4 class / Simplified TypeScript version
  */
 export class Arc4 {
 
@@ -75,26 +32,61 @@ export class Arc4 {
   }
 
   /**
+   * generate ksa
+   *
+   * @function gKsa
+   * @param {Array} key - user key
+   * @return {Array}
+   */
+  private gKsa(key: number[]): number[] {
+    let j = 0;
+    const s = box.slice();
+    const len = key.length;
+    for (let i = 0; i < 256; ++i) {
+      j = (j + s[i] + key[i % len]) % 256;
+      [s[i], s[j]] = [s[j], s[i]]; // swap elements
+    }
+    return s;
+  }
+
+  /**
    * change user key
    *
    * @param {String|Array|Buffer} key - user key
    */
-  change(key: string | number[] | Buffer): void {
-
-    if (Array.isArray(key)) {
-      this.key = key;
-    } else if (typeof (key) === 'string' || Buffer.isBuffer(key)) {
-      this.key = new Array(key.length);
-      var keys = new Buffer(key as string);
-      for (var i = 0, ii = keys.length; i < ii; ++i) {
-        this.key[i] = keys[i];
-      }
+  public change(key: string | number[] | Buffer): void {
+    if (typeof key === 'string') {
+      this.key = Array.from(Buffer.from(key)).map(byte => byte);
+    } else if (Array.isArray(key) || Buffer.isBuffer(key)) {
+      this.key = Array.from(key);
     } else {
       throw new Error('Invalid data');
     }
-    this.ksa = gKsa(this.key);
-    return;
-  };
+    this.ksa = this.gKsa(this.key);
+  }
+
+  /**
+   * body cipher
+   *
+   * @function body
+   * @param {Array|Buffer} inp - input
+   * @param {Array} gksa - ksa box
+   * @param {Array|Buffer} container - out container
+   * @param {Integer} length - limit
+   * @return {Array|Buffer}
+   */
+  private body(inp: number[] | Buffer, gksa: number[], container: number[] | Buffer, length: number): number[] | Buffer {
+    let i = 0, j = 0;
+    const out = container;
+    const ksa = gksa.slice();
+    for (let y = 0; y < length; ++y) {
+      i = (i + 1) % 256;
+      j = (j + ksa[i]) % 256;
+      [ksa[i], ksa[j]] = [ksa[j], ksa[i]]; // swap elements
+      out[y] = inp[y] ^ ksa[(ksa[i] + ksa[j]) % 256];
+    }
+    return out;
+  }
 
   /**
    * Arc4 string encode
@@ -107,9 +99,9 @@ export class Arc4 {
   encodeString(str: string, input_encoding: BufferEncoding = 'utf8', output_encoding: BufferEncoding = 'hex'): string {
     const out = Buffer.from(str, input_encoding);
     const l = out.length;
-    return Buffer.from(body(out, this.ksa!, Buffer.alloc(l), l))
+    return Buffer.from(this.body(out, this.ksa!, Buffer.alloc(l), l))
       .toString(output_encoding);
-  };
+  }
 
   /**
    * Arc4 string decode
@@ -122,7 +114,7 @@ export class Arc4 {
   decodeString(str: string, input_encoding: BufferEncoding = 'hex', output_encoding: BufferEncoding = 'utf8'): string {
     const out = Buffer.from(str, input_encoding);
     const l = out.length;
-    return Buffer.from(body(out, this.ksa!, Buffer.alloc(l), l))
+    return Buffer.from(this.body(out, this.ksa!, Buffer.alloc(l), l))
       .toString(output_encoding);
-  };
+  }
 }

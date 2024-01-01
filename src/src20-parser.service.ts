@@ -57,7 +57,7 @@ export function decodeSrc20Transaction(transaction: {
 
     // 4. Decrypt using RC4
     const cipher = new Arc4(arc4Key);
-    const decryptedStr: string = cipher.decodeString(concatenatedPubkeys);
+    const decryptedStr = cipher.decodeString(concatenatedPubkeys);
 
     // This is finally in hex:
     // 00457374616d703a7b2270223a227372632d3230222c226f70223a227472616e73666572222c227469636b223a225354455645222c22616d74223a22313030303030303030227d0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
