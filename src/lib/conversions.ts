@@ -101,8 +101,8 @@ export function bytesToBinaryString(bytes: Uint8Array): string {
 /**
  * Converts a hexadecimal string to a Uint8Array.
  *
- * @param {string} hex - A string of hexadecimal characters.
- * @returns {Uint8Array} A Uint8Array representing the hex string.
+ * @param hex - A string of hexadecimal characters.
+ * @returns A Uint8Array representing the hex string.
  */
 export function hexToBytes(hex: string): Uint8Array {
   const bytes = new Uint8Array(hex.length / 2);
@@ -115,8 +115,8 @@ export function hexToBytes(hex: string): Uint8Array {
 /**
  * Converts a Uint8Array to a hexadecimal string.
  *
- * @param {Uint8Array} bytes - A Uint8Array to convert.
- * @returns {string} A string of hexadecimal characters representing the byte array.
+ * @param bytes - A Uint8Array to convert.
+ * @returns A string of hexadecimal characters representing the byte array.
  */
 export function bytesToHex(bytes: Uint8Array): string {
   return Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');

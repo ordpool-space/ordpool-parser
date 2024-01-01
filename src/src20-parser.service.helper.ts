@@ -1,44 +1,6 @@
 import { OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4 } from "./inscription-parser.service.helper";
+import { bytesToHex, hexToBytes } from "./lib/conversions";
 import { readPushdata } from "./lib/reader";
-
-/**
- * Converts a hexadecimal string to an array of numbers.
- *
- * Each pair of hexadecimal characters (00 through FF) is converted to its
- * corresponding byte value, which is represented as a number (0 through 255).
- * The function iterates through the hexadecimal string two characters at a time,
- * parsing each pair into a byte and adding it to the resulting array.
- *
- * @param hexStr - A string of hexadecimal characters.
- * @returns An array of numbers, where each number is a byte value (0-255) corresponding to a pair of hex characters.
- */
-export function hexToBytes(hexStr: string): number[] {
-  const bytes = [];
-  for (let i = 0; i < hexStr.length; i += 2) {
-    bytes.push(parseInt(hexStr.substr(i, 2), 16));
-  }
-  return bytes;
-}
-
-/**
- * Converts an array of byte values (numbers) to a hexadecimal string.
- *
- * Each number in the array is assumed to be a byte (0 through 255) and is
- * converted to its corresponding two-character hexadecimal representation.
- * The function iterates over each number in the array, converts it to
- * hexadecimal, and concatenates the result into a single string.
- *
- * @param byteArray - An array of numbers, each representing a byte.
- * @returns A string of hexadecimal characters representing the byte array.
- */
-export function bytesToHex(byteArray: number[]): string {
-  const hexArray = [];
-  for (let i = 0; i < byteArray.length; i++) {
-    hexArray.push((byteArray[i] >>> 4).toString(16));
-    hexArray.push((byteArray[i] & 0xF).toString(16));
-  }
-  return hexArray.join('');
-}
 
 /**
  * Determines if an opcode represents a data push operation.
@@ -57,19 +19,20 @@ function isDataPushOpcode(opcode: number): boolean {
 /**
  * Parses a Bitcoin script and extracts its components (opcodes and data).
  *
- * @param {number[]} buffer - An array of numbers representing the script in bytes.
- * @returns {Array<number | number[]>} An array where each element is either an opcode or an array of data bytes.
+ * @param bytes - A Uint8Array representing the script in bytes.
+ * @returns An array where each element is either an opcode or a Uint8Array of data bytes.
  */
-export function parseScript(buffer: number[]): Array<number | number[]> {
-  const chunks: Array<number | number[]> = [];
+export function parseScript(bytes: Uint8Array): Array<number | Uint8Array> {
+  const chunks: Array<number | Uint8Array> = [];
   let i = 0;
 
-  while (i < buffer.length) {
-    const opcode = buffer[i];
+  while (i < bytes.length) {
+    const opcode = bytes[i];
 
     if (isDataPushOpcode(opcode)) {
-      const [data, newPointer] = readPushdata(new Uint8Array(buffer), i);
-      chunks.push(Array.from(data)); // Convert Uint8Array back to number[]
+      // Use readPushdata for handling data push opcodes
+      const [data, newPointer] = readPushdata(bytes, i);
+      chunks.push(data);
       i = newPointer;
     } else {
       // Handle non-push opcodes
@@ -81,29 +44,30 @@ export function parseScript(buffer: number[]): Array<number | number[]> {
   return chunks;
 }
 
-
 /**
- * decodes some parts of the redeemscript of a multisignature transaction
- * but only for OP_CHECKMULTISIG
- * see: https://github.com/OutCast3k/coinbin/blob/cda4559cfd5948dbb18dc078c48a3e62121218e5/js/coin.js#L868
+ * Extracts public keys from a redeem script of a multisignature transaction.
+ *
+ * Notes:
+ * Only tested and developed for OP_CHECKMULTISIG
+ * The original implementation originated here:
+ * https://github.com/OutCast3k/coinbin/blob/cda4559cfd5948dbb18dc078c48a3e62121218e5/js/coin.js#L868
+ *
+ * @param hex - The redeem script in hex format
+ * @returns An array of public keys extracted from the script.
  */
-export function extractPubkeys(redeemScriptHex: string) {
+export function extractPubkeys(hex: string): string[] {
 
-  // Split the redeem script into chunks
-  const bytes = hexToBytes(redeemScriptHex);
+  const bytes = hexToBytes(hex);
   const chunks = parseScript(bytes);
 
-  var pubkeys = [];
-  for(var i=1;i < chunks.length-2; i++){
-    pubkeys.push(bytesToHex(chunks[i] as number[]));
+  const pubkeys: string[] = [];
+  for (let i = 1; i < chunks.length - 2; i++) {
+    if (typeof chunks[i] !== 'number') {
+      pubkeys.push(bytesToHex(chunks[i] as Uint8Array));
+    }
   }
 
   return pubkeys;
-}
-
-export function toHex(data: Uint8Array | Buffer | number[]): string {
-  const buffer = Buffer.from(data)
-  return buffer.toString("hex")
 }
 
 /**
