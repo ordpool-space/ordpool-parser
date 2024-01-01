@@ -1,7 +1,7 @@
-import { bigEndianBytesToNumber, bytesToUnicodeString, unicodeStringToBytes } from './lib/conversions';
+import { Arc4 } from "./lib/arc4";
+import { bigEndianBytesToNumber, unicodeStringToBytes } from "./lib/conversions";
+import { bytesToUnicodeString } from './lib/conversions';
 import { extractPubkeys } from './src20-parser.service.helper';
-
-var rc4 = require('arc4');
 
 /**
  * Decodes a SRC-20 Bitcoin Transaction
@@ -56,7 +56,7 @@ export function decodeSrc20Transaction(transaction: {
       .join('');
 
     // 4. Decrypt using RC4
-    const cipher = rc4('arc4', arc4Key);
+    const cipher = new Arc4(arc4Key);
     const decryptedStr: string = cipher.decodeString(concatenatedPubkeys);
 
     // This is finally in hex:
@@ -77,7 +77,8 @@ export function decodeSrc20Transaction(transaction: {
 
     return result.replace('stamp:', '');
 
-  } catch {
+  } catch(error) {
+    console.log(error);
     return null;
   }
 }

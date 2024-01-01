@@ -50,8 +50,5 @@
     "src",
     "*.js",
     "*.json"
-  ],
-  "dependencies": {
-    "arc4": "^3.4.0"
-  }
+  ]
 }

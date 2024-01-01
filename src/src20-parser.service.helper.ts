@@ -1,12 +1,12 @@
-import { OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4 } from "./inscription-parser.service.helper";
-import { bytesToHex, hexToBytes } from "./lib/conversions";
-import { readPushdata } from "./lib/reader";
+import { OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4 } from './inscription-parser.service.helper';
+import { bytesToHex, hexToBytes } from './lib/conversions';
+import { readPushdata } from './lib/reader';
 
 /**
  * Determines if an opcode represents a data push operation.
  *
- * @param {number} opcode - The opcode to evaluate.
- * @returns {boolean} True if the opcode represents a data push.
+ * @param opcode - The opcode to evaluate.
+ * @returns True if the opcode represents a data push.
  */
 function isDataPushOpcode(opcode: number): boolean {
   // Opcodes from 0x01 to 0x4b (decimal values 1 to 75) are special opcodes that indicate a data push is happening.
@@ -49,7 +49,7 @@ export function parseScript(bytes: Uint8Array): Array<number | Uint8Array> {
  *
  * Notes:
  * Only tested and developed for OP_CHECKMULTISIG
- * The original implementation originated here:
+ * This implementation originated here:
  * https://github.com/OutCast3k/coinbin/blob/cda4559cfd5948dbb18dc078c48a3e62121218e5/js/coin.js#L868
  *
  * @param hex - The redeem script in hex format
