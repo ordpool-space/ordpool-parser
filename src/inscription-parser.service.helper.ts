@@ -1,4 +1,4 @@
-import { MAX_DECOMPRESSED_SIZE_MESSAGE, brotliDecode } from "./brotli-decode";
+import { MAX_DECOMPRESSED_SIZE_MESSAGE, brotliDecode } from "./lib/brotli-decode";
 import { littleEndianBytesToNumber } from "./lib/conversions";
 import { bytesToHex } from "./lib/conversions";
 

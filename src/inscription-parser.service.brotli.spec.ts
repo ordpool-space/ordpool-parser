@@ -1,4 +1,4 @@
-import { MAX_DECOMPRESSED_SIZE_MESSAGE } from './brotli-decode';
+import { MAX_DECOMPRESSED_SIZE_MESSAGE } from './lib/brotli-decode';
 import { InscriptionParserService } from './inscription-parser.service';
 import { brotliDecodeUint8Array } from './inscription-parser.service.helper';
 import { bytesToBinaryString } from './lib/conversions';

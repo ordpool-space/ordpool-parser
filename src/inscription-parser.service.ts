@@ -2,7 +2,7 @@ import { OP_0, OP_ENDIF, brotliDecodeUint8Array, extractPointer, getKnownFieldVa
 import { extractParent } from "./inscription-parser.service.helper";
 import { binaryStringToBase64, hexToBytes, bytesToBinaryString, bytesToUnicodeString } from "./lib/conversions";
 import { ParsedInscription } from "./parsed-inscription";
-import { CBOR } from "./cbor";
+import { CBOR } from "./lib/cbor";
 
 /**
  * Extracts all Ordinal inscriptions from a Bitcoin transaction.
