@@ -31,11 +31,11 @@ export interface ParsedInscription {
   getPointer: () => number | undefined;
 
   /**
-   * Get Parent inscription, from tag 3
+   * Get Parent inscription(s), from tag 3
    * see provenance docs: https://docs.ordinals.com/inscriptions/provenance.html
    * OWNERSHIP OF THE PARENT IS NOT VALIDATED!
    */
-  getParent: () => string | undefined;
+  getParents: () => string[];
 
   /**
    * Get Metadata, from tag 5

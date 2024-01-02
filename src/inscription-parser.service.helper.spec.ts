@@ -1,5 +1,48 @@
-import { extractParent, extractPointer, getNextInscriptionMark } from './inscription-parser.service.helper';
+import { extractParent, extractPointer, getKnownFieldValue, getKnownFieldValues, getNextInscriptionMark } from './inscription-parser.service.helper';
 import { hexToBytes } from './lib/conversions';
+
+describe('getKnownFieldValue', () => {
+
+  it('should return the value for a matching field', () => {
+    const fields = [
+      { tag: new Uint8Array([1]), value: new Uint8Array([10]) },
+      { tag: new Uint8Array([2]), value: new Uint8Array([20]) }
+    ];
+    const result = getKnownFieldValue(fields, 1);
+    expect(result).toEqual(new Uint8Array([10]));
+  });
+
+  it('should return undefined if there is no matching field', () => {
+    const fields = [
+      { tag: new Uint8Array([1]), value: new Uint8Array([10]) },
+      { tag: new Uint8Array([2]), value: new Uint8Array([20]) }
+    ];
+    const result = getKnownFieldValue(fields, 3);
+    expect(result).toBeUndefined();
+  });
+});
+
+describe('getKnownFieldValues', () => {
+
+  it('should return all values for matching fields', () => {
+    const fields = [
+      { tag: new Uint8Array([1]), value: new Uint8Array([10]) },
+      { tag: new Uint8Array([1]), value: new Uint8Array([15]) },
+      { tag: new Uint8Array([2]), value: new Uint8Array([20]) }
+    ];
+    const result = getKnownFieldValues(fields, 1);
+    expect(result).toEqual([new Uint8Array([10]), new Uint8Array([15])]);
+  });
+
+  it('should return an empty array if there are no matching fields', () => {
+    const fields = [
+      { tag: new Uint8Array([1]), value: new Uint8Array([10]) },
+      { tag: new Uint8Array([2]), value: new Uint8Array([20]) }
+    ];
+    const result = getKnownFieldValues(fields, 3);
+    expect(result).toEqual([]);
+  });
+});
 
 describe('getNextInscriptionMark', () => {
 
@@ -134,10 +177,6 @@ describe('extractParent', () => {
     const value = hexToBytes('1f1e1d1c1b1a191817161514131211100f0e0d0c0b0a090807060504030201000001');
     const expected = '000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fi256';
     expect(extractParent(value)).toEqual(expected);
-  });
-
-  it('should return undefined for undefined parent field', () => {
-    expect(extractParent(undefined)).toBeUndefined();
   });
 });
 

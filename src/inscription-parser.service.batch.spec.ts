@@ -73,9 +73,9 @@ describe('Inscription parser', () => {
     expect(inscriptions[2].getMetadata()).toEqual({ id: 3, pattern: 'Fractal', mode: 'Dark' });
 
     // and also check the parent inscription
-    expect(inscriptions[0].getParent()).toEqual('2593027c930e08446af96cb3e94be579024d35ed0d381e83789bfc6aca5e3550i0');
-    expect(inscriptions[1].getParent()).toEqual('2593027c930e08446af96cb3e94be579024d35ed0d381e83789bfc6aca5e3550i0');
-    expect(inscriptions[2].getParent()).toEqual('2593027c930e08446af96cb3e94be579024d35ed0d381e83789bfc6aca5e3550i0');
+    expect(inscriptions[0].getParents()).toEqual(['2593027c930e08446af96cb3e94be579024d35ed0d381e83789bfc6aca5e3550i0']);
+    expect(inscriptions[1].getParents()).toEqual(['2593027c930e08446af96cb3e94be579024d35ed0d381e83789bfc6aca5e3550i0']);
+    expect(inscriptions[2].getParents()).toEqual(['2593027c930e08446af96cb3e94be579024d35ed0d381e83789bfc6aca5e3550i0']);
 
     // and also check the pointer
     // TODO: The pointer is not displayed anywhere on ordinals.com,

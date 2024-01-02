@@ -40,7 +40,15 @@ export const knownFields = {
   content_encoding: 0x09
 }
 
-export function getKnownFieldValue(fields: { tag: Uint8Array; value: Uint8Array }[], field: number) {
+/**
+ * Retrieves the value for a given field from an array of field objects.
+ * It returns the value of the first object where the tag matches the specified field.
+ *
+ * @param fields - An array of objects containing tag and value properties.
+ * @param field - The field number to search for.
+ * @returns The value associated with the first matching field, or undefined if no match is found.
+ */
+export function getKnownFieldValue(fields: { tag: Uint8Array; value: Uint8Array }[], field: number): Uint8Array | undefined {
   const knownField = fields.find(x =>
     x.tag.length === 1 &&
     x.tag[0] === field);
@@ -52,6 +60,22 @@ export function getKnownFieldValue(fields: { tag: Uint8Array; value: Uint8Array 
   return knownField.value;
 }
 
+/**
+ * Retrieves the values for a given field from an array of field objects.
+ * It returns the values of all objects where the tag matches the specified field.
+ *
+ * @param fields - An array of objects containing tag and value properties.
+ * @param field - The field number to search for.
+ * @returns An array of Uint8Array values associated with the matching fields. If no matches are found, an empty array is returned.
+ */
+export function getKnownFieldValues(fields: { tag: Uint8Array; value: Uint8Array }[], field: number): Uint8Array[] {
+  const knownFields = fields.filter(x =>
+    x.tag.length === 1 &&
+    x.tag[0] === field
+  );
+
+  return knownFields.map(field => field.value);
+}
 
 /**
  * Searches for the next position of the ordinal inscription mark (0063036f7264)
@@ -151,19 +175,17 @@ export function brotliDecodeUint8Array(bytes: Uint8Array): Uint8Array {
     }
     throw error;
   }
-}/**
+}
+
+/**
  * Extracts the parent inscription ID from a field in an inscription.
  * The parent field value consists of a 32-byte transaction ID (TXID) followed by a four-byte little-endian index.
  * The TXID part is reversed in order, and trailing zeroes are omitted.
  *
  * @param parentField - The field containing the parent inscription data.
- * @returns The parent inscription ID as a string, or undefined if the parent field is not provided.
+ * @returns The parent inscription ID as a string.
  */
-export function extractParent(value: Uint8Array | undefined): string | undefined {
-
-  if (value === undefined) {
-    return undefined;
-  }
+export function extractParent(value: Uint8Array): string {
 
   // Reverse the TXID part and convert it to hexadecimal
   const txId = value.slice(0, 32).reverse();

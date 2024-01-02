@@ -1,9 +1,18 @@
-import { OP_0, OP_ENDIF, brotliDecodeUint8Array, extractPointer, getKnownFieldValue, getNextInscriptionMark, knownFields } from "./inscription-parser.service.helper";
-import { readPushdata } from "./lib/reader";
-import { extractParent } from "./inscription-parser.service.helper";
-import { binaryStringToBase64, hexToBytes, bytesToBinaryString, bytesToUnicodeString } from "./lib/conversions";
-import { ParsedInscription } from "./parsed-inscription";
-import { CBOR } from "./lib/cbor";
+import {
+  brotliDecodeUint8Array,
+  extractParent,
+  extractPointer,
+  getKnownFieldValue,
+  getKnownFieldValues,
+  getNextInscriptionMark,
+  knownFields,
+  OP_0,
+  OP_ENDIF,
+} from './inscription-parser.service.helper';
+import { CBOR } from './lib/cbor';
+import { binaryStringToBase64, bytesToBinaryString, bytesToUnicodeString, hexToBytes } from './lib/conversions';
+import { readPushdata } from './lib/reader';
+import { ParsedInscription } from './parsed-inscription';
 
 /**
  * Extracts all Ordinal inscriptions from a Bitcoin transaction.
@@ -162,17 +171,17 @@ export class InscriptionParserService {
         },
 
         getPointer: (): number | undefined => {
-          const pointerRaw = getKnownFieldValue(fields, knownFields.pointer)
+          const pointerRaw = getKnownFieldValue(fields, knownFields.pointer);
           return extractPointer(pointerRaw);
         },
 
-        getParent: (): string | undefined => {
-          const parentRaw = getKnownFieldValue(fields, knownFields.parent)
-          return extractParent(parentRaw);
+        getParents: (): string[] => {
+          const parentsRaw = getKnownFieldValues(fields, knownFields.parent);
+          return parentsRaw.map(parentRaw => extractParent(parentRaw));
         },
 
         getMetadata: (): string | undefined => {
-          const metadataRaw = getKnownFieldValue(fields, knownFields.metadata)
+          const metadataRaw = getKnownFieldValue(fields, knownFields.metadata);
 
           if (!metadataRaw) {
             return undefined;

@@ -44,7 +44,7 @@ export function readPushdata(raw: Uint8Array, pointer: number): [Uint8Array, num
     case OP_PUSHDATA2: numBytes = 2; break;
     case OP_PUSHDATA4: numBytes = 4; break;
     default:
-      throw new Error(`Invalid push opcode ${opcode.toString(16)} at position ${pointer}`);
+      throw new Error(`Invalid push opcode ${ opcode } at position ${pointer}`);
   }
 
   let [dataSizeArray, nextPointer] = readBytes(raw, newPointer, numBytes);
