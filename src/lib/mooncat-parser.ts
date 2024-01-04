@@ -31,6 +31,13 @@ export class MooncatParser {
   /**
    * Parses the MoonCat design based on the given transaction ID.
    *
+   * Note:
+   * In the original Mooncat algorithm, the first byte was used as a boolean
+   * flag to toggle between genesis status and normal cat status.
+   * However, I hereby define that every cat gets the 'genesis' status if its
+   * transaction ID starts with exactly the ID 98 (hex), which corresponds to
+   * 152 in decimal. This is because the very first CAT-21 had that ID.
+   *
    * @param catId - The transaction ID.
    * @returns MoonCat design as a 2D array.
    */
@@ -39,11 +46,14 @@ export class MooncatParser {
       catId = catId.slice(2);
     }
     const bytes = hexToBytes(catId);
-    const genesis = bytes[0],
-      k = bytes[1],
-      r = bytes[2],
-      g = bytes[3],
-      b = bytes[4];
+
+    // const genesis = bytes[0]; // old logic, which assumed that this is boolean
+    const genesis = bytes[0] === 152; // new CAT-21 logic!
+
+    const k = bytes[1];
+    const r = bytes[2];
+    const g = bytes[3];
+    const b = bytes[4];
 
     const invert = k >= 128;
     const designIndex = k % 128;
@@ -78,17 +88,15 @@ export class MooncatParser {
    */
   public static generateMoonCatSvg(catId: string, size: number = 10): string {
     const data = MooncatParser.parse(catId);
-    // const width = size * data[0].length;
-    // const height = size * data.length;
 
     let svgContent = '';
     for (let i = 0; i < data.length; i++) {
-        for (let j = 0; j < data[i].length; j++) {
-            const color = data[i][j];
-            if (color) {
-                svgContent += `<rect x="${i * size}" y="${j * size}" width="${size}" height="${size}" fill="${color}" />\n`;
-            }
+      for (let j = 0; j < data[i].length; j++) {
+        const color = data[i][j];
+        if (color) {
+          svgContent += `<rect x="${i * size}" y="${j * size}" width="${size}" height="${size}" fill="${color}" />\n`;
         }
+      }
     }
 
     return `<svg xmlns="http://www.w3.org/2000/svg">\n${svgContent}</svg>`;
