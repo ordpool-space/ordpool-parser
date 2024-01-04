@@ -68,6 +68,9 @@ export class MooncatParser {
       }
     } else {
       colors = derivePalette(r, g, b, invert);
+
+      // new CAT-21 logic, remove all background pixels
+      colors[0] = null;
     }
 
     return design.map(row => {
