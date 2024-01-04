@@ -1,5 +1,6 @@
 import { Cat21ParserService } from "./cat21-parser.service";
 import { readTransaction } from "./test.helper";
+import fs from 'fs';
 
 describe('Cat21ParserService', () => {
 
@@ -33,6 +34,8 @@ describe('Cat21ParserService', () => {
     const parsedCat = Cat21ParserService.parseCat(txn);
     expect(parsedCat?.getImage()).toContain('<svg');
 
-    console.log(parsedCat?.getImage());
+    fs.writeFileSync('testdist/genesis-cat.svg', parsedCat?.getImage() || '');
+
+    // console.log(parsedCat?.getImage());
   });
 });
