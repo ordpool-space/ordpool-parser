@@ -6,7 +6,7 @@ export interface ParsedCat {
   catId: string;
 
   /**
-   * Returns the cat image (base64 encoded)
+   * Returns the cat SVG image
    */
   getImage: () => string;
 }
