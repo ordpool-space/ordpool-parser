@@ -83,22 +83,26 @@ export class MooncatParser {
    * The size of each rectangle (pixel) can be controlled by the 'size' parameter.
    *
    * @param catId - The unique identifier of the MoonCat (transaction ID).
-   * @param The size of each pixel in the SVG. Defaults to 10.
    * @returns A string containing the SVG markup of the MoonCat.
    */
-  public static generateMoonCatSvg(catId: string, size: number = 10): string {
+  public static generateMoonCatSvg(catId: string): string {
+
+    const size = 1;
     const data = MooncatParser.parse(catId);
+    const width = size * data.length;
+    const height = size * data[0].length;
 
     let svgContent = '';
     for (let i = 0; i < data.length; i++) {
       for (let j = 0; j < data[i].length; j++) {
         const color = data[i][j];
         if (color) {
-          svgContent += `<rect x="${i * size}" y="${j * size}" width="${size}" height="${size}" fill="${color}" />\n`;
+          // the stroke is supposed to remove the thin border that shows up when rendering in a browser
+          svgContent += `<rect x="${i * size}" y="${j * size}" width="${size}" height="${size}" fill="${color}" stroke="${color}" stroke-width="0.05" />\n`;
         }
       }
     }
 
-    return `<svg xmlns="http://www.w3.org/2000/svg">\n${svgContent}</svg>`;
+    return `<svg viewBox="0 0 ${width * size} ${height * size}" xmlns="http://www.w3.org/2000/svg">\n${svgContent}</svg>`;
   }
 }
