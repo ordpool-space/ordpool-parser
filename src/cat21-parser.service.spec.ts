@@ -58,7 +58,9 @@ describe('Cat21ParserService', () => {
       svg {
         max-width: 100px;
         max-height: 100px;
-        border: 1px solid white;
+        border: 1px solid silver;
+        display: block;
+        float: left;
       }
     </style>
   </head>

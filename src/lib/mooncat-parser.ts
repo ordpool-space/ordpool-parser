@@ -78,29 +78,34 @@ export class MooncatParser {
    *
    * This function parses the MoonCat design from the catId and constructs an SVG
    * image, where each pixel of the MoonCat design is represented as an SVG rectangle.
-   * The size of each rectangle (pixel) can be controlled by the 'size' parameter.
    *
    * @param catId - The unique identifier of the MoonCat (transaction ID).
    * @returns A string containing the SVG markup of the MoonCat.
    */
   public static generateMoonCatSvg(catId: string): string {
 
-    const size = 1;
     const data = MooncatParser.parse(catId);
-    const width = size * data.length;
-    const height = size * data[0].length;
+    const gridWidth = 22;
+    const gridHeight = 22;
+    const catWidth = data.length;
+    const catHeight = data[0].length;
+
+    // Calculate x-offset to center the cat
+    const xOffset = Math.floor((gridWidth - catWidth) / 2);
+
+    // Calculate the y-offset to align the cat at the bottom of the 22x22 grid
+    const yOffset = gridHeight - catHeight;
 
     let svgContent = '';
-    for (let i = 0; i < data.length; i++) {
-      for (let j = 0; j < data[i].length; j++) {
+    for (let i = 0; i < catWidth; i++) {
+      for (let j = 0; j < catHeight; j++) {
         const color = data[i][j];
         if (color) {
-          // the stroke is supposed to remove the thin border that shows up when rendering in a browser
-          svgContent += `<rect x="${i * size}" y="${j * size}" width="${size}" height="${size}" fill="${color}" stroke="${color}" stroke-width="0.05" />\n`;
+          svgContent += `<rect x="${i + xOffset}" y="${j + yOffset}" width="1" height="1" fill="${color}" stroke="${color}" stroke-width="0.05" />\n`;
         }
       }
     }
 
-    return `<svg viewBox="0 0 ${width * size} ${height * size}" xmlns="http://www.w3.org/2000/svg">\n${svgContent}</svg>`;
+    return `<svg viewBox="0 0 ${gridWidth} ${gridHeight}" xmlns="http://www.w3.org/2000/svg">\n${svgContent}</svg>`;
   }
 }
