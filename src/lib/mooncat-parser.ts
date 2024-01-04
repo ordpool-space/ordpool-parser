@@ -42,9 +42,7 @@ export class MooncatParser {
    * @returns MoonCat design as a 2D array.
    */
   public static parse(catId: string): (string | null)[][] {
-    if (catId.slice(0, 2) === "0x") {
-      catId = catId.slice(2);
-    }
+
     const bytes = hexToBytes(catId);
 
     // const genesis = bytes[0]; // old logic, which assumed that this is boolean
@@ -68,9 +66,6 @@ export class MooncatParser {
       }
     } else {
       colors = derivePalette(r, g, b, invert);
-
-      // new CAT-21 logic, remove all background pixels
-      colors[0] = null;
     }
 
     return design.map(row => {

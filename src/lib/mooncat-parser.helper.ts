@@ -1,5 +1,3 @@
-import { designs } from "./mooncat-parser.designs";
-
 /*
 ORIGINAL LICENSE
 
@@ -21,29 +19,38 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
  * @returns The HSL representation.
  */
 export function RGBToHSL(r: number, g: number, b: number): [number, number, number] {
-  r /= 255, g /= 255, b /= 255;
-  let max = Math.max(r, g, b), min = Math.min(r, g, b);
-  let h = 0, s, l = (max + min) / 2;
+  // if (Array.isArray(r)) {
+  //   g = r[1];
+  //   b = r[2];
+  //   r = r[0];
+  // }
+  var r = r / 255;
+  var g = g / 255;
+  var b = b / 255;
+  var cMax = Math.max(r, g, b);
+  var cMin = Math.min(r, g, b);
+  var delta = cMax - cMin;
+  if (delta == 0) {
+    var h = 0;
+  } else if (cMax == r) {
+    var h = 60 * (((g - b) / delta) % 6);
+  } else if (cMax == g) {
+    var h = 60 * ((b - r) / delta + 2);
+  } else if (cMax == b) {
+    var h = 60 * ((r - g) / delta + 4);
+  }
+  if (h! < 0) {
+    h! += 360;
+  }
+  var l = (cMax + cMin) / 2;
 
-  if (max == min) {
-    h = s = 0; // achromatic
+  if (delta == 0) {
+    var s = 0;
   } else {
-    let d = max - min;
-    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-    if (max == r) {
-      h = (g - b) / d + (g < b ? 6 : 0);
-    } else if (max == g) {
-      h = (b - r) / d + 2;
-    } else if (max == b) {
-      h = (r - g) / d + 4;
-    }
-    h /= 6;
+    var s = delta / (1 - Math.abs(2 * l - 1));
   }
 
-  if (h < 0) {
-    h = 360 + h;
-  }
-  return [h, s, l];
+  return [h!, s, l]
 }
 
 /**
@@ -54,28 +61,43 @@ export function RGBToHSL(r: number, g: number, b: number): [number, number, numb
  * @returns The RGB representation.
  */
 export function HSLToRGB(h: number, s: number, l: number): [number, number, number] {
-  let r: number, g: number, b: number;
-
-  if (s == 0) {
-    r = g = b = l; // achromatic
-  } else {
-    const hue2rgb = (p: number, q: number, t: number): number => {
-      if (t < 0) t += 1;
-      if (t > 1) t -= 1;
-      if (t < 1 / 6) return p + (q - p) * 6 * t;
-      if (t < 1 / 2) return q;
-      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
-      return p;
-    };
-
-    let q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-    let p = 2 * l - q;
-    r = hue2rgb(p, q, h + 1 / 3);
-    g = hue2rgb(p, q, h);
-    b = hue2rgb(p, q, h - 1 / 3);
+  // if (Array.isArray(h)) {
+  //   s = h[1];
+  //   l = h[2];
+  //   h = h[0];
+  // }
+  var c = (1 - Math.abs(2 * l - 1)) * s;
+  var x = c * (1 - Math.abs((h / 60) % 2 - 1));
+  var m = l - c / 2;
+  if (h >= 0 && h < 60) {
+    var r = c,
+      g = x,
+      b = 0;
+  } else if (h >= 60 && h < 120) {
+    var r = x,
+      g = c,
+      b = 0;
+  } else if (h >= 120 && h < 180) {
+    var r = 0,
+      g = c,
+      b = x;
+  } else if (h >= 180 && h < 240) {
+    var r = 0,
+      g = x,
+      b = c;
+  } else if (h >= 240 && h < 300) {
+    var r = x,
+      g = 0,
+      b = c;
+  } else if (h >= 300 && h < 360) {
+    var r = c,
+      g = 0,
+      b = x;
   }
-
-  return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+  r = Math.round((r! + m) * 255);
+  g = Math.round((g! + m) * 255);
+  b = Math.round((b! + m) * 255);
+  return [r, g, b];
 }
 
 /**
@@ -83,11 +105,11 @@ export function HSLToRGB(h: number, s: number, l: number): [number, number, numb
  * @param arr - RGB array.
  * @returns The hex color string.
  */
-export function RGBToHex(rgb: [number, number, number]): string {
-  return '#' + rgb.map(x => {
-    const hex = x.toString(16);
-    return hex.length === 1 ? '0' + hex : hex;
-  }).join('');
+export function RGBToHex(arr: [number, number, number]): string {
+  var r = arr[0],
+    g = arr[1],
+    b = arr[2];
+  return "#" + ("0" + r.toString(16)).slice(-2) + ("0" + g.toString(16)).slice(-2) + ("0" + b.toString(16)).slice(-2);
 }
 
 /**
@@ -99,25 +121,36 @@ export function RGBToHex(rgb: [number, number, number]): string {
  * @returns An array of hex color strings.
  */
 export function derivePalette(r: number, g: number, b: number, invert: boolean): (string | null)[] {
-  const hsl = RGBToHSL(r, g, b);
-  const [h, s, l] = hsl;
-  const hx = h % 360;
-  const hy = (h + 320) % 360;
+  var hsl = RGBToHSL(r, g, b);
 
-  const c1 = HSLToRGB(hx, 1, 0.1);
-  const c2 = HSLToRGB(hx, 1, 0.2);
-  const c3 = HSLToRGB(hx, 1, 0.45);
-  const c4 = HSLToRGB(hx, 1, 0.7);
-  const c5 = HSLToRGB(hy, 1, 0.8);
+  var h = hsl[0];
+  // var s = hsl[1];
+  // var l = hsl[2];
+  var hx = h % 360;
+  var hy = (h + 320) % 360;
 
-  let palette;
+  var c1 = HSLToRGB(hx, 1, 0.1);
   if (invert) {
-    palette = [c4, c5, c2, c3, c1];
+    var c4 = HSLToRGB(hx, 1, 0.2);
+    var c5 = HSLToRGB(hx, 1, 0.45);
+    var c2 = HSLToRGB(hx, 1, 0.7);
+    var c3 = HSLToRGB(hy, 1, 0.8);
   } else {
-    palette = [c1, c2, c3, c4, c5];
+    var c2 = HSLToRGB(hx, 1, 0.2);
+    var c3 = HSLToRGB(hx, 1, 0.45);
+    var c4 = HSLToRGB(hx, 1, 0.7);
+    var c5 = HSLToRGB(hy, 1, 0.8);
+
   }
 
-  return palette.map(color => RGBToHex(color));
+  return [
+    null,
+    RGBToHex(c1),
+    RGBToHex(c2),
+    RGBToHex(c3),
+    RGBToHex(c4),
+    RGBToHex(c5)
+  ];
 }
 
 /**
@@ -126,9 +159,9 @@ export function derivePalette(r: number, g: number, b: number, invert: boolean):
  * @returns {number[]} - The array of bytes.
  */
 export function hexToBytes(hex: string): number[] {
-  const bytes: number[] = [];
-  for (let i = 0; i < hex.length; i += 2) {
-    bytes.push(parseInt(hex.substr(i, 2), 16));
+  var result = []
+  for (var i = 0; i < hex.length; i += 2) {
+    result.push(parseInt(hex.slice(i, i + 2), 16));
   }
-  return bytes;
+  return result;
 }
