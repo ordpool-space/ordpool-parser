@@ -26,11 +26,6 @@ describe('Cat21ParserService', () => {
     expect(Cat21ParserService.parseCat(txn)).toBeNull();
   });
 
-  it('should return null for transactions that are not payments to a pay-to-taproot (P2TR) address', () => {
-    const txn = { ...baseTxn, vout: [{ scriptpubkey_address: 'invalidAddress' }] };
-    expect(Cat21ParserService.parseCat(txn)).toBeNull();
-  });
-
   it('should render the Genesis cat!', () => {
 
     const txn = readTransaction('98316dcb21daaa221865208fe0323616ee6dd84e6020b78bc6908e914ac03892');

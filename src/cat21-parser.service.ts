@@ -42,22 +42,6 @@ export class Cat21ParserService {
       return false;
     }
 
-    return this.isPaymentToTaprootAddress(transaction);
-  }
-
-  /**
-   * Checks if a transaction is a payment to a pay-to-taproot (P2TR) address.
-   *
-   * @param transaction - The transaction to check.
-   * @returns True if the transaction is a Taproot transaction, false otherwise.
-   */
-  private static isPaymentToTaprootAddress(transaction: {
-    vout: { scriptpubkey_address: string }[]
-  }): boolean {
-
-    // Check if first vout address is a Taproot (P2TR) address
-    const taprootAddressPrefixes = ['bc1p', 'bcrt', 'tb1'];
-    const address = transaction.vout[0].scriptpubkey_address;
-    return taprootAddressPrefixes.some(prefix => address.startsWith(prefix));
+    return true;
   }
 }
