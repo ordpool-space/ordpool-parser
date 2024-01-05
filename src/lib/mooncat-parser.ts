@@ -1,5 +1,5 @@
 import { hexToBytes } from "./conversions";
-import { designs } from "./mooncat-parser.designs";
+import { designs, laser_designs } from "./mooncat-parser.designs";
 import { derivePalette } from "./mooncat-parser.helper";
 
 /*
@@ -53,16 +53,23 @@ export class MooncatParser {
     const g = bytes[3];
     const b = bytes[4];
 
+    const laser = bytes[5] >= 224 && bytes[5] < 240; // 6.25% chance of laser eyes
     const invert = k >= 128;
     const designIndex = k % 128;
-    const design = designs[designIndex].split(".");
+
+    let design;
+    if (laser) {
+      design = laser_designs[designIndex].split(".");
+    } else {
+      design = designs[designIndex].split(".");
+    }
     let colors: (string | null)[];
 
     if (genesis) {
       if (designIndex % 2 === 0 && invert || designIndex % 2 === 1 && !invert) {
-        colors = [null, "#555555", "#d3d3d3", "#ffffff", "#aaaaaa", "#ff9999"];
+        colors = [null, "#555555", "#d3d3d3", "#ffffff", "#aaaaaa", "#ff9999", "#ffac1c", "#ff0000"];
       } else {
-        colors = [null, "#555555", "#222222", "#111111", "#bbbbbb", "#ff9999"];
+        colors = [null, "#555555", "#222222", "#111111", "#bbbbbb", "#ff9999", "#ffac1c", "#ff0000"];
       }
     } else {
       colors = derivePalette(r, g, b, invert);
