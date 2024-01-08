@@ -10,11 +10,17 @@ export const OP_FALSE = 0x00;
 export const OP_IF = 0x63;
 export const OP_0 = 0x00;
 
-export const OP_PUSHBYTES_3 = 0x03; // not an actual opcode, but used in documentation --> pushes the next 3 bytes onto the stack.
-export const OP_PUSHDATA1 = 0x4c; // The next byte contains the number of bytes to be pushed onto the stack.
-export const OP_PUSHDATA2 = 0x4d; // The next two bytes contain the number of bytes to be pushed onto the stack in little endian order.
-export const OP_PUSHDATA4 = 0x4e; // The next four bytes contain the number of bytes to be pushed onto the stack in little endian order.
-export const OP_ENDIF = 0x68; // Ends an if/else block.
+export const OP_PUSHBYTES_3 = 0x03; //  3 -- not an actual opcode, but used in documentation --> pushes the next 3 bytes onto the stack.
+export const OP_PUSHDATA1 = 0x4c;   // 76 -- The next byte contains the number of bytes to be pushed onto the stack.
+export const OP_PUSHDATA2 = 0x4d;   // 77 -- The next two bytes contain the number of bytes to be pushed onto the stack in little endian order.
+export const OP_PUSHDATA4 = 0x4e;   // 78 -- The next four bytes contain the number of bytes to be pushed onto the stack in little endian order.
+export const OP_ENDIF = 0x68;       // 104 -- Ends an if/else block.
+
+export const OP_1NEGATE = 0x4f;            // 79 -- The number -1 is pushed onto the stack.
+export const OP_RESERVED = 0x50;           // 80 -- Transaction is invalid unless occuring in an unexecuted OP_IF branch
+export const OP_PUSHNUM_1 = 0x51;          // 81 -- also known as OP_1
+// OP_PUSHNUM_2 to OP_PUSHNUM_15 would be here
+export const OP_PUSHNUM_16 = 0x60;         // 96 -- also known as OP_16
 
 /**
  * Inscriptions may include fields before an optional body. Each field consists of two data pushes, a tag and a value.
