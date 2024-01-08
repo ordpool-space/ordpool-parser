@@ -1,4 +1,4 @@
-import { MooncatParser } from "./lib/mooncat-parser";
+import { CatTraits, MooncatParser } from "./lib/mooncat-parser";
 import { ParsedCat } from "./parsed-cat";
 
 /**
@@ -14,13 +14,31 @@ export class Cat21ParserService {
    */
   static parseCat(transaction: {
     txid: string,
-    locktime: number,
-    vout: { scriptpubkey_address: string }[]
+    locktime: number
   }): ParsedCat | null {
     if (this.isValidCat21Transaction(transaction)) {
+
+      let svgAndTraits: { svg: string; traits: CatTraits; } | null = null;
+
       return {
         catId: transaction.txid,
-        getImage: () => MooncatParser.generateMoonCatSvg(transaction.txid)
+        getImage: () => {
+
+          if (!svgAndTraits) {
+            svgAndTraits = MooncatParser.generateMoonCatSvg(transaction.txid);
+          }
+
+          return svgAndTraits.svg
+        },
+
+        getTraits: () => {
+
+          if (!svgAndTraits) {
+            svgAndTraits = MooncatParser.generateMoonCatSvg(transaction.txid);
+          }
+
+          return svgAndTraits.traits
+        }
       };
     }
     return null;
@@ -33,8 +51,7 @@ export class Cat21ParserService {
    * @returns True if the transaction is a valid CAT-21 transaction, false otherwise.
    */
   private static isValidCat21Transaction(transaction: {
-    locktime: number,
-    vout: { scriptpubkey_address: string }[]
+    locktime: number
   }): boolean {
 
     // nLockTime must be 21
