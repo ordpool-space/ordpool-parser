@@ -45,7 +45,7 @@ describe('Cat21ParserService', () => {
     expect(Cat21ParserService.parseCat(txn)).toBeNull();
   });
 
-  it.skip('should render the Genesis cat!', () => {
+  it('should render the Genesis cat!', () => {
 
     const txn = readTransaction('98316dcb21daaa221865208fe0323616ee6dd84e6020b78bc6908e914ac03892');
     const parsedCat = Cat21ParserService.parseCat(txn);
