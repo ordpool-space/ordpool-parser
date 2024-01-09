@@ -1,4 +1,4 @@
-import { OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4 } from "../inscription-parser.service.helper";
+import { OP_1NEGATE, OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4, OP_PUSHNUM_1, OP_PUSHNUM_16, OP_RESERVED } from "../inscription-parser.service.helper";
 
 import { littleEndianBytesToNumber } from "./conversions";
 
@@ -17,9 +17,7 @@ export function readBytes(raw: Uint8Array, pointer: number, n: number): [Uint8Ar
 
 /**
  * Reads data based on the Bitcoin script push opcode starting from a specified pointer in the raw data.
- *
- * This function handles different opcodes (OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4)
- * and the direct push (where the opcode itself signifies the number of bytes to push).
+ * Handles different opcodes and direct push (where the opcode itself signifies the number of bytes to push).
  *
  * @param raw - The raw transaction data as a Uint8Array.
  * @param pointer - The current position in the raw data array.
@@ -30,10 +28,22 @@ export function readPushdata(raw: Uint8Array, pointer: number): [Uint8Array, num
   let [opcodeSlice, newPointer] = readBytes(raw, pointer, 1);
   const opcode = opcodeSlice[0];
 
-  // Opcodes from 0x01 to 0x4b (decimal values 1 to 75) are special opcodes that indicate a data push is happening.
-  // Specifically, they indicate the number of bytes to be pushed onto the stack.
-  // This checks if the current opcode represents a direct data push of 1 to 75 bytes.
-  // If this condition is true, then read the next opcode number of bytes and treat them as data
+  // Handle the special case of OP_1NEGATE (-1)
+  if (opcode === OP_1NEGATE) {
+    // OP_1NEGATE pushes the value -1 onto the stack, represented as 0x81 in Bitcoin Script
+    return [new Uint8Array([0x81]), newPointer];
+  }
+
+  // Handle minimal push numbers OP_PUSHNUM_1 (0x51) to OP_PUSHNUM_16 (0x60)
+  // which are used to push the values 0x01 (decimal 1) through 0x10 (decimal 16) onto the stack.
+  // To get the value, we can subtract OP_RESERVED (0x50) from the opcode to get the value to be pushed.
+  if (opcode >= OP_PUSHNUM_1 && opcode <= OP_PUSHNUM_16) {
+    // Convert opcode to corresponding byte value
+    const byteValue = opcode - OP_RESERVED;
+    return [Uint8Array.from([byteValue]), newPointer];
+  }
+
+  // Handle direct push of 1 to 75 bytes (OP_PUSHBYTES_1 to OP_PUSHBYTES_75)
   if (1 <= opcode && opcode <= 75) {
     return readBytes(raw, newPointer, opcode);
   }
@@ -44,7 +54,7 @@ export function readPushdata(raw: Uint8Array, pointer: number): [Uint8Array, num
     case OP_PUSHDATA2: numBytes = 2; break;
     case OP_PUSHDATA4: numBytes = 4; break;
     default:
-      throw new Error(`Invalid push opcode ${opcode.toString(16)} at position ${pointer}`);
+      throw new Error(`Invalid push opcode ${ opcode } at position ${pointer}`);
   }
 
   let [dataSizeArray, nextPointer] = readBytes(raw, newPointer, numBytes);

@@ -10,11 +10,17 @@ export const OP_FALSE = 0x00;
 export const OP_IF = 0x63;
 export const OP_0 = 0x00;
 
-export const OP_PUSHBYTES_3 = 0x03; // not an actual opcode, but used in documentation --> pushes the next 3 bytes onto the stack.
-export const OP_PUSHDATA1 = 0x4c; // The next byte contains the number of bytes to be pushed onto the stack.
-export const OP_PUSHDATA2 = 0x4d; // The next two bytes contain the number of bytes to be pushed onto the stack in little endian order.
-export const OP_PUSHDATA4 = 0x4e; // The next four bytes contain the number of bytes to be pushed onto the stack in little endian order.
-export const OP_ENDIF = 0x68; // Ends an if/else block.
+export const OP_PUSHBYTES_3 = 0x03; //  3 -- not an actual opcode, but used in documentation --> pushes the next 3 bytes onto the stack.
+export const OP_PUSHDATA1 = 0x4c;   // 76 -- The next byte contains the number of bytes to be pushed onto the stack.
+export const OP_PUSHDATA2 = 0x4d;   // 77 -- The next two bytes contain the number of bytes to be pushed onto the stack in little endian order.
+export const OP_PUSHDATA4 = 0x4e;   // 78 -- The next four bytes contain the number of bytes to be pushed onto the stack in little endian order.
+export const OP_ENDIF = 0x68;       // 104 -- Ends an if/else block.
+
+export const OP_1NEGATE = 0x4f;            // 79 -- The number -1 is pushed onto the stack.
+export const OP_RESERVED = 0x50;           // 80 -- Transaction is invalid unless occuring in an unexecuted OP_IF branch
+export const OP_PUSHNUM_1 = 0x51;          // 81 -- also known as OP_1
+// OP_PUSHNUM_2 to OP_PUSHNUM_15 would be here
+export const OP_PUSHNUM_16 = 0x60;         // 96 -- also known as OP_16
 
 /**
  * Inscriptions may include fields before an optional body. Each field consists of two data pushes, a tag and a value.
@@ -40,10 +46,17 @@ export const knownFields = {
   content_encoding: 0x09
 }
 
-export function getKnownFieldValue(fields: { tag: Uint8Array; value: Uint8Array }[], field: number) {
+/**
+ * Retrieves the value for a given field from an array of field objects.
+ * It returns the value of the first object where the tag matches the specified field.
+ *
+ * @param fields - An array of objects containing tag and value properties.
+ * @param field - The field number to search for.
+ * @returns The value associated with the first matching field, or undefined if no match is found.
+ */
+export function getKnownFieldValue(fields: { tag: number; value: Uint8Array }[], field: number): Uint8Array | undefined {
   const knownField = fields.find(x =>
-    x.tag.length === 1 &&
-    x.tag[0] === field);
+    x.tag === field);
 
   if (knownField === undefined) {
     return undefined;
@@ -52,6 +65,21 @@ export function getKnownFieldValue(fields: { tag: Uint8Array; value: Uint8Array 
   return knownField.value;
 }
 
+/**
+ * Retrieves the values for a given field from an array of field objects.
+ * It returns the values of all objects where the tag matches the specified field.
+ *
+ * @param fields - An array of objects containing tag and value properties.
+ * @param field - The field number to search for.
+ * @returns An array of Uint8Array values associated with the matching fields. If no matches are found, an empty array is returned.
+ */
+export function getKnownFieldValues(fields: { tag: number; value: Uint8Array }[], field: number): Uint8Array[] {
+  const knownFields = fields.filter(x =>
+    x.tag === field
+  );
+
+  return knownFields.map(field => field.value);
+}
 
 /**
  * Searches for the next position of the ordinal inscription mark (0063036f7264)
@@ -151,19 +179,17 @@ export function brotliDecodeUint8Array(bytes: Uint8Array): Uint8Array {
     }
     throw error;
   }
-}/**
+}
+
+/**
  * Extracts the parent inscription ID from a field in an inscription.
  * The parent field value consists of a 32-byte transaction ID (TXID) followed by a four-byte little-endian index.
  * The TXID part is reversed in order, and trailing zeroes are omitted.
  *
  * @param parentField - The field containing the parent inscription data.
- * @returns The parent inscription ID as a string, or undefined if the parent field is not provided.
+ * @returns The parent inscription ID as a string.
  */
-export function extractParent(value: Uint8Array | undefined): string | undefined {
-
-  if (value === undefined) {
-    return undefined;
-  }
+export function extractParent(value: Uint8Array): string {
 
   // Reverse the TXID part and convert it to hexadecimal
   const txId = value.slice(0, 32).reverse();

@@ -4,7 +4,7 @@ export interface ParsedInscription {
 
   contentType: string;
 
-  fields: { tag: Uint8Array; value: Uint8Array }[];
+  fields: { tag: number; value: Uint8Array }[];
 
   /**
    * UTF-8 encoded string (not intended for binary content like images or videos)
@@ -31,11 +31,11 @@ export interface ParsedInscription {
   getPointer: () => number | undefined;
 
   /**
-   * Get Parent inscription, from tag 3
+   * Get Parent inscription(s), from tag 3
    * see provenance docs: https://docs.ordinals.com/inscriptions/provenance.html
    * OWNERSHIP OF THE PARENT IS NOT VALIDATED!
    */
-  getParent: () => string | undefined;
+  getParents: () => string[];
 
   /**
    * Get Metadata, from tag 5
