@@ -2,9 +2,11 @@ import { Arc4 } from "./lib/arc4";
 import { bigEndianBytesToNumber, unicodeStringToBytes } from "./lib/conversions";
 import { bytesToUnicodeString } from './lib/conversions';
 import { extractPubkeys } from './src20-parser.service.helper';
+import { DigitalArtifactType } from "./types/digital-artifact";
+import { ParsedSrc20 } from "./types/parsed-src20";
 
 /**
- * Decodes a SRC-20 Bitcoin Transaction
+ * Service to parse SRC-20 Bitcoin Transactions.
  *
  * The full offical specification can be found here:
  * https://github.com/hydren-crypto/stampchain/blob/main/docs/src20.md#src-20-btc-transaction-specifications
@@ -31,54 +33,64 @@ import { extractPubkeys } from './src20-parser.service.helper';
  *    00457374616d703a7b2270223a227372632d3230222c226f70223a227472616e73666572222c227469636b223a225354455645222c22616d74223a22313030303030303030227d0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
  *    which is decoded: --> stamp:{"p":"src-20","op":"transfer","tick":"STEVE","amt":"100000000"}
  */
-export function decodeSrc20Transaction(transaction: {
-  vin: { txid: string }[];
-  vout: {
-    scriptpubkey: string,
-    scriptpubkey_type: string
-  }[];
-}): string | null {
+export class Src20ParserService {
 
-  try {
-    // 1. The transaction ID is the ARC4 key
-    const arc4Key = Buffer.from(transaction.vin[0].txid, 'hex');
+  static parseSrc20Transaction(transaction: {
+    txid: string;
+    vin: { txid: string }[];
+    vout: {
+      scriptpubkey: string,
+      scriptpubkey_type: string
+    }[];
+  }): ParsedSrc20 | null {
 
-    const concatenatedPubkeys = transaction.vout
-      // 2. Extract the first two pubkeys from multisig scripts
-      .filter(vout => vout.scriptpubkey_type === 'multisig')
-      .map(vout => {
-        const pubkeys = extractPubkeys(vout.scriptpubkey);
-        return [pubkeys[0], pubkeys[1]];
-      })
-      .flat()
-      // 3. We strip the sign and nonce bytes (first and last bytes from each string)
-      .map(key => key.substring(2, 64))
-      .join('');
+    try {
+      // 1. The transaction ID is the ARC4 key
+      const arc4Key = Buffer.from(transaction.vin[0].txid, 'hex');
 
-    // 4. Decrypt using RC4
-    const cipher = new Arc4(arc4Key);
-    const decryptedStr = cipher.decodeString(concatenatedPubkeys);
+      const concatenatedPubkeys = transaction.vout
+        // 2. Extract the first two pubkeys from multisig scripts
+        .filter(vout => vout.scriptpubkey_type === 'multisig')
+        .map(vout => {
+          const pubkeys = extractPubkeys(vout.scriptpubkey);
+          return [pubkeys[0], pubkeys[1]];
+        })
+        .flat()
+        // 3. We strip the sign and nonce bytes (first and last bytes from each string)
+        .map(key => key.substring(2, 64))
+        .join('');
 
-    // This is finally in hex:
-    // 00457374616d703a7b2270223a227372632d3230222c226f70223a227472616e73666572222c227469636b223a225354455645222c22616d74223a22313030303030303030227d0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-    const decrypted = unicodeStringToBytes(decryptedStr);
+      // 4. Decrypt using RC4
+      const cipher = new Arc4(arc4Key);
+      const decryptedStr = cipher.decodeString(concatenatedPubkeys);
 
-    // Extract the first two bytes to determine the length
-    // The first two bytes, is the expected length of the decoded data in hex
-    // (less any trailing zeros) for data validation.
-    const expectedLength = bigEndianBytesToNumber(decrypted.slice(0, 2));
+      // This is finally in hex:
+      // 00457374616d703a7b2270223a227372632d3230222c226f70223a227472616e73666572222c227469636b223a225354455645222c22616d74223a22313030303030303030227d0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+      const decrypted = unicodeStringToBytes(decryptedStr);
 
-    const data = decrypted.slice(2, 2 + expectedLength);
+      // Extract the first two bytes to determine the length
+      // The first two bytes, is the expected length of the decoded data in hex
+      // (less any trailing zeros) for data validation.
+      const expectedLength = bigEndianBytesToNumber(decrypted.slice(0, 2));
 
-    const result = bytesToUnicodeString(data);
-    if (!result || !result.includes('stamp:')) {
+      const data = decrypted.slice(2, 2 + expectedLength);
+
+      const result = bytesToUnicodeString(data);
+      if (!result || !result.includes('stamp:')) {
+        return null;
+      }
+
+      const content = result.replace('stamp:', '');
+
+      return {
+        type: DigitalArtifactType.Src20,
+        transactionId: transaction.txid,
+        getContent: () => content
+      }
+
+    } catch(error) {
+      console.log(error);
       return null;
     }
-
-    return result.replace('stamp:', '');
-
-  } catch(error) {
-    console.log(error);
-    return null;
   }
 }

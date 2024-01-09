@@ -1,4 +1,6 @@
-export interface ParsedInscription {
+import { DigitalArtifact } from "./digital-artifact";
+
+export interface ParsedInscription extends DigitalArtifact {
 
   inscriptionId: string;
 
@@ -7,33 +9,29 @@ export interface ParsedInscription {
   fields: { tag: number; value: Uint8Array }[];
 
   /**
-   * UTF-8 encoded string (not intended for binary content like images or videos)
+   * Data as UTF-8 encoded string (not intended for binary content like images or videos)
    */
-  getContentString: () => string;
+  getContent: () => string;
 
   /**
-   * Only the content (base64 encoded)
+   * The raw data (base64 encoded)
    */
   getData: () => string;
 
   /**
-   * Base64 encoded data URI that can be displayed in an iframe
+   * The raw Base64 encoded data as an URI that can be displayed in an iframe
    */
   getDataUri: () => string;
 
   /**
    * Get Pointer, from tag 2
    * see pointer docs: https://docs.ordinals.com/inscriptions/pointer.html
-   *
-   * TODO: The pointer is not displayed anywhere on ordinals.com,
-   * so I have no indication of whether these numbers are really correct
    */
   getPointer: () => number | undefined;
 
   /**
    * Get Parent inscription(s), from tag 3
    * see provenance docs: https://docs.ordinals.com/inscriptions/provenance.html
-   * OWNERSHIP OF THE PARENT IS NOT VALIDATED!
    */
   getParents: () => string[];
 

@@ -1,5 +1,6 @@
 import { CatTraits, MooncatParser } from "./lib/mooncat-parser";
-import { ParsedCat } from "./parsed-cat";
+import { DigitalArtifactType } from "./types/digital-artifact";
+import { ParsedCat21 } from "./types/parsed-cat21";
 
 /**
  * Service to parse CAT-21 transactions.
@@ -15,13 +16,16 @@ export class Cat21ParserService {
   static parseCat(transaction: {
     txid: string,
     locktime: number
-  }): ParsedCat | null {
+  }): ParsedCat21 | null {
     if (this.isValidCat21Transaction(transaction)) {
 
       let svgAndTraits: { svg: string; traits: CatTraits; } | null = null;
 
       return {
-        catId: transaction.txid,
+
+        type: DigitalArtifactType.Cat21,
+        transactionId: transaction.txid,
+
         getImage: () => {
 
           if (!svgAndTraits) {

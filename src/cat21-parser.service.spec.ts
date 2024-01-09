@@ -36,7 +36,7 @@ describe('Cat21ParserService', () => {
     const txn = { ...baseTxn };
     const parsedCat = Cat21ParserService.parseCat(txn);
     expect(parsedCat).not.toBeNull();
-    expect(parsedCat?.catId).toBe('98316dcb21daaa221865208fe0323616ee6dd84e6020b78bc6908e914ac03892');
+    expect(parsedCat?.transactionId).toBe('98316dcb21daaa221865208fe0323616ee6dd84e6020b78bc6908e914ac03892');
     expect(parsedCat?.getImage()).toContain('<svg');
   });
 

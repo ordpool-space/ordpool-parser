@@ -78,7 +78,7 @@ describe('Inscription parser', () => {
     expect(inscriptions[2].getParents()).toEqual(['2593027c930e08446af96cb3e94be579024d35ed0d381e83789bfc6aca5e3550i0']);
 
     // and also check the pointer
-    // TODO: The pointer is not displayed anywhere on ordinals.com,
+    // The pointer is not displayed anywhere on ordinals.com,
     // so I have no indication of whether these numbers are really correct
     expect(inscriptions[0].getPointer()).toEqual(697);
     expect(inscriptions[1].getPointer()).toEqual(1363);

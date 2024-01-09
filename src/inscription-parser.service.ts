@@ -12,7 +12,8 @@ import {
 import { CBOR } from './lib/cbor';
 import { binaryStringToBase64, bytesToBinaryString, bytesToUnicodeString, hexToBytes, littleEndianBytesToNumber } from './lib/conversions';
 import { readPushdata } from './lib/reader';
-import { ParsedInscription } from './parsed-inscription';
+import { DigitalArtifactType } from './types/digital-artifact';
+import { ParsedInscription } from './types/parsed-inscription';
 
 /**
  * Extracts all Ordinal inscriptions from a Bitcoin transaction.
@@ -38,7 +39,11 @@ export class InscriptionParserService {
         if (vinInscriptions) {
           for (let n = 0; n < vinInscriptions.length; n++) {
             const inscription = vinInscriptions[n];
+
+            // overrides the 'REPLACE_THIS' placeholders
             inscription.inscriptionId = `${transaction.txid}i${counter}`;
+            inscription.transactionId = transaction.txid;
+
             inscriptions.push(inscription);
             counter++;
           }
@@ -170,13 +175,17 @@ export class InscriptionParserService {
       }
 
       return {
-        inscriptionId: 'ERROR', // will be overridden
+
+        type: DigitalArtifactType.Inscription,
+
+        inscriptionId: 'REPLACE_THIS', // must be overridden in the calling method
+        transactionId: 'REPLACE_THIS', // must be overridden in the calling method
 
         contentType,
 
         fields,
 
-        getContentString() {
+        getContent() {
           return bytesToUnicodeString(combinedData) + ''; // never return undefined here
         },
 

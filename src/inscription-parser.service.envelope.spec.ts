@@ -95,7 +95,7 @@ describe('Inscription parser', () => {
     const expectedFileData = readInscriptionAsBase64('430901147831e41111aced3895ee4b9742cf72ac3cffa132624bd38c551ef379i0', 'txt');
 
     const contentType = inscription?.contentType;
-    const contentString = inscription?.getContentString();
+    const contentString = inscription?.getContent();
     const actualFileData = inscription?.getData();
 
     expect(contentType).toEqual('text/plain;charset=utf-8');
