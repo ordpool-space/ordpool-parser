@@ -54,10 +54,9 @@ export const knownFields = {
  * @param field - The field number to search for.
  * @returns The value associated with the first matching field, or undefined if no match is found.
  */
-export function getKnownFieldValue(fields: { tag: Uint8Array; value: Uint8Array }[], field: number): Uint8Array | undefined {
+export function getKnownFieldValue(fields: { tag: number; value: Uint8Array }[], field: number): Uint8Array | undefined {
   const knownField = fields.find(x =>
-    x.tag.length === 1 &&
-    x.tag[0] === field);
+    x.tag === field);
 
   if (knownField === undefined) {
     return undefined;
@@ -74,10 +73,9 @@ export function getKnownFieldValue(fields: { tag: Uint8Array; value: Uint8Array 
  * @param field - The field number to search for.
  * @returns An array of Uint8Array values associated with the matching fields. If no matches are found, an empty array is returned.
  */
-export function getKnownFieldValues(fields: { tag: Uint8Array; value: Uint8Array }[], field: number): Uint8Array[] {
+export function getKnownFieldValues(fields: { tag: number; value: Uint8Array }[], field: number): Uint8Array[] {
   const knownFields = fields.filter(x =>
-    x.tag.length === 1 &&
-    x.tag[0] === field
+    x.tag === field
   );
 
   return knownFields.map(field => field.value);

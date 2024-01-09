@@ -4,7 +4,7 @@ export interface ParsedInscription {
 
   contentType: string;
 
-  fields: { tag: Uint8Array; value: Uint8Array }[];
+  fields: { tag: number; value: Uint8Array }[];
 
   /**
    * UTF-8 encoded string (not intended for binary content like images or videos)

@@ -5,8 +5,8 @@ describe('getKnownFieldValue', () => {
 
   it('should return the value for a matching field', () => {
     const fields = [
-      { tag: new Uint8Array([1]), value: new Uint8Array([10]) },
-      { tag: new Uint8Array([2]), value: new Uint8Array([20]) }
+      { tag: 1, value: new Uint8Array([10]) },
+      { tag: 2, value: new Uint8Array([20]) }
     ];
     const result = getKnownFieldValue(fields, 1);
     expect(result).toEqual(new Uint8Array([10]));
@@ -14,8 +14,8 @@ describe('getKnownFieldValue', () => {
 
   it('should return undefined if there is no matching field', () => {
     const fields = [
-      { tag: new Uint8Array([1]), value: new Uint8Array([10]) },
-      { tag: new Uint8Array([2]), value: new Uint8Array([20]) }
+      { tag: 1, value: new Uint8Array([10]) },
+      { tag: 2, value: new Uint8Array([20]) }
     ];
     const result = getKnownFieldValue(fields, 3);
     expect(result).toBeUndefined();
@@ -26,9 +26,9 @@ describe('getKnownFieldValues', () => {
 
   it('should return all values for matching fields', () => {
     const fields = [
-      { tag: new Uint8Array([1]), value: new Uint8Array([10]) },
-      { tag: new Uint8Array([1]), value: new Uint8Array([15]) },
-      { tag: new Uint8Array([2]), value: new Uint8Array([20]) }
+      { tag: 1, value: new Uint8Array([10]) },
+      { tag: 1, value: new Uint8Array([15]) },
+      { tag: 2, value: new Uint8Array([20]) }
     ];
     const result = getKnownFieldValues(fields, 1);
     expect(result).toEqual([new Uint8Array([10]), new Uint8Array([15])]);
@@ -36,8 +36,8 @@ describe('getKnownFieldValues', () => {
 
   it('should return an empty array if there are no matching fields', () => {
     const fields = [
-      { tag: new Uint8Array([1]), value: new Uint8Array([10]) },
-      { tag: new Uint8Array([2]), value: new Uint8Array([20]) }
+      { tag: 1, value: new Uint8Array([10]) },
+      { tag: 2, value: new Uint8Array([20]) }
     ];
     const result = getKnownFieldValues(fields, 3);
     expect(result).toEqual([]);

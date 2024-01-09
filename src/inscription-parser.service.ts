@@ -10,7 +10,7 @@ import {
   OP_ENDIF,
 } from './inscription-parser.service.helper';
 import { CBOR } from './lib/cbor';
-import { binaryStringToBase64, bytesToBinaryString, bytesToUnicodeString, hexToBytes } from './lib/conversions';
+import { binaryStringToBase64, bytesToBinaryString, bytesToUnicodeString, hexToBytes, littleEndianBytesToNumber } from './lib/conversions';
 import { readPushdata } from './lib/reader';
 import { ParsedInscription } from './parsed-inscription';
 
@@ -77,29 +77,50 @@ export class InscriptionParserService {
   }
 
   /**
+   * Extracts fields from the raw data until OP_0 is encountered.
+   *
+   * @param raw - The raw data to read.
+   * @param pointer - The current pointer where the reading starts.
+   * @returns An array of fields and the updated pointer position.
+   */
+  private static extractFields(raw: Uint8Array, pointer: number): [{ tag: number; value: Uint8Array }[], number] {
+
+    const fields: { tag: number; value: Uint8Array }[] = [];
+    let newPointer = pointer;
+    let slice: Uint8Array;
+
+    while (newPointer < raw.length && raw[newPointer] !== OP_0) {
+
+      // tags are encoded by ord as single-byte data pushes, but are accepted by ord as either single-byte pushes, or as OP_NUM data pushes.
+      // tags greater than or equal to 256 should be encoded as little endian integers with trailing zeros omitted.
+      // see: https://github.com/ordinals/ord/issues/2505
+      [slice, newPointer] = readPushdata(raw, newPointer);
+      const tag = slice.length === 1 ? slice[0] : littleEndianBytesToNumber(slice);
+
+      [slice, newPointer] = readPushdata(raw, newPointer);
+      const value = slice;
+
+      fields.push({ tag, value });
+    }
+
+    return [fields, newPointer];
+  }
+
+  /**
    * Extracts inscription data starting from the current pointer.
    * @param raw - The raw data to read.
    * @param pointer - The current pointer where the reading starts.
-   * @returns The parsed inscription or null
+   * @returns The parsed inscription or nullx
    */
   private static extractInscriptionData(raw: Uint8Array, pointer: number): ParsedInscription | null {
 
     try {
 
-      // Process fields until OP_0 is encountered
-      const fields: { tag: Uint8Array; value: Uint8Array }[] = [];
-      let newPointer = pointer;
-      let slice;
+      let fields: { tag: number; value: Uint8Array }[];
+      let newPointer: number;
+      let slice: Uint8Array;
 
-      while (newPointer < raw.length && raw[newPointer] !== OP_0) {
-        [slice, newPointer] = readPushdata(raw, newPointer);
-        const tag = slice;
-
-        [slice, newPointer] = readPushdata(raw, newPointer);
-        const value = slice;
-
-        fields.push({ tag, value });
-      }
+      [fields, newPointer] = InscriptionParserService.extractFields(raw, pointer);
 
       // Now we are at the beginning of the body
       // (or at the end of the raw data if there's no body)
