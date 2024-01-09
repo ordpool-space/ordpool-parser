@@ -1,6 +1,6 @@
 {
   "name": "ordpool-parser",
-  "version": "0.0.5",
+  "version": "0.0.6-beta",
   "description": "The parsing engine that detects inscriptions in Bitcoin transactions.",
   "repository": {
     "type": "git",
@@ -9,10 +9,11 @@
   "bugs": {
     "url": "https://github.com/haushoppe/ordpool-parser/issues"
   },
-  "main": "dist/index.js",
+  "main": "dist-commonjs/index.js",
+  "module": "dist/index.js",
   "scripts": {
-    "clean": "rimraf dist",
-    "build": "npm run clean && tsc --project tsconfig.build.json",
+    "clean": "rimraf dist && rimraf dist-commonjs",
+    "build": "npm run clean && tsc --project tsconfig.build.json && tsc --project tsconfig.build-commonjs.json",
     "start": "npm run test",
     "test": "npm run test:node && npm run test:browser",
     "test:node": "npm run clean && jest --config jest.config.node.js",
