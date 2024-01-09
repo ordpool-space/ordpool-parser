@@ -154,15 +154,15 @@ export class InscriptionParserService {
         return null;
       }
 
-      // it would make no sense to add UTF-8 to content-type, so assuming no UTF-8 here
-      const contentType = bytesToBinaryString(contentTypeRaw);
+      // strings are (always) UTF-8 , according to https://github.com/ordinals/ord/issues/2505
+      const contentType = bytesToUnicodeString(contentTypeRaw);
 
       // figure out if the body is encoded via brotli
       const contentEncodingRaw = getKnownFieldValue(fields, knownFields.content_encoding);
 
       let contentEncoding: string | undefined = undefined;
       if (contentEncodingRaw) {
-        contentEncoding = bytesToBinaryString(contentEncodingRaw);
+        contentEncoding = bytesToUnicodeString(contentEncodingRaw);
       }
 
       if (contentEncoding === 'br') {
