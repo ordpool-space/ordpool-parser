@@ -25,7 +25,7 @@ describe.skip('Real data usage example (see README)', () => {
 
       // UTF-8 encoded string (not intended for binary content like images or videos)
       // Output: <html><!--cubes.haushoppe.art--><body> [...]
-      console.log(parsedInscriptions[0].getContentString());
+      console.log(parsedInscriptions[0].getContent());
 
       // Base64 encoded data URI that can be displayed in an iframe
       // Output: data:text/html;charset=utf-8;base64,PGh0bWw+PCEtLWN1YmVzLmhhdXNob3BwZS5hcnQtLT48Ym9keT4 [...]
