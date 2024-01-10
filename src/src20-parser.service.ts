@@ -44,6 +44,22 @@ export class Src20ParserService {
     }[];
   }): ParsedSrc20 | null {
 
+    // TODO: early exit by checking against Key Burn addresses
+    // https://github.com/mikeinspace/stamps/blob/main/Key-Burn.md
+    // big question: are these really all used burners?
+
+    return Src20ParserService.decodeSrc20Transaction(transaction)
+  }
+
+  private static decodeSrc20Transaction(transaction: {
+    txid: string;
+    vin: { txid: string }[];
+    vout: {
+      scriptpubkey: string,
+      scriptpubkey_type: string
+    }[];
+  }): ParsedSrc20 | null {
+
     try {
       // 1. The transaction ID is the ARC4 key
       const arc4Key = Buffer.from(transaction.vin[0].txid, 'hex');

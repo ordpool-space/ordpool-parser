@@ -29,28 +29,35 @@ export class InscriptionParserService {
     vin: { witness?: string[] }[]
   }): ParsedInscription[] {
 
-    const inscriptions: ParsedInscription[] = [];
-    let counter = 0;
+    try {
 
-    for (let i = 0; i < transaction.vin.length; i++) {
-      const vin = transaction.vin[i];
-      if (vin.witness) {
-        const vinInscriptions = InscriptionParserService.parseInscriptionsWithinWitness(vin.witness);
-        if (vinInscriptions) {
-          for (let n = 0; n < vinInscriptions.length; n++) {
-            const inscription = vinInscriptions[n];
+      const inscriptions: ParsedInscription[] = [];
+      let counter = 0;
 
-            // overrides the 'REPLACE_THIS' placeholders
-            inscription.inscriptionId = `${transaction.txid}i${counter}`;
-            inscription.transactionId = transaction.txid;
+      for (let i = 0; i < transaction.vin.length; i++) {
+        const vin = transaction.vin[i];
+        if (vin.witness) {
+          const vinInscriptions = InscriptionParserService.parseInscriptionsWithinWitness(vin.witness);
+          if (vinInscriptions) {
+            for (let n = 0; n < vinInscriptions.length; n++) {
+              const inscription = vinInscriptions[n];
 
-            inscriptions.push(inscription);
-            counter++;
+              // overrides the 'REPLACE_THIS' placeholders
+              inscription.inscriptionId = `${transaction.txid}i${counter}`;
+              inscription.transactionId = transaction.txid;
+
+              inscriptions.push(inscription);
+              counter++;
+            }
           }
         }
       }
+      return inscriptions;
+
+    } catch (ex) {
+      // console.error(ex);
+      return [];
     }
-    return inscriptions;
   }
 
   /**
@@ -235,7 +242,7 @@ export class InscriptionParserService {
       };
 
     } catch (ex) {
-      console.error(ex);
+      // console.error(ex);
       return null;
     }
   }

@@ -80,7 +80,7 @@ describe('Cat21ParserService', () => {
 
     let svgContent = '';
     for (let i = 0; i < txIds.length; i++) {
-      const svgAndTraits = MooncatParser.generateMoonCatSvg(txIds[i]);
+      const svgAndTraits = MooncatParser.parseAndGenerateSvg(txIds[i]);
       const traitsJSON = JSON.stringify(svgAndTraits.traits).replaceAll('"', "'");
       svgContent += `<span title="${traitsJSON}">` + svgAndTraits.svg + '</span>';
 
@@ -95,7 +95,7 @@ describe('Cat21ParserService', () => {
 
     let svgContent = '';
     for (let i = 0; i < txIds.length; i++) {
-      const svgAndTraits = MooncatParser.generateMoonCatSvg(txIds[i]);
+      const svgAndTraits = MooncatParser.parseAndGenerateSvg(txIds[i]);
       svgContent += svgAndTraits.svg;
       if (i >= 1000) { break; }
     }
@@ -124,7 +124,7 @@ describe('Cat21ParserService', () => {
               steps[b].toString(16).padStart(2, '0') +
               (224).toString(16).padStart(2, '0');
 
-            const svgAndTraits = MooncatParser.generateMoonCatSvg(txId);
+            const svgAndTraits = MooncatParser.parseAndGenerateSvg(txId);
             const traitsJSON = JSON.stringify(svgAndTraits.traits).replaceAll('"', "'");
 
             svgContent += `<span title="${k} | ${r} | ${g} | ${b} –– ${traitsJSON}">` + svgAndTraits.svg + '</span>';
@@ -153,7 +153,7 @@ describe('Cat21ParserService', () => {
         (4).toString(16).padStart(2, '0') +
         (224).toString(16).padStart(2, '0');
 
-      svgContent += `<span title="${k}">` + MooncatParser.generateMoonCatSvg(txId) + '</span>';
+      svgContent += `<span title="${k}">` + MooncatParser.parseAndGenerateSvg(txId) + '</span>';
     }
 
     fs.writeFileSync('testdist/cat-lasereye-poses-testdrive.html', testdriveHtml.replace('CATS!', svgContent));

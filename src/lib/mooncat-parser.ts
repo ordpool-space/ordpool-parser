@@ -1,3 +1,4 @@
+import { CatTraits } from "../types/parsed-cat21";
 import { hexToBytes } from "./conversions";
 import { designs, laser_designs } from "./mooncat-parser.designs";
 import { derivePalette } from "./mooncat-parser.helper";
@@ -15,78 +16,6 @@ Except with the prior written authorization from ponderware ltd., any modificati
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-export interface CatTraits {
-
-  /**
-   * The super rare genesis trait. Genesis cats are white or black, and have no bright colors.
-   * Probability: ~0.4%
-   */
-  genesis: boolean;
-
-  /**
-   * All colors (or shades of gray for genesis cats) that are used to paint the cat.
-   *
-   * The genesis cats are always:
-   * "#555555", "#d3d3d3", "#ffffff", "#aaaaaa", "#ff9999"
-   * or
-   * "#555555", "#222222", "#111111", "#bbbbbb", "#ff9999"
-   *
-   * see https://github.com/cryptocopycats/awesome-mooncatrescue-bubble/blob/master/COLORS.md
-   */
-  colors: string[];
-
-  /**
-   * Inverted cats have a mirrored design and an adjusted color palette.
-   * There is a 50% chance to receive an inverted cat.
-   *
-   * see https://github.com/cryptocopycats/awesome-mooncatrescue-bubble/blob/master/COLORS.md
-   */
-  inverted: boolean;
-
-  /**
-   * One of the 128 designs (from 0 to 127)
-   * The design is a combination of the following traits:
-   *
-   * Pose
-   *   0: Standing
-   *   1: Sleeping
-   *   2: Pouncing
-   *   3: Stalking
-   *
-   * Facing
-   *   0: Left
-   *   1: Right
-   *
-   * Pattern
-   *   0: Solid
-   *   1: Striped
-   *   2: Eyepatch
-   *   3: Half/Half
-   *
-   * Expression
-   *   0: Smile
-   *   1: Frown (look down)
-   *   2: Frown (look up)
-   *   3: Flat whiskers
-   *
-   * see https://github.com/cryptocopycats/awesome-mooncatrescue-bubble/blob/master/DESIGNS.md
-   * see https://github.com/cryptocopycats/awesome-mooncatrescue-bubble/blob/master/TRAITS.md
-   */
-  designIndex: number;
-
-  /**
-   * The laser eyes trait.
-   * There is a ~10% chance to receive a cat with laser eyes.
-   */
-  laserEyes: boolean;
-
-  /**
-   * The orange background trait.
-   * There is a ~10% chance to receive a cat with an orange background instead of an transparent background.
-   * The orange color is #ff9900, because this is the only true orange Bitcoin color!
-   */
-  orangeBackground: boolean;
-}
 
 /**
  * Modified Typescript version of
@@ -105,7 +34,7 @@ export interface CatTraits {
 export class MooncatParser {
 
   /**
-   * Parses the MoonCat design based on the given transaction ID.
+   * Parses the Mooncat design based on the given transaction ID.
    *
    * Note:
    * In the original Mooncat algorithm, the first byte was used as a boolean
@@ -116,7 +45,7 @@ export class MooncatParser {
    * Same goes for the other new traits. First Genesis cat has all of them.
    *
    * @param catId - The transaction ID.
-   * @returns MoonCat design as a 2D array.
+   * @returns Mooncat design as a 2D array.
    */
   public static parse(catId: string): { catData: (string | null)[][]; traits: CatTraits } {
 
@@ -193,15 +122,15 @@ export class MooncatParser {
   }
 
   /**
-   * Generates an SVG representation of a MoonCat from a given catId.
+   * Generates an SVG representation of a Mooncat from a given catId.
    *
-   * This function parses the MoonCat design from the catId and constructs an SVG
-   * image, where each pixel of the MoonCat design is represented as an SVG rectangle.
+   * This function parses the Mooncat design from the catId and constructs an SVG
+   * image, where each pixel of the Mooncat design is represented as an SVG rectangle.
    *
-   * @param catId - The unique identifier of the MoonCat (transaction ID).
-   * @returns The traits and a string containing the SVG markup of the MoonCat.
+   * @param catId - The unique identifier of the Mooncat (transaction ID).
+   * @returns The traits and a string containing the SVG markup of the Mooncat.
    */
-  public static generateMoonCatSvg(catId: string): { svg: string; traits: CatTraits } {
+  public static parseAndGenerateSvg(catId: string): { svg: string; traits: CatTraits } {
 
     const parsed = MooncatParser.parse(catId);
     const catData = parsed.catData;

@@ -1,6 +1,6 @@
-import { CatTraits, MooncatParser } from "./lib/mooncat-parser";
-import { DigitalArtifactType } from "./types/digital-artifact";
-import { ParsedCat21 } from "./types/parsed-cat21";
+import { MooncatParser } from './lib/mooncat-parser';
+import { DigitalArtifactType } from './types/digital-artifact';
+import { CatTraits, ParsedCat21 } from './types/parsed-cat21';
 
 /**
  * Service to parse CAT-21 transactions.
@@ -17,7 +17,12 @@ export class Cat21ParserService {
     txid: string,
     locktime: number
   }): ParsedCat21 | null {
-    if (this.isValidCat21Transaction(transaction)) {
+
+    try {
+
+      if (!this.isValidCat21Transaction(transaction)) {
+        return null;
+      }
 
       let svgAndTraits: { svg: string; traits: CatTraits; } | null = null;
 
@@ -29,7 +34,7 @@ export class Cat21ParserService {
         getImage: () => {
 
           if (!svgAndTraits) {
-            svgAndTraits = MooncatParser.generateMoonCatSvg(transaction.txid);
+            svgAndTraits = MooncatParser.parseAndGenerateSvg(transaction.txid);
           }
 
           return svgAndTraits.svg
@@ -38,14 +43,18 @@ export class Cat21ParserService {
         getTraits: () => {
 
           if (!svgAndTraits) {
-            svgAndTraits = MooncatParser.generateMoonCatSvg(transaction.txid);
+            svgAndTraits = MooncatParser.parseAndGenerateSvg(transaction.txid);
           }
 
           return svgAndTraits.traits
         }
       };
+
+    } catch (ex) {
+      // console.error(ex);
+      return null;
     }
-    return null;
+
   }
 
   /**
