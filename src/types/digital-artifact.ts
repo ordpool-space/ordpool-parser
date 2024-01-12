@@ -10,13 +10,18 @@ export enum DigitalArtifactType {
 export interface DigitalArtifact {
 
   /**
-   * A unique identifier for the type of the digital artifact, right now supported:
+   * Type of the digital artifact, right now supported:
    * - Inscription
    * - SRC-20 (Stamps)
    * - CAT-21
    * - more to come?!
    */
   type: DigitalArtifactType;
+
+  /**
+   * Unique ID, since a single transaction can have multiple types of digital artifacts
+   */
+  uniqueId: string;
 
   /**
    * The transactionId where the artifact was created / minted

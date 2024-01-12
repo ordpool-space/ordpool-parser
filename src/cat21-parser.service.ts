@@ -30,6 +30,7 @@ export class Cat21ParserService {
 
         type: DigitalArtifactType.Cat21,
         transactionId: transaction.txid,
+        uniqueId: `${DigitalArtifactType.Cat21}-${transaction.txid}`,
 
         getImage: () => {
 

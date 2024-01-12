@@ -101,6 +101,7 @@ export class Src20ParserService {
       return {
         type: DigitalArtifactType.Src20,
         transactionId: transaction.txid,
+        uniqueId: `${DigitalArtifactType.Src20}-${transaction.txid}`,
         getContent: () => content
       }
 

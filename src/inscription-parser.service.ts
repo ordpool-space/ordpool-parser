@@ -45,6 +45,7 @@ export class InscriptionParserService {
               // overrides the 'REPLACE_THIS' placeholders
               inscription.inscriptionId = `${transaction.txid}i${counter}`;
               inscription.transactionId = transaction.txid;
+              inscription.uniqueId = `${DigitalArtifactType.Inscription}-${inscription.inscriptionId}`
 
               inscriptions.push(inscription);
               counter++;
@@ -187,6 +188,7 @@ export class InscriptionParserService {
 
         inscriptionId: 'REPLACE_THIS', // must be overridden in the calling method
         transactionId: 'REPLACE_THIS', // must be overridden in the calling method
+        uniqueId:      'REPLACE_THIS', // must be overridden in the calling method
 
         contentType,
 
