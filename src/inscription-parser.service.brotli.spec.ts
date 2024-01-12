@@ -10,7 +10,7 @@ describe('Inscription parser', () => {
 
     const txn = readTransaction('6dc2c16a74dedcae46300b2058ebadc7ca78aea78236459662375c8d7d9804db');
 
-    const inscription = InscriptionParserService.parseInscriptions(txn)[0];
+    const inscription = InscriptionParserService.parse(txn)[0];
 
     const actualFileData = inscription.getData();
     const expectedFileData = readInscriptionAsBase64('6dc2c16a74dedcae46300b2058ebadc7ca78aea78236459662375c8d7d9804dbi0', 'js');

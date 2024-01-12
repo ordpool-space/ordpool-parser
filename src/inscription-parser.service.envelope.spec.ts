@@ -22,7 +22,7 @@ describe('Inscription parser', () => {
 
     const txn = readTransaction('c1e013bdd1434450c6e1155417c81eb888e20cbde2e0cde37ec238d91cf37045');
 
-    const inscription = InscriptionParserService.parseInscriptions(txn)[0];
+    const inscription = InscriptionParserService.parse(txn)[0];
     const actualFileData = inscription.getData();
     const expectedFileData = readInscriptionAsBase64('c1e013bdd1434450c6e1155417c81eb888e20cbde2e0cde37ec238d91cf37045i0', 'txt');
 
@@ -48,7 +48,7 @@ describe('Inscription parser', () => {
 
     const txn = readTransaction('78fa9d6e9b2b49fbb9f4838e1792dba7c1ec836f22e3206561e2d52759708251');
 
-    const inscription = InscriptionParserService.parseInscriptions(txn)[0];
+    const inscription = InscriptionParserService.parse(txn)[0];
     const actualFileData = inscription.getData();
     const expectedFileData = readInscriptionAsBase64('78fa9d6e9b2b49fbb9f4838e1792dba7c1ec836f22e3206561e2d52759708251i0', 'html');
 
@@ -75,7 +75,7 @@ describe('Inscription parser', () => {
 
     const txn = readTransaction('f531eea03671ac17100a9887d5212532250d5eae09e7c8873cdd2efa6f7fab57');
 
-    const inscription = InscriptionParserService.parseInscriptions(txn)[0];
+    const inscription = InscriptionParserService.parse(txn)[0];
     const actualFileData = inscription.getData();
     const expectedFileData = readInscriptionAsBase64('f531eea03671ac17100a9887d5212532250d5eae09e7c8873cdd2efa6f7fab57i0', 'html');
 
@@ -91,7 +91,7 @@ describe('Inscription parser', () => {
 
     const txn = readTransaction('430901147831e41111aced3895ee4b9742cf72ac3cffa132624bd38c551ef379');
 
-    const inscription = InscriptionParserService.parseInscriptions(txn)[0];
+    const inscription = InscriptionParserService.parse(txn)[0];
     const expectedFileData = readInscriptionAsBase64('430901147831e41111aced3895ee4b9742cf72ac3cffa132624bd38c551ef379i0', 'txt');
 
     const contentType = inscription?.contentType;

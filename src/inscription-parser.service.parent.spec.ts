@@ -11,7 +11,7 @@ describe('Inscription parser', () => {
 
     const txn = readTransaction('f988fe4b414a3f3d4a815dd1b1675dea0ba6140b1d698d8970273c781fb95746');
 
-    const inscription = InscriptionParserService.parseInscriptions(txn)[0];
+    const inscription = InscriptionParserService.parse(txn)[0];
     const parents = inscription.getParents();
 
     // see https://twitter.com/devaloft/status/1740055605719736325

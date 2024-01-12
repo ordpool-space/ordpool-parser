@@ -15,7 +15,17 @@ npm install ordpool-parser
 ```
 
 Then, you can use the parser in your project. 
-It expects a transaction from the Mempool API:
+It expects a transaction in JSON format from an Esplora API.
+
+To avoid confusion, here are the different kinds of "Electrum" servers explained:
+- Electrum and ElectrumX are basic indexers for Bitcoin
+- romanz/electrs (Electrum Server in Rust) is re-implementation Electrum
+- "Esplora - Electrs backend API" is a fork by blockstream.info with a powerful REST API
+
+Esplora is the backend mempool.space uses, and is also what powers blockstream.info!
+The ordpool-parser was only tested with this API.
+
+
 
 ```ts
 import axios from 'axios';
@@ -24,9 +34,11 @@ import { InscriptionParserService } from 'ordpool-parser';
 async function getInscriptions(txId: string) {
 
   const response = await axios.get(`https://mempool.space/api/tx/${txId}`);
+  // OR 
+  // const response = await axios.get(`https://blockstream.info/api/tx/${txId}`);
   const transaction = response.data;
 
-  return InscriptionParserService.parseInscriptions(transaction);
+  return InscriptionParserService.parse(transaction);
 }
 
 const parsedInscriptions = await getInscriptions('f1997166547da9784a3e7419d2b248551565211811d4f5e705b685efa244451f');

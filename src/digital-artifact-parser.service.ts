@@ -14,7 +14,7 @@ export class DigitalArtifactsParserService {
    * @param transaction - The transaction to parse.
    * @returns The parsed digital artifacts or an empty array
    */
-  static parseDigitalArtifacts(transaction: {
+  static parse(transaction: {
     txid: string,
     locktime: number,
     vin: {
@@ -26,9 +26,9 @@ export class DigitalArtifactsParserService {
     }[];
   }): DigitalArtifact[] {
 
-    const artifacts: DigitalArtifact[] = InscriptionParserService.parseInscriptions(transaction);
-    const parsedSrc20 = Src20ParserService.parseSrc20Transaction(transaction);
-    const parsedCat = Cat21ParserService.parseCat(transaction);
+    const artifacts: DigitalArtifact[] = InscriptionParserService.parse(transaction);
+    const parsedSrc20 = Src20ParserService.parse(transaction);
+    const parsedCat = Cat21ParserService.parse(transaction);
 
     if (parsedSrc20) {
       artifacts.push(parsedSrc20);

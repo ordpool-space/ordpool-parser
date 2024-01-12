@@ -11,7 +11,7 @@ describe('Inscription parser', () => {
 
     const txn = readTransaction('49cbc5cbac92cf917dd4539d62720a3e528d17e22ef5fc47070a17ec0d3cf307');
 
-    const inscriptions = InscriptionParserService.parseInscriptions(txn);
+    const inscriptions = InscriptionParserService.parse(txn);
 
     const actualFileData = inscriptions[0].getData();
     const metaprotocol = inscriptions[0].getMetaprotocol();

@@ -35,7 +35,7 @@ import { ParsedSrc20 } from "./types/parsed-src20";
  */
 export class Src20ParserService {
 
-  static parseSrc20Transaction(transaction: {
+  static parse(transaction: {
     txid: string;
     vin: { txid: string }[];
     vout: {

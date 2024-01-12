@@ -16,7 +16,7 @@ describe('Inscription parser', () => {
 
     const txn = readTransaction('092111e882a8025f3f05ab791982e8cc7fd7395afe849a5949fd56255b5c41cc');
 
-    const inscriptions = InscriptionParserService.parseInscriptions(txn);
+    const inscriptions = InscriptionParserService.parse(txn);
 
     const actualFileData0 = inscriptions[0].getData();
     const actualFileData1 = inscriptions[1].getData();
@@ -48,7 +48,7 @@ describe('Inscription parser', () => {
 
     const txn = readTransaction('11d3f4b39e8ab97995bab1eacf7dcbf1345ec59c07261c0197e18bf29b88d8da');
 
-    const inscriptions = InscriptionParserService.parseInscriptions(txn);
+    const inscriptions = InscriptionParserService.parse(txn);
 
     // according to ordinals.com the number 665 is the last inscription
     // https://ordinals.com/inscription/11d3f4b39e8ab97995bab1eacf7dcbf1345ec59c07261c0197e18bf29b88d8dai665

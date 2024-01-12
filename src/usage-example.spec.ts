@@ -10,7 +10,7 @@ describe.skip('Real data usage example (see README)', () => {
       const response = await axios.get(`https://mempool.space/api/tx/${txId}`);
       const transaction = response.data;
 
-      return InscriptionParserService.parseInscriptions(transaction);
+      return InscriptionParserService.parse(transaction);
     }
 
     const parsedInscriptions = await getInscriptions('f1997166547da9784a3e7419d2b248551565211811d4f5e705b685efa244451f');

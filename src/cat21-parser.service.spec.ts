@@ -34,7 +34,7 @@ describe('Cat21ParserService', () => {
 
   it.skip('should parse a valid CAT-21 transaction', () => {
     const txn = { ...baseTxn };
-    const parsedCat = Cat21ParserService.parseCat(txn);
+    const parsedCat = Cat21ParserService.parse(txn);
     expect(parsedCat).not.toBeNull();
     expect(parsedCat?.transactionId).toBe('98316dcb21daaa221865208fe0323616ee6dd84e6020b78bc6908e914ac03892');
     expect(parsedCat?.getImage()).toContain('<svg');
@@ -42,13 +42,13 @@ describe('Cat21ParserService', () => {
 
   it.skip('should return null for transactions with incorrect nLockTime', () => {
     const txn = { ...baseTxn, locktime: 20 };
-    expect(Cat21ParserService.parseCat(txn)).toBeNull();
+    expect(Cat21ParserService.parse(txn)).toBeNull();
   });
 
   it('should render the Genesis cat!', () => {
 
     const txn = readTransaction('98316dcb21daaa221865208fe0323616ee6dd84e6020b78bc6908e914ac03892');
-    const parsedCat = Cat21ParserService.parseCat(txn);
+    const parsedCat = Cat21ParserService.parse(txn);
     expect(parsedCat?.getImage()).toContain('<svg');
 
     fs.writeFileSync('testdist/genesis-cat.svg', parsedCat?.getImage() || '');

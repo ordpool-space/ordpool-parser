@@ -24,7 +24,7 @@ export class InscriptionParserService {
    * Main function that parses all inscription in a transaction.
    * @returns The parsed inscriptions or an empty array
    */
-  static parseInscriptions(transaction: {
+  static parse(transaction: {
     txid: string;
     vin: { witness?: string[] }[]
   }): ParsedInscription[] {

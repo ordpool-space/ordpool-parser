@@ -13,7 +13,7 @@ export class Cat21ParserService {
    * @param transaction - The transaction to parse.
    * @returns A ParsedCat object if the transaction is a valid CAT-21 transaction, otherwise null.
    */
-  static parseCat(transaction: {
+  static parse(transaction: {
     txid: string,
     locktime: number
   }): ParsedCat21 | null {
