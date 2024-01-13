@@ -1,5 +1,5 @@
 import { Arc4 } from "./lib/arc4";
-import { bigEndianBytesToNumber, unicodeStringToBytes } from "./lib/conversions";
+import { bigEndianBytesToNumber, hexToBytes, unicodeStringToBytes } from "./lib/conversions";
 import { bytesToUnicodeString } from './lib/conversions';
 import { extractPubkeys } from './src20-parser.service.helper';
 import { DigitalArtifactType } from "./types/digital-artifact";
@@ -62,7 +62,7 @@ export class Src20ParserService {
 
     try {
       // 1. The transaction ID is the ARC4 key
-      const arc4Key = Buffer.from(transaction.vin[0].txid, 'hex');
+      const arc4Key = hexToBytes(transaction.vin[0].txid);
 
       const concatenatedPubkeys = transaction.vout
         // 2. Extract the first two pubkeys from multisig scripts

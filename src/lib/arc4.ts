@@ -6,8 +6,13 @@
  * @author hex7c0 <hex7c0@gmail.com>
  * @copyright hex7c0 2014
  * @license GPLv3
- *  --> core functionality extracted and modified to TypeScript by Johannes
+ *
+ * Original: https://github.com/hex7c0/arc4
+ * --> core functionality extracted and modified to TypeScript by Johannes
+ * --> Buffer replaced with Uint8Array for Browser compatibility
  */
+
+import { bytesToHex, bytesToUnicodeString, hexToBytes, unicodeStringToBytes } from "./conversions";
 
 
 // creates an array from 0 to 255
@@ -16,6 +21,7 @@ const box = [...Array(256).keys()];
 
 /**
  * Arc4 class / Simplified TypeScript version
+ * with contains the bare minimum to work with the Src20ParserService
  */
 export class Arc4 {
 
@@ -23,20 +29,18 @@ export class Arc4 {
   private ksa: number[] | null;
 
   /**
-   * @param {String|Array|Buffer} key - user key
+   * @param key - user key
    */
-  constructor(key: string | number[] | Buffer) {
+  constructor(key: string | Uint8Array) {
     this.key = null;
     this.ksa = null;
     this.change(key);
   }
 
   /**
-   * generate ksa
+   * Generate Key-Scheduling Algorithm (KSA)
    *
-   * @function gKsa
-   * @param {Array} key - user key
-   * @return {Array}
+   * @param key - user key
    */
   private gKsa(key: number[]): number[] {
     let j = 0;
@@ -50,32 +54,31 @@ export class Arc4 {
   }
 
   /**
-   * change user key
+   * Change user key
    *
-   * @param {String|Array|Buffer} key - user key
+   * @param key - user key
    */
-  public change(key: string | number[] | Buffer): void {
+  public change(key: Uint8Array |string): void {
     if (typeof key === 'string') {
-      this.key = Array.from(Buffer.from(key)).map(byte => byte);
-    } else if (Array.isArray(key) || Buffer.isBuffer(key)) {
+      const encoder = new TextEncoder();
+      this.key = Array.from(encoder.encode(key));
+    } else if (key instanceof Uint8Array) {
       this.key = Array.from(key);
     } else {
-      throw new Error('Invalid data');
+      throw new Error('Invalid key');
     }
     this.ksa = this.gKsa(this.key);
   }
 
   /**
-   * body cipher
+   * Body cipher
    *
-   * @function body
-   * @param {Array|Buffer} inp - input
-   * @param {Array} gksa - ksa box
-   * @param {Array|Buffer} container - out container
-   * @param {Integer} length - limit
-   * @return {Array|Buffer}
+   * @param inp - input
+   * @param gksa - ksa box
+   * @param container - out container
+   * @param length - limit
    */
-  private body(inp: number[] | Buffer, gksa: number[], container: number[] | Buffer, length: number): number[] | Buffer {
+  private body(inp: Uint8Array, gksa: number[], container: Uint8Array, length: number): Uint8Array {
     let i = 0, j = 0;
     const out = container;
     const ksa = gksa.slice();
@@ -89,32 +92,36 @@ export class Arc4 {
   }
 
   /**
-   * Arc4 string encode
+   * Applies the core RC4 encryption or decryption logic.
    *
-   * @param {String} str - data
-   * @param {String} [input_encoding] - input
-   * @param {String} [output_encoding] - output
-   * @return {String}
+   * @param bytes - The byte array to be processed.
+   * @return The processed byte array.
    */
-  encodeString(str: string, input_encoding: BufferEncoding = 'utf8', output_encoding: BufferEncoding = 'hex'): string {
-    const out = Buffer.from(str, input_encoding);
-    const l = out.length;
-    return Buffer.from(this.body(out, this.ksa!, Buffer.alloc(l), l))
-      .toString(output_encoding);
+  private processBytes(bytes: Uint8Array): Uint8Array {
+    return this.body(bytes, this.ksa!, new Uint8Array(bytes.length), bytes.length);
   }
 
   /**
-   * Arc4 string decode
+   * Encrypts a UTF-8 string and returns the result as a hex string.
    *
-   * @param {String} str - data
-   * @param {String} [input_encoding] - input
-   * @param {String} [output_encoding] - output
-   * @return {String}
+   * @param {String} str - UTF-8 string to encrypt.
+   * @return {String} - Encrypted data as a hex string.
    */
-  decodeString(str: string, input_encoding: BufferEncoding = 'hex', output_encoding: BufferEncoding = 'utf8'): string {
-    const out = Buffer.from(str, input_encoding);
-    const l = out.length;
-    return Buffer.from(this.body(out, this.ksa!, Buffer.alloc(l), l))
-      .toString(output_encoding);
+  encodeString(str: string): string {
+    const encoded = unicodeStringToBytes(str);
+    const encrypted = this.processBytes(encoded);
+    return bytesToHex(encrypted);
+  }
+
+  /**
+   * Decrypts a hex string and returns the result as a UTF-8 string.
+   *
+   * @param hexStr - Hex string to decrypt.
+   * @return Decrypted data as a UTF-8 string.
+   */
+  decodeString(hexStr: string): string {
+    const bytes = hexToBytes(hexStr);
+    const decryptedBytes = this.processBytes(bytes);
+    return bytesToUnicodeString(decryptedBytes);
   }
 }
