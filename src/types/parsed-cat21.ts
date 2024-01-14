@@ -21,7 +21,7 @@ export interface CatTraits {
   colors: string[];
 
   /**
-   * Inverted cats have a mirrored design and an adjusted color palette.
+   * Inverted cats have a inverted color palette.
    * There is a 50% chance to receive an inverted cat.
    *
    * see https://github.com/cryptocopycats/awesome-mooncatrescue-bubble/blob/master/COLORS.md
@@ -61,9 +61,11 @@ export interface CatTraits {
 
   /**
    * The laser eyes trait.
-   * There is a ~10% chance to receive a cat with laser eyes.
+   * There is a ~10% chance to receive a cat with red laser eyes.
+   * There is a ~10% chance to receive a cat with green laser eyes.
+   * There is a ~10% chance to receive a cat with blue laser eyes.
    */
-  laserEyes: boolean;
+  laserEyes: 'red' | 'green' | 'blue' | 'none';
 
   /**
    * The orange background trait.

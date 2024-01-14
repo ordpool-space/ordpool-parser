@@ -104,10 +104,14 @@ describe('Cat21ParserService', () => {
   });
 
   // pretty slow
-  it.skip('should generate examples with laser eyes in all the possible palettes', () => {
+  it('should generate examples with laser eyes in all the possible palettes', () => {
 
     // const steps = [0, 28, 56, 84, 112, 140, 168, 196, 224, 255];
     const steps = [0, 51, 102, 153, 204, 255];
+
+    const laserEyesByte = 224; // red
+    // const laserEyesByte = 198; // green
+    // const laserEyesByte = 172; // blue
 
     let svgContent = '';
 
@@ -122,7 +126,7 @@ describe('Cat21ParserService', () => {
               steps[r].toString(16).padStart(2, '0') +
               steps[g].toString(16).padStart(2, '0') +
               steps[b].toString(16).padStart(2, '0') +
-              (224).toString(16).padStart(2, '0');
+              (laserEyesByte).toString(16).padStart(2, '0');
 
             const svgAndTraits = MooncatParser.parseAndGenerateSvg(txId);
             const traitsJSON = JSON.stringify(svgAndTraits.traits).replaceAll('"', "'");

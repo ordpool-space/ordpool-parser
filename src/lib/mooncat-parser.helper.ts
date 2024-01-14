@@ -148,11 +148,7 @@ export function derivePalette(r: number, g: number, b: number, invert: boolean):
     RGBToHex(c2),
     RGBToHex(c3),
     RGBToHex(c4),
-    RGBToHex(c5),
-
-    // colors for the laser eyes
-    "#ffac1c",
-    "#ff0000"
+    RGBToHex(c5)
   ];
 }
 

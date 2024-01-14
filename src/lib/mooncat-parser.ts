@@ -1,7 +1,7 @@
-import { CatTraits } from "../types/parsed-cat21";
-import { hexToBytes } from "./conversions";
-import { designs, laser_designs } from "./mooncat-parser.designs";
-import { derivePalette } from "./mooncat-parser.helper";
+import { CatTraits } from '../types/parsed-cat21';
+import { hexToBytes } from './conversions';
+import { designs, laser_designs } from './mooncat-parser.designs';
+import { derivePalette } from './mooncat-parser.helper';
 
 /*
 ORIGINAL LICENSE
@@ -60,17 +60,19 @@ export class MooncatParser {
     const g = bytes[3];
     const b = bytes[4];
 
-    // Second historic cat has has value 224 here - it should have laser eyes, too
-    // 10% chance of laser eyes
+    // Second historic cat has has value 224 here - it should have red laser eyes, too
+    // 10% chance of red laser eyes
     // 26 values between: 199 and 224 --> 26/256 --> 0.1015625 --> ~10%
-    const laserEyes = bytes[5] >= 199 && bytes[5] <= 224;
+    const redLaserEyes = bytes[5] >= 199 && bytes[5] <= 224;
+    const greenLaserEyes = bytes[5] >= 173 && bytes[5] <= 198;
+    const blueLaserEyes = bytes[5] >= 147 && bytes[5] <= 172;
 
     // First genesis cat has value 170 here
     // 10% chance of an orange background
     // 26 values between: 170 and 195 --> 26/256 --> 0.1015625 --> ~10%
     const orangeBackground  = bytes[6] >= 170 && bytes[6] <= 195;
 
-    // 50% chance of inverted
+    // 50% chance of inverted colors
     // 128/256  --> 0.5 --> exactly 50%
     const inverted = k >= 128;
 
@@ -79,25 +81,47 @@ export class MooncatParser {
     const designIndex = k % 128;
 
     let design;
-    if (laserEyes) {
-      design = laser_designs[designIndex].split(".");
+    if (redLaserEyes || greenLaserEyes || blueLaserEyes) {
+      design = laser_designs[designIndex].split('.');
     } else {
-      design = designs[designIndex].split(".");
+      design = designs[designIndex].split('.');
     }
     let colors: (string | null)[];
 
+    let laserEyesColors: (string | null)[] = [null, null]
+    let laserEyesName: 'red' | 'green' | 'blue' | 'none' = 'none';
+
+    // as a homage to the good old days, only "web save colors" are used here
+    if (redLaserEyes) {
+      laserEyesColors = ['#ff0000', '#ff9900'];
+      laserEyesName = 'red';
+    }
+
+    if (greenLaserEyes) {
+      laserEyesColors = ['#009900', '#33ff00'];
+      laserEyesName = 'green';
+    }
+
+    if (blueLaserEyes) {
+      laserEyesColors = ['#0033cc', '#66ccff'];
+      laserEyesName = 'blue';
+    }
+
     if (genesis) {
       if (designIndex % 2 === 0 && inverted || designIndex % 2 === 1 && !inverted) {
-        colors = [null, "#555555", "#d3d3d3", "#ffffff", "#aaaaaa", "#ff9999", /* laser eyes: */ "#ffac1c", "#ff0000"];
+        colors = [null, '#555555', '#d3d3d3', '#ffffff', '#aaaaaa', '#ff9999'];
       } else {
-        colors = [null, "#555555", "#222222", "#111111", "#bbbbbb", "#ff9999", /* laser eyes: */ "#ffac1c", "#ff0000"];
+        colors = [null, '#555555', '#222222', '#111111', '#bbbbbb', '#ff9999'];
       }
     } else {
       colors = derivePalette(r, g, b, inverted);
     }
 
+    // add laser eyes colors
+    colors = [...colors, laserEyesColors[0], laserEyesColors[1]];
+
     const catData = design.map(row => {
-      return row.split("").map(cell => colors[parseInt(cell, 10)]);
+      return row.split('').map(cell => colors[parseInt(cell, 10)]);
     });
 
     const traits = {
@@ -111,7 +135,7 @@ export class MooncatParser {
       ] as string[],
       inverted,
       designIndex,
-      laserEyes,
+      laserEyes: laserEyesName,
       orangeBackground
     }
 
