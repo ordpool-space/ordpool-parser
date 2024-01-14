@@ -10,6 +10,7 @@ export interface CatTraits {
 
   /**
    * All colors (or shades of gray for genesis cats) that are used to paint the cat.
+   * (colors of the laser eyes are not included)
    *
    * The genesis cats are always:
    * "#555555", "#d3d3d3", "#ffffff", "#aaaaaa", "#ff9999"
@@ -32,32 +33,19 @@ export interface CatTraits {
    * One of the 128 designs (from 0 to 127)
    * The design is a combination of the following traits:
    *
-   * Pose
-   *   0: Standing
-   *   1: Sleeping
-   *   2: Pouncing
-   *   3: Stalking
-   *
-   * Facing
-   *   0: Left
-   *   1: Right
-   *
-   * Pattern
-   *   0: Solid
-   *   1: Striped
-   *   2: Eyepatch
-   *   3: Half/Half
-   *
-   * Expression
-   *   0: Smile
-   *   1: Frown (look down)
-   *   2: Frown (look up)
-   *   3: Flat whiskers
+   * Pose: 'Standing' | 'Sleeping' | 'Pouncing' | 'Stalking'
+   * Facing: 'Left' | 'Right'
+   * Pattern: 'Solid' | 'Striped' | 'Eyepatch' | 'Half/Half'
+   * Expression: 'Smile' | 'Grumpy' | 'Pouting' | 'Shy'
    *
    * see https://github.com/cryptocopycats/awesome-mooncatrescue-bubble/blob/master/DESIGNS.md
    * see https://github.com/cryptocopycats/awesome-mooncatrescue-bubble/blob/master/TRAITS.md
    */
   designIndex: number;
+  designPose: 'Standing' | 'Sleeping' | 'Pouncing' | 'Stalking',
+  designExpression: 'Smile' | 'Grumpy' | 'Pouting' | 'Shy',
+  designPattern: 'Solid' | 'Striped' | 'Eyepatch' | 'Half/Half',
+  designFacing: 'Left' | 'Right',
 
   /**
    * The laser eyes trait.

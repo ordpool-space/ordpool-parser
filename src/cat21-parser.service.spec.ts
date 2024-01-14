@@ -32,7 +32,7 @@ describe('Cat21ParserService', () => {
     locktime: 21
   };
 
-  it.skip('should parse a valid CAT-21 transaction', () => {
+  it('should parse a valid CAT-21 transaction', () => {
     const txn = { ...baseTxn };
     const parsedCat = Cat21ParserService.parse(txn);
     expect(parsedCat).not.toBeNull();
@@ -40,7 +40,7 @@ describe('Cat21ParserService', () => {
     expect(parsedCat?.getImage()).toContain('<svg');
   });
 
-  it.skip('should return null for transactions with incorrect nLockTime', () => {
+  it('should return null for transactions with incorrect nLockTime', () => {
     const txn = { ...baseTxn, locktime: 20 };
     expect(Cat21ParserService.parse(txn)).toBeNull();
   });
@@ -50,6 +50,20 @@ describe('Cat21ParserService', () => {
     const txn = readTransaction('98316dcb21daaa221865208fe0323616ee6dd84e6020b78bc6908e914ac03892');
     const parsedCat = Cat21ParserService.parse(txn);
     expect(parsedCat?.getImage()).toContain('<svg');
+
+    const traits = parsedCat?.getTraits();
+
+    expect(traits?.genesis).toBe(true);
+    expect(traits?.inverted).toBe(false);
+
+    expect(traits?.designIndex).toEqual(49);
+    expect(traits?.designPose).toEqual('Sleeping');
+    expect(traits?.designExpression).toEqual('Shy');
+    expect(traits?.designPattern).toEqual('Solid');
+    expect(traits?.designFacing).toEqual('Left');
+
+    expect(traits?.laserEyes).toEqual('red');
+    expect(traits?.orangeBackground).toBe(true);
 
     fs.writeFileSync('testdist/genesis-cat.svg', parsedCat?.getImage() || '');
   });
@@ -90,20 +104,18 @@ describe('Cat21ParserService', () => {
     fs.writeFileSync('testdist/cat-historic-testdrive.html', testdriveHtml.replace('CATS!', svgContent));
   });
 
-  // pretty slow
-  it.skip('should render all potential cats of a block!', () => {
+  it('should render all potential cats of a block!', () => {
 
     let svgContent = '';
     for (let i = 0; i < txIds.length; i++) {
       const svgAndTraits = MooncatParser.parseAndGenerateSvg(txIds[i]);
       svgContent += svgAndTraits.svg;
-      if (i >= 1000) { break; }
+      if (i >= 2000) { break; }
     }
 
     fs.writeFileSync('testdist/cat-block-testdrive.html', testdriveHtml.replace('CATS!', svgContent));
   });
 
-  // pretty slow
   it('should generate examples with laser eyes in all the possible palettes', () => {
 
     // const steps = [0, 28, 56, 84, 112, 140, 168, 196, 224, 255];

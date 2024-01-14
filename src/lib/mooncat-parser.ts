@@ -1,6 +1,7 @@
 import { CatTraits } from '../types/parsed-cat21';
 import { hexToBytes } from './conversions';
 import { designs, laser_designs } from './mooncat-parser.designs';
+import { mooncatDesignsToTraits } from './mooncat-parser.designs-to-traits';
 import { derivePalette } from './mooncat-parser.helper';
 
 /*
@@ -124,6 +125,8 @@ export class MooncatParser {
       return row.split('').map(cell => colors[parseInt(cell, 10)]);
     });
 
+    const designTraits = mooncatDesignsToTraits.find(design => design[0] === designIndex)!;
+
     const traits = {
       genesis,
       colors: [
@@ -135,6 +138,10 @@ export class MooncatParser {
       ] as string[],
       inverted,
       designIndex,
+      designPose: designTraits[1],
+      designExpression: designTraits[2],
+      designPattern: designTraits[3],
+      designFacing: designTraits[4],
       laserEyes: laserEyesName,
       orangeBackground
     }
@@ -169,10 +176,10 @@ export class MooncatParser {
     const xOffset = Math.floor((gridWidth - catWidth) / 2);
 
     // Calculate the y-offset to align the cat at the bottom of the 22x22 grid
-    const yOffset = gridHeight - catHeight;
+    // the -1 adds 1px padding to the bottom if possible otherwise 0
+    const yOffset = Math.max(gridHeight - catHeight - 1, 0);
 
     let svgGrid = '';
-
     if (traits.orangeBackground) {
       svgGrid += '<rect x="0" y="0" width="22" height="22" fill="#ff9900" />'
     }
