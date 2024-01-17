@@ -43,7 +43,10 @@ export const knownFields = {
   metaprotocol: 0x07,
 
   // content_encoding, with a tag of 9, whose value is the encoding of the body.
-  content_encoding: 0x09
+  content_encoding: 0x09,
+
+  // delegate, with a tag of 11, see delegate docs: https://docs.ordinals.com/inscriptions/delegate.html
+  delegate: 0xb
 }
 
 /**
@@ -182,14 +185,15 @@ export function brotliDecodeUint8Array(bytes: Uint8Array): Uint8Array {
 }
 
 /**
- * Extracts the parent inscription ID from a field in an inscription.
- * The parent field value consists of a 32-byte transaction ID (TXID) followed by a four-byte little-endian index.
+ * Extracts an inscription ID from a field in an inscription.
+ * (used for parent instriptions and for delegate inscriptions)
+ * The value consists of a 32-byte transaction ID (TXID) followed by a four-byte little-endian index.
  * The TXID part is reversed in order, and trailing zeroes are omitted.
  *
  * @param parentField - The field containing the parent inscription data.
- * @returns The parent inscription ID as a string.
+ * @returns The inscription ID as a string.
  */
-export function extractParent(value: Uint8Array): string {
+export function extractInscriptionId(value: Uint8Array): string {
 
   // Reverse the TXID part and convert it to hexadecimal
   const txId = value.slice(0, 32).reverse();

@@ -1,4 +1,4 @@
-import { extractParent, extractPointer, getKnownFieldValue, getKnownFieldValues, getNextInscriptionMark } from './inscription-parser.service.helper';
+import { extractInscriptionId, extractPointer, getKnownFieldValue, getKnownFieldValues, getNextInscriptionMark } from './inscription-parser.service.helper';
 import { hexToBytes } from './lib/conversions';
 
 describe('getKnownFieldValue', () => {
@@ -170,13 +170,13 @@ describe('extractParent', () => {
   it('should correctly extract parent inscription ID (000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fi255)', () => {
     const value = hexToBytes('1f1e1d1c1b1a191817161514131211100f0e0d0c0b0a09080706050403020100ff');
     const expected = '000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fi255';
-    expect(extractParent(value)).toEqual(expected);
+    expect(extractInscriptionId(value)).toEqual(expected);
   });
 
   it('should correctly extract parent inscription ID (000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fi256)', () => {
     const value = hexToBytes('1f1e1d1c1b1a191817161514131211100f0e0d0c0b0a090807060504030201000001');
     const expected = '000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fi256';
-    expect(extractParent(value)).toEqual(expected);
+    expect(extractInscriptionId(value)).toEqual(expected);
   });
 });
 

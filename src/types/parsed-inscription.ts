@@ -50,4 +50,10 @@ export interface ParsedInscription extends DigitalArtifact {
    * Get Content encoding, from tag 9
    */
   getContentEncoding: () => string | undefined;
+
+  /**
+   * Get Delegate inscription(s), from tag 11
+   * see delegate docs: https://docs.ordinals.com/inscriptions/delegate.html
+   */
+  getDelegates: () => string[];
 }

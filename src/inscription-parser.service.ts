@@ -1,6 +1,6 @@
 import {
   brotliDecodeUint8Array,
-  extractParent,
+  extractInscriptionId,
   extractPointer,
   getKnownFieldValue,
   getKnownFieldValues,
@@ -102,7 +102,12 @@ export class InscriptionParserService {
     let newPointer = pointer;
     let slice: Uint8Array;
 
-    while (newPointer < raw.length && raw[newPointer] !== OP_0) {
+    while (newPointer < raw.length &&
+      // normal inscription - content follows now
+      (raw[newPointer] !== OP_0) &&
+      // delegate - inscription has no further content and ends directly here
+      (raw[newPointer] !== OP_ENDIF)
+    ) {
 
       // tags are encoded by ord as single-byte data pushes, but are accepted by ord as either single-byte pushes, or as OP_NUM data pushes.
       // tags greater than or equal to 256 should be encoded as little endian integers with trailing zeros omitted.
@@ -137,7 +142,6 @@ export class InscriptionParserService {
 
       // Now we are at the beginning of the body
       // (or at the end of the raw data if there's no body)
-      // --> Question: should we also allow empty inscriptions? (where the next byte is OP_ENDIF)
       if (newPointer < raw.length && raw[newPointer] === OP_0) {
         newPointer++; // Skip OP_0
       }
@@ -160,26 +164,30 @@ export class InscriptionParserService {
       }
 
       const contentTypeRaw = getKnownFieldValue(fields, knownFields.content_type);
-
-      // Let's ignore inscriptions without a contentType, because there is no good way to display them
-      // we could change this later on, if there are really inscriptions with no contentType but meaningful metadata
-      if (!contentTypeRaw) {
-        return null;
-      }
-
-      // strings are (always) UTF-8 , according to https://github.com/ordinals/ord/issues/2505
-      const contentType = bytesToUnicodeString(contentTypeRaw);
-
-      // figure out if the body is encoded via brotli
-      const contentEncodingRaw = getKnownFieldValue(fields, knownFields.content_encoding);
-
+      let contentType: string;
       let contentEncoding: string | undefined = undefined;
-      if (contentEncodingRaw) {
-        contentEncoding = bytesToUnicodeString(contentEncodingRaw);
-      }
 
-      if (contentEncoding === 'br') {
-        combinedData = brotliDecodeUint8Array(combinedData);
+      // an inscriptions without a contentType, probably a delegate
+      if (!contentTypeRaw) {
+
+        contentType = 'undefined';
+
+      } else {
+
+        // strings are (always) UTF-8, according to https://github.com/ordinals/ord/issues/2505
+        contentType = bytesToUnicodeString(contentTypeRaw);
+
+        // figure out if the body is encoded via brotli
+        const contentEncodingRaw = getKnownFieldValue(fields, knownFields.content_encoding);
+        if (contentEncodingRaw) {
+          contentEncoding = bytesToUnicodeString(contentEncodingRaw);
+        }
+
+        if (contentEncoding === 'br') {
+          combinedData = brotliDecodeUint8Array(combinedData);
+        }
+
+        // TODO: add support for gzip
       }
 
       return {
@@ -216,7 +224,7 @@ export class InscriptionParserService {
 
         getParents: (): string[] => {
           const parentsRaw = getKnownFieldValues(fields, knownFields.parent);
-          return parentsRaw.map(parentRaw => extractParent(parentRaw));
+          return parentsRaw.map(parentRaw => extractInscriptionId(parentRaw));
         },
 
         getMetadata: (): string | undefined => {
@@ -240,7 +248,12 @@ export class InscriptionParserService {
 
         getContentEncoding: (): string | undefined => {
           return contentEncoding;
-        }
+        },
+
+        getDelegates: (): string[] => {
+          const delegatesRaw = getKnownFieldValues(fields, knownFields.delegate);
+          return delegatesRaw.map(parentRaw => extractInscriptionId(parentRaw));
+        },
       };
 
     } catch (ex) {
