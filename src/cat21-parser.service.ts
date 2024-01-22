@@ -1,3 +1,4 @@
+import { createCatHash } from './cat21-parser.service.helper';
 import { MooncatParser } from './lib/mooncat-parser';
 import { DigitalArtifactType } from './types/digital-artifact';
 import { CatTraits, ParsedCat21 } from './types/parsed-cat21';
@@ -12,10 +13,14 @@ export class Cat21ParserService {
    *
    * @param transaction - The transaction to parse.
    * @returns A ParsedCat object if the transaction is a valid CAT-21 transaction, otherwise null.
+   *          For unconfirmed transactions the SVG is a placeholder image and the traits are null
    */
   static parse(transaction: {
     txid: string,
-    locktime: number
+    locktime: number,
+    status: {
+      block_hash?: string, // undefined, if unconfirmed txn!
+    }
   }): ParsedCat21 | null {
 
     try {
@@ -24,32 +29,48 @@ export class Cat21ParserService {
         return null;
       }
 
-      let svgAndTraits: { svg: string; traits: CatTraits; } | null = null;
+      const type = DigitalArtifactType.Cat21;
+      const transactionId = transaction.txid;
+      const blockId = transaction.status.block_hash || null;
+      const uniqueId = `${DigitalArtifactType.Cat21}-${transaction.txid}`;
 
-      return {
+      if (blockId) {
 
-        type: DigitalArtifactType.Cat21,
-        transactionId: transaction.txid,
-        uniqueId: `${DigitalArtifactType.Cat21}-${transaction.txid}`,
+        let svgAndTraits: { svg: string; traits: CatTraits; } | null = null;
+        const catHash = createCatHash(transactionId, blockId);
 
-        getImage: () => {
+        // final cat
+        return {
+          type,
+          transactionId,
+          blockId,
+          uniqueId,
 
-          if (!svgAndTraits) {
-            svgAndTraits = MooncatParser.parseAndGenerateSvg(transaction.txid);
+          getImage: () => {
+            if (!svgAndTraits) {
+              svgAndTraits = MooncatParser.parseAndGenerateSvg(catHash);
+            }
+            return svgAndTraits.svg
+          },
+          getTraits: () => {
+            if (!svgAndTraits) {
+              svgAndTraits = MooncatParser.parseAndGenerateSvg(catHash);
+            }
+            return svgAndTraits.traits
           }
+        };
+      } else {
 
-          return svgAndTraits.svg
-        },
-
-        getTraits: () => {
-
-          if (!svgAndTraits) {
-            svgAndTraits = MooncatParser.parseAndGenerateSvg(transaction.txid);
-          }
-
-          return svgAndTraits.traits
-        }
-      };
+        // placeholder cat
+        return {
+          type,
+          transactionId,
+          blockId,
+          uniqueId,
+          getImage: () => '<svg></svg>',
+          getTraits: () => null
+        };
+      }
 
     } catch (ex) {
       // console.error(ex);

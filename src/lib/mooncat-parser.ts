@@ -1,3 +1,4 @@
+import { createCatHash } from '../cat21-parser.service.helper';
 import { CatTraits } from '../types/parsed-cat21';
 import { hexToBytes } from './conversions';
 import { designs, laser_designs } from './mooncat-parser.designs';
@@ -22,7 +23,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
  * Modified Typescript version of
  * https://github.com/ponderware/mooncatparser/blob/master/mooncatparser.js
  *
- * This parser takes a 7 byte hex catId and returns a 2D array of hex color value strings, or null for transparency.
+ * This parser takes a catHash and returns a 2D array of hex color value strings, or null for transparency.
  * New: It generates a SVG file, instead of a pixel image.
  * New: Laser eyes trait
  * New: Orange background trait
@@ -45,33 +46,34 @@ export class MooncatParser {
    * 152 in decimal. This is because the very first CAT-21 had that ID.
    * Same goes for the other new traits. First Genesis cat has all of them.
    *
-   * @param catId - The transaction ID.
+   * @param catHash - concatenated transactionId and blockId
    * @returns Mooncat design as a 2D array.
    */
-  public static parse(catId: string): { catData: (string | null)[][]; traits: CatTraits } {
+  public static parse(catHash: string): { catData: (string | null)[][]; traits: CatTraits } {
 
-    const bytes = hexToBytes(catId);
+    const bytes = hexToBytes(catHash);
 
-    // First genesis cat has value 152 here
+    // Genesis cat has value 79 here
     // Probability: 1/256 --> 0.00390625 --> ~0.4%
-    const genesis = bytes[0] === 152;
+    const genesis = bytes[0] === 79;
 
     const k = bytes[1];
     const r = bytes[2];
     const g = bytes[3];
     const b = bytes[4];
 
-    // Second historic cat has has value 224 here - it should have red laser eyes, too
+    // Genesis cat has value 121 here
+    // Second historic cat has has value 140 here - both should have red laser eyes
     // 10% chance of red laser eyes
-    // 26 values between: 199 and 224 --> 26/256 --> 0.1015625 --> ~10%
-    const redLaserEyes = bytes[5] >= 199 && bytes[5] <= 224;
-    const greenLaserEyes = bytes[5] >= 173 && bytes[5] <= 198;
-    const blueLaserEyes = bytes[5] >= 147 && bytes[5] <= 172;
+    // 26 values between: 121 and 146 --> 26/256 --> 0.1015625 --> ~10%
+    const redLaserEyes = bytes[5] >= 121 && bytes[5] <= 146;
+    const greenLaserEyes = bytes[5] >= 95 && bytes[5] <= 120;
+    const blueLaserEyes = bytes[5] >= 69 && bytes[5] <= 94;
 
-    // First genesis cat has value 170 here
+    // First genesis cat has value 120 here
     // 10% chance of an orange background
-    // 26 values between: 170 and 195 --> 26/256 --> 0.1015625 --> ~10%
-    const orangeBackground  = bytes[6] >= 170 && bytes[6] <= 195;
+    // 26 values between: 120 and 145 --> 26/256 --> 0.1015625 --> ~10%
+    const orangeBackground  = bytes[6] >= 120 && bytes[6] <= 145;
 
     // 50% chance of inverted colors
     // 128/256  --> 0.5 --> exactly 50%
@@ -153,17 +155,18 @@ export class MooncatParser {
   }
 
   /**
-   * Generates an SVG representation of a Mooncat from a given catId.
+   * Generates an SVG representation of a Mooncat from a given catHash.
    *
-   * This function parses the Mooncat design from the catId and constructs an SVG
+   * This function parses the Mooncat design from the catHash (transactionId + blockId) and constructs an SVG
    * image, where each pixel of the Mooncat design is represented as an SVG rectangle.
    *
-   * @param catId - The unique identifier of the Mooncat (transaction ID).
+   * @param catHash - transactionId in hex format
+   * @param blockId - blockId in hex format
    * @returns The traits and a string containing the SVG markup of the Mooncat.
    */
-  public static parseAndGenerateSvg(catId: string): { svg: string; traits: CatTraits } {
+  static parseAndGenerateSvg(catHash: string): { svg: string; traits: CatTraits } {
 
-    const parsed = MooncatParser.parse(catId);
+    const parsed = MooncatParser.parse(catHash);
     const catData = parsed.catData;
     const traits = parsed.traits
 

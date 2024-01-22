@@ -1,7 +1,7 @@
 // A list of all txids in the block of the Genesis cat.
 // GET https://mempool.space/api/block/000000000000000000018e3ea447b11385e3330348010e1b2418d0d8ae4e0ac7/txids
 
-export const txIds = ['fad857b1d734e9491752d62fb942ea6c9836c7f9508fbd6efb5f12394852057b',
+export const cat21GenesisBlockTxIds = ['fad857b1d734e9491752d62fb942ea6c9836c7f9508fbd6efb5f12394852057b',
 'd06e7718a23878a8701c6c844b348f75dfb7ac89ea950698d0babf30e8d5cca4',
 '69e059d74d6cb60be71ffe88ca3517527a1ffea7377164474bf26d6f54ae3048',
 '2265c78aab7d776a8996e570543af10730d312615a28e8d25f2db68381cf300a',

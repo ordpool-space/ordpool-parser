@@ -66,13 +66,19 @@ export interface CatTraits {
 export interface ParsedCat21 extends DigitalArtifact {
 
   /**
-   * Returns the cat SVG image
+   * Returns the block hash if the transaction is confirmed, or `null` if the transaction is still unconfirmed
+   */
+  blockId: string | null;
+
+  /**
+   * Returns the final cat SVG image for confirmed transactions
+   * or the official placeholder image if the transaction is still unconfirmed
    */
   getImage: () => string;
 
   /**
    * Returns the cat's traits
    */
-  getTraits: () => CatTraits;
+  getTraits: () => CatTraits | null;
 }
 
