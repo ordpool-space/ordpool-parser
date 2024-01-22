@@ -1,3 +1,4 @@
+import { createCatHash } from '../cat21-parser.service.helper';
 import { CatTraits } from '../types/parsed-cat21';
 import { hexToBytes } from './conversions';
 import { designs, laser_designs } from './mooncat-parser.designs';
@@ -22,7 +23,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
  * Modified Typescript version of
  * https://github.com/ponderware/mooncatparser/blob/master/mooncatparser.js
  *
- * This parser takes a 7 byte hex catId and returns a 2D array of hex color value strings, or null for transparency.
+ * This parser takes a catHash and returns a 2D array of hex color value strings, or null for transparency.
  * New: It generates a SVG file, instead of a pixel image.
  * New: Laser eyes trait
  * New: Orange background trait
@@ -45,12 +46,12 @@ export class MooncatParser {
    * 152 in decimal. This is because the very first CAT-21 had that ID.
    * Same goes for the other new traits. First Genesis cat has all of them.
    *
-   * @param catId - The transaction ID.
+   * @param catHash - concatenated transactionId and blockId
    * @returns Mooncat design as a 2D array.
    */
-  public static parse(catId: string): { catData: (string | null)[][]; traits: CatTraits } {
+  public static parse(catHash: string): { catData: (string | null)[][]; traits: CatTraits } {
 
-    const bytes = hexToBytes(catId);
+    const bytes = hexToBytes(catHash);
 
     // First genesis cat has value 152 here
     // Probability: 1/256 --> 0.00390625 --> ~0.4%
@@ -153,17 +154,18 @@ export class MooncatParser {
   }
 
   /**
-   * Generates an SVG representation of a Mooncat from a given catId.
+   * Generates an SVG representation of a Mooncat from a given catHash.
    *
-   * This function parses the Mooncat design from the catId and constructs an SVG
+   * This function parses the Mooncat design from the catHash (transactionId + blockId) and constructs an SVG
    * image, where each pixel of the Mooncat design is represented as an SVG rectangle.
    *
-   * @param catId - The unique identifier of the Mooncat (transaction ID).
+   * @param catHash - transactionId in hex format
+   * @param blockId - blockId in hex format
    * @returns The traits and a string containing the SVG markup of the Mooncat.
    */
-  public static parseAndGenerateSvg(catId: string): { svg: string; traits: CatTraits } {
+  static parseAndGenerateSvg(catHash: string): { svg: string; traits: CatTraits } {
 
-    const parsed = MooncatParser.parse(catId);
+    const parsed = MooncatParser.parse(catHash);
     const catData = parsed.catData;
     const traits = parsed.traits
 
