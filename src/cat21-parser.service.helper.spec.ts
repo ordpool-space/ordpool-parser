@@ -23,12 +23,14 @@ describe('sha256Hash', () => {
 // Hex In: 98316dcb21daaa221865208fe0323616ee6dd84e6020b78bc6908e914ac03892000000000000000000018e3ea447b11385e3330348010e1b2418d0d8ae4e0ac7
 // Hex Result: 4f988e3ec77978db7774182d573ef8b077972d00b664a7095b121152c86a2f58
 describe('createCat21Hash', () => {
-  it('should create a valid CAT-21 hash for given transactionId and blockId', () => {
+  it('should create a valid CAT-21 hash for a given transactionId and blockId', () => {
     const transactionId = '98316dcb21daaa221865208fe0323616ee6dd84e6020b78bc6908e914ac03892';
     const blockId = '000000000000000000018e3ea447b11385e3330348010e1b2418d0d8ae4e0ac7';
 
-    const cat21Hash = createCatHash(transactionId, blockId);
-    expect(cat21Hash.length).toBe(64);
-    expect(cat21Hash).toBe('4f988e3ec77978db7774182d573ef8b077972d00b664a7095b121152c86a2f58');
+    const catHash = createCatHash(transactionId, blockId);
+    expect(catHash.length).toBe(64);
+
+    // the catHash of the Genesis cat
+    expect(catHash).toBe('4f988e3ec77978db7774182d573ef8b077972d00b664a7095b121152c86a2f58');
   });
 });

@@ -53,26 +53,27 @@ export class MooncatParser {
 
     const bytes = hexToBytes(catHash);
 
-    // First genesis cat has value 152 here
+    // Genesis cat has value 79 here
     // Probability: 1/256 --> 0.00390625 --> ~0.4%
-    const genesis = bytes[0] === 152;
+    const genesis = bytes[0] === 79;
 
     const k = bytes[1];
     const r = bytes[2];
     const g = bytes[3];
     const b = bytes[4];
 
-    // Second historic cat has has value 224 here - it should have red laser eyes, too
+    // Genesis cat has value 121 here
+    // Second historic cat has has value 140 here - both should have red laser eyes
     // 10% chance of red laser eyes
-    // 26 values between: 199 and 224 --> 26/256 --> 0.1015625 --> ~10%
-    const redLaserEyes = bytes[5] >= 199 && bytes[5] <= 224;
-    const greenLaserEyes = bytes[5] >= 173 && bytes[5] <= 198;
-    const blueLaserEyes = bytes[5] >= 147 && bytes[5] <= 172;
+    // 26 values between: 121 and 146 --> 26/256 --> 0.1015625 --> ~10%
+    const redLaserEyes = bytes[5] >= 121 && bytes[5] <= 146;
+    const greenLaserEyes = bytes[5] >= 95 && bytes[5] <= 120;
+    const blueLaserEyes = bytes[5] >= 69 && bytes[5] <= 94;
 
-    // First genesis cat has value 170 here
+    // First genesis cat has value 120 here
     // 10% chance of an orange background
-    // 26 values between: 170 and 195 --> 26/256 --> 0.1015625 --> ~10%
-    const orangeBackground  = bytes[6] >= 170 && bytes[6] <= 195;
+    // 26 values between: 120 and 145 --> 26/256 --> 0.1015625 --> ~10%
+    const orangeBackground  = bytes[6] >= 120 && bytes[6] <= 145;
 
     // 50% chance of inverted colors
     // 128/256  --> 0.5 --> exactly 50%

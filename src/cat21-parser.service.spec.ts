@@ -72,6 +72,7 @@ describe('Cat21ParserService', () => {
     fs.writeFileSync('testdist/genesis-cat.svg', parsedCat?.getImage() || '');
   });
 
+
   it('should render the first historic cats', async () => {
 
     const txIdsAndBlockIds = [
