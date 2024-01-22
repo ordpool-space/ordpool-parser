@@ -33,44 +33,29 @@ export class Cat21ParserService {
       const transactionId = transaction.txid;
       const blockId = transaction.status.block_hash || null;
       const uniqueId = `${DigitalArtifactType.Cat21}-${transaction.txid}`;
+      const catHash = blockId ? createCatHash(transactionId, blockId) : null;
 
-      if (blockId) {
+      let svgAndTraits: { svg: string; traits: CatTraits | null; } | null = null;
 
-        let svgAndTraits: { svg: string; traits: CatTraits; } | null = null;
-        const catHash = createCatHash(transactionId, blockId);
+      return {
+        type,
+        transactionId,
+        blockId,
+        uniqueId,
 
-        // final cat
-        return {
-          type,
-          transactionId,
-          blockId,
-          uniqueId,
-
-          getImage: () => {
-            if (!svgAndTraits) {
-              svgAndTraits = MooncatParser.parseAndGenerateSvg(catHash);
-            }
-            return svgAndTraits.svg
-          },
-          getTraits: () => {
-            if (!svgAndTraits) {
-              svgAndTraits = MooncatParser.parseAndGenerateSvg(catHash);
-            }
-            return svgAndTraits.traits
+        getImage: () => {
+          if (!svgAndTraits) {
+            svgAndTraits = MooncatParser.parseAndGenerateSvg(catHash);
           }
-        };
-      } else {
-
-        // placeholder cat
-        return {
-          type,
-          transactionId,
-          blockId,
-          uniqueId,
-          getImage: () => '<svg></svg>',
-          getTraits: () => null
-        };
-      }
+          return svgAndTraits.svg
+        },
+        getTraits: () => {
+          if (!svgAndTraits) {
+            svgAndTraits = MooncatParser.parseAndGenerateSvg(catHash);
+          }
+          return svgAndTraits.traits
+        }
+      };
 
     } catch (ex) {
       // console.error(ex);

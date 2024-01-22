@@ -1,7 +1,7 @@
 import { createCatHash } from '../cat21-parser.service.helper';
 import { CatTraits } from '../types/parsed-cat21';
 import { hexToBytes } from './conversions';
-import { designs, laser_designs } from './mooncat-parser.designs';
+import { designs, laserDesigns, placeholderDesign } from './mooncat-parser.designs';
 import { mooncatDesignsToTraits } from './mooncat-parser.designs-to-traits';
 import { derivePalette } from './mooncat-parser.helper';
 
@@ -73,7 +73,7 @@ export class MooncatParser {
     // First genesis cat has value 120 here
     // 10% chance of an orange background
     // 26 values between: 120 and 145 --> 26/256 --> 0.1015625 --> ~10%
-    const orangeBackground  = bytes[6] >= 120 && bytes[6] <= 145;
+    const orangeBackground = bytes[6] >= 120 && bytes[6] <= 145;
 
     // 50% chance of inverted colors
     // 128/256  --> 0.5 --> exactly 50%
@@ -85,7 +85,7 @@ export class MooncatParser {
 
     let design;
     if (redLaserEyes || greenLaserEyes || blueLaserEyes) {
-      design = laser_designs[designIndex].split('.');
+      design = laserDesigns[designIndex].split('.');
     } else {
       design = designs[designIndex].split('.');
     }
@@ -155,6 +155,26 @@ export class MooncatParser {
   }
 
   /**
+   * Returns a placeholder cat 2D array
+   *
+   * @returns Mooncat design as a 2D array.
+   */
+  public static parsePlaceholder(): { catData: (string | null)[][]; traits: null } {
+
+    let colors: (string | null)[] = [null, '#bbbbbb', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#555555'];
+
+    const catData = placeholderDesign.split('.')
+      .map(row => {
+        return row.split('').map(cell => colors[parseInt(cell, 10)]);
+      });
+
+    return {
+      catData,
+      traits: null
+    }
+  }
+
+  /**
    * Generates an SVG representation of a Mooncat from a given catHash.
    *
    * This function parses the Mooncat design from the catHash (transactionId + blockId) and constructs an SVG
@@ -164,9 +184,15 @@ export class MooncatParser {
    * @param blockId - blockId in hex format
    * @returns The traits and a string containing the SVG markup of the Mooncat.
    */
-  static parseAndGenerateSvg(catHash: string): { svg: string; traits: CatTraits } {
+  static parseAndGenerateSvg(catHash: string | null): { svg: string; traits: CatTraits | null } {
 
-    const parsed = MooncatParser.parse(catHash);
+    let parsed: { catData: (string | null)[][]; traits: CatTraits | null };
+
+    if (catHash) {
+      parsed = MooncatParser.parse(catHash);
+    } else {
+      parsed = MooncatParser.parsePlaceholder();
+    }
     const catData = parsed.catData;
     const traits = parsed.traits
 
@@ -183,7 +209,7 @@ export class MooncatParser {
     const yOffset = Math.max(gridHeight - catHeight - 1, 0);
 
     let svgGrid = '';
-    if (traits.orangeBackground) {
+    if (traits?.orangeBackground) {
       svgGrid += '<rect x="0" y="0" width="22" height="22" fill="#ff9900" />'
     }
 
