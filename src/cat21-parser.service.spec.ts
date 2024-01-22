@@ -40,16 +40,38 @@ describe('Cat21ParserService', () => {
     const txn = { ...baseTxn };
     const parsedCat = Cat21ParserService.parse(txn);
     expect(parsedCat).not.toBeNull();
+
     expect(parsedCat?.transactionId).toBe('98316dcb21daaa221865208fe0323616ee6dd84e6020b78bc6908e914ac03892');
+    expect(parsedCat?.blockId).toBe('000000000000000000018e3ea447b11385e3330348010e1b2418d0d8ae4e0ac7');
     expect(parsedCat?.getImage()).toContain('<svg');
+    expect(parsedCat?.getTraits()).not.toBeNull();
   });
 
   it('should return null for transactions with incorrect nLockTime', () => {
     const txn = { ...baseTxn, locktime: 20 };
-    expect(Cat21ParserService.parse(txn)).toBeNull();
+    const parsedCat = Cat21ParserService.parse(txn);
+    expect(parsedCat).toBeNull();
   });
 
-  it('should render the Genesis cat!', () => {
+  it('should render a placeholder cat for unconfirmed transactions', () => {
+    const txn = {
+      ...baseTxn,
+      status: {
+        block_hash: undefined
+      }
+    };
+
+    const parsedCat = Cat21ParserService.parse(txn)
+    expect(parsedCat?.transactionId).toBe('98316dcb21daaa221865208fe0323616ee6dd84e6020b78bc6908e914ac03892');
+    expect(parsedCat?.blockId).toBeNull();
+
+    expect(parsedCat?.getImage()).toContain('<svg');
+    expect(parsedCat?.getTraits()).toBeNull();
+
+    fs.writeFileSync('testdist/placholder-cat.svg', parsedCat?.getImage() || '');
+  });
+
+  it('should render the Genesis cat', () => {
 
     const txn = readTransaction('98316dcb21daaa221865208fe0323616ee6dd84e6020b78bc6908e914ac03892');
     const parsedCat = Cat21ParserService.parse(txn);
@@ -57,17 +79,15 @@ describe('Cat21ParserService', () => {
 
     const traits = parsedCat?.getTraits();
 
-    // expect(traits?.genesis).toBe(true);
-    // expect(traits?.inverted).toBe(false);
-
-    // expect(traits?.designIndex).toEqual(49);
-    // expect(traits?.designPose).toEqual('Sleeping');
-    // expect(traits?.designExpression).toEqual('Shy');
-    // expect(traits?.designPattern).toEqual('Solid');
-    // expect(traits?.designFacing).toEqual('Left');
-
-    // expect(traits?.laserEyes).toEqual('red');
-    // expect(traits?.orangeBackground).toBe(true);
+    expect(traits?.genesis).toBe(true);
+    expect(traits?.inverted).toBe(true);
+    expect(traits?.designIndex).toEqual(24);
+    expect(traits?.designPose).toEqual('Standing');
+    expect(traits?.designExpression).toEqual('Grumpy');
+    expect(traits?.designPattern).toEqual('Eyepatch');
+    expect(traits?.designFacing).toEqual('Left');
+    expect(traits?.laserEyes).toEqual('red');
+    expect(traits?.orangeBackground).toBe(true);
 
     fs.writeFileSync('testdist/genesis-cat.svg', parsedCat?.getImage() || '');
   });
@@ -131,9 +151,9 @@ describe('Cat21ParserService', () => {
     // const steps = [0, 28, 56, 84, 112, 140, 168, 196, 224, 255];
     const steps = [0, 51, 102, 153, 204, 255];
 
-    const laserEyesByte = 224; // red
-    // const laserEyesByte = 198; // green
-    // const laserEyesByte = 172; // blue
+    const laserEyesByte = 121; // red
+    // const laserEyesByte = 95; // green
+    // const laserEyesByte = 69; // blue
 
     let svgContent = '';
 
@@ -168,18 +188,20 @@ describe('Cat21ParserService', () => {
 
   it('should generate examples with laser eyes in all poses', () => {
 
+    const laserEyesByte = 121; // red
     let svgContent = '';
 
     for (let k = 0; k < 256; k++) {
 
-      const catHash = '00' +
-        k.toString(16).padStart(2, '0') +
+      const catHash =
         (0).toString(16).padStart(2, '0') +
-        (3).toString(16).padStart(2, '0') +
-        (4).toString(16).padStart(2, '0') +
-        (224).toString(16).padStart(2, '0');
+        k.toString(16).padStart(2, '0') +
+        (50).toString(16).padStart(2, '0') +
+        (200).toString(16).padStart(2, '0') +
+        (0).toString(16).padStart(2, '0') +
+        (laserEyesByte).toString(16).padStart(2, '0');
 
-      svgContent += `<span title="${k}">` + MooncatParser.parseAndGenerateSvg(catHash) + '</span>';
+      svgContent += `<span title="${k}">` + MooncatParser.parseAndGenerateSvg(catHash).svg + '</span>';
     }
 
     fs.writeFileSync('testdist/cat-lasereye-poses-testdrive.html', testdriveHtml.replace('CATS!', svgContent));
