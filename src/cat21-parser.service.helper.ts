@@ -2,7 +2,7 @@ import { bytesToHex, hexToBytes } from "./lib/conversions";
 import { createHash } from './lib/sha256-uint8array';
 
 /**
- * Hashes data using a SHA-256 algorithm.
+ * Hashes data using the SHA-256 algorithm.
  * Takes a Uint8Array as input and returns a Uint8Array of the hash.
  *
  * Does not use the SubtleCrypto API because this one is returning Promises
@@ -23,7 +23,7 @@ export function sha256Hash(inputData: Uint8Array): Uint8Array {
  *
  * @param transactionId - The transaction ID in hexadecimal format.
  * @param blockId - The block ID in hexadecimal format.
- * @returns A promise that resolves to a 64-character hexadecimal hash string.
+ * @returns A 64-character hexadecimal hash string.
  * @throws If transactionId or blockId are not valid hexadecimal strings of the correct length.
  */
 export function createCatHash(transactionId: string, blockId: string): string {

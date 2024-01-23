@@ -23,7 +23,10 @@ export class DigitalArtifactsParserService {
     vout: {
       scriptpubkey: string,
       scriptpubkey_type: string
-    }[];
+    }[],
+    status: {
+      block_hash?: string, // undefined, if unconfirmed txn!
+    }
   }): DigitalArtifact[] {
 
     const artifacts: DigitalArtifact[] = InscriptionParserService.parse(transaction);
