@@ -76,7 +76,7 @@ export function bytesToBinaryString(bytes: Uint8Array): string {
 export function hexToBytes(hex: string): Uint8Array {
   const bytes = new Uint8Array(hex.length / 2);
   for (let i = 0, j = 0; i < hex.length; i += 2, j++) {
-    bytes[j] = parseInt(hex.substr(i, 2), 16);
+    bytes[j] = parseInt(hex.slice(i, i + 2), 16);
   }
   return bytes;
 }

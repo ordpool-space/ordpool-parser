@@ -151,16 +151,3 @@ export function derivePalette(r: number, g: number, b: number, invert: boolean):
     RGBToHex(c5)
   ];
 }
-
-/**
- * Converts a hexadecimal string to an array of bytes.
- * @param {string} hex - The hexadecimal string.
- * @returns {number[]} - The array of bytes.
- */
-export function hexToBytes(hex: string): number[] {
-  var result = []
-  for (var i = 0; i < hex.length; i += 2) {
-    result.push(parseInt(hex.slice(i, i + 2), 16));
-  }
-  return result;
-}
