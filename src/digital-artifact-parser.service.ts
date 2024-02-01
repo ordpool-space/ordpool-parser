@@ -37,8 +37,9 @@ export class DigitalArtifactsParserService {
       artifacts.push(parsedSrc20);
     }
 
+    // cat's are first!
     if (parsedCat) {
-      artifacts.push(parsedCat);
+      artifacts.unshift(parsedCat);
     }
 
     return artifacts;

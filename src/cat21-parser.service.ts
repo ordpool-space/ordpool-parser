@@ -32,7 +32,7 @@ export class Cat21ParserService {
       const type = DigitalArtifactType.Cat21;
       const transactionId = transaction.txid;
       const blockId = transaction.status.block_hash || null;
-      const uniqueId = `${DigitalArtifactType.Cat21}-${transaction.txid}`;
+      const uniqueId = `${DigitalArtifactType.Cat21}-${transaction.txid}-${ blockId || 'unconfirmed' }`;
       const catHash = blockId ? createCatHash(transactionId, blockId) : null;
 
       let svgAndTraits: { svg: string; traits: CatTraits | null; } | null = null;
