@@ -61,6 +61,12 @@ export interface CatTraits {
    * The orange color is #ff9900, because this is the only true orange Bitcoin color!
    */
   orangeBackground: boolean;
+
+  /**
+   * The crown trait.
+   * There is a ~10% chance to receive a cat with a crown.
+   */
+  crown: boolean;
 }
 
 export interface ParsedCat21 extends DigitalArtifact {

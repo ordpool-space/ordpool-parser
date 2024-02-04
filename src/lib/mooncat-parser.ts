@@ -159,7 +159,8 @@ export class MooncatParser {
       designPattern: designTraits[3],
       designFacing: designTraits[4],
       laserEyes: laserEyesName,
-      orangeBackground
+      orangeBackground,
+      crown
     }
 
     return {
