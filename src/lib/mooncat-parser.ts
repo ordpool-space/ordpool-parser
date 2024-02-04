@@ -1,7 +1,7 @@
 import { createCatHash } from '../cat21-parser.service.helper';
 import { CatTraits } from '../types/parsed-cat21';
 import { hexToBytes } from './conversions';
-import { designs, laserDesigns, placeholderDesign } from './mooncat-parser.designs';
+import { designs, laserDesigns, crownDesigns, laserCrownDesigns, placeholderDesign } from './mooncat-parser.designs';
 import { mooncatDesignsToTraits } from './mooncat-parser.designs-to-traits';
 import { derivePalette } from './mooncat-parser.helper';
 
@@ -75,6 +75,9 @@ export class MooncatParser {
     // 26 values between: 120 and 145 --> 26/256 --> 0.1015625 --> ~10%
     const orangeBackground = bytes[6] >= 120 && bytes[6] <= 145;
 
+    // 10% chance of crown
+    const crown = bytes[7] >= 120 && bytes[7] <= 145;
+
     // 50% chance of inverted colors
     // 128/256  --> 0.5 --> exactly 50%
     const inverted = k >= 128;
@@ -84,8 +87,12 @@ export class MooncatParser {
     const designIndex = k % 128;
 
     let design;
-    if (redLaserEyes || greenLaserEyes || blueLaserEyes) {
+    if ((redLaserEyes || greenLaserEyes || blueLaserEyes) && crown) {
+      design = laserCrownDesigns[designIndex].split('.');
+    } else if (redLaserEyes || greenLaserEyes || blueLaserEyes) {
       design = laserDesigns[designIndex].split('.');
+    } else if (crown) {
+      design = crownDesigns[designIndex].split('.');
     } else {
       design = designs[designIndex].split('.');
     }
@@ -93,6 +100,13 @@ export class MooncatParser {
 
     let laserEyesColors: (string | null)[] = [null, null]
     let laserEyesName: 'red' | 'green' | 'blue' | 'none' = 'none';
+
+    // gold crown
+    let crownColors = ["#ffaf51", "#ffcf39"];
+    if (orangeBackground) {
+      // diamond crown
+      crownColors = ["#b8d8e7", "#cbe3f0"];
+    }
 
     // as a homage to the good old days, only "web save colors" are used here
     if (redLaserEyes) {
@@ -120,8 +134,8 @@ export class MooncatParser {
       colors = derivePalette(r, g, b, inverted);
     }
 
-    // add laser eyes colors
-    colors = [...colors, laserEyesColors[0], laserEyesColors[1]];
+    // add laser eye and crown colors
+    colors = [...colors, laserEyesColors[0], laserEyesColors[1], crownColors[0], crownColors[1]];
 
     const catData = design.map(row => {
       return row.split('').map(cell => colors[parseInt(cell, 10)]);
