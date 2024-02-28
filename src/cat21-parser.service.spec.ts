@@ -80,7 +80,7 @@ describe('Cat21ParserService', () => {
     const traits = parsedCat?.getTraits();
 
     expect(traits?.genesis).toBe(true);
-    expect(traits?.inverted).toBe(true);
+    expect(traits?.gender).toBe('female');
     expect(traits?.designIndex).toEqual(24);
     expect(traits?.designPose).toEqual('Standing');
     expect(traits?.designExpression).toEqual('Grumpy');

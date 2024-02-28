@@ -143,6 +143,9 @@ export class MooncatParser {
 
     const designTraits = mooncatDesignsToTraits.find(design => design[0] === designIndex)!;
 
+    // inverted=false is male cat, inverted=true is a female cat
+    const gender: 'female' | 'male' = inverted ? 'female' : 'male';
+
     const traits = {
       genesis,
       colors: [
@@ -152,7 +155,8 @@ export class MooncatParser {
         colors[4],
         colors[5]
       ] as string[],
-      inverted,
+
+      gender,
       designIndex,
       designPose: designTraits[1],
       designExpression: designTraits[2],

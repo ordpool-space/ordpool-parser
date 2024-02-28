@@ -22,12 +22,13 @@ export interface CatTraits {
   colors: string[];
 
   /**
-   * Inverted cats have a inverted color palette.
-   * There is a 50% chance to receive an inverted cat.
+   * The gender (sex) of a cat.
+   * There is a 50% chance to receive a female cat.
+   * Female cats have a inverted color palette, so that it's easy to identify them.
    *
    * see https://github.com/cryptocopycats/awesome-mooncatrescue-bubble/blob/master/COLORS.md
    */
-  inverted: boolean;
+  gender: 'male' | 'female';
 
   /**
    * One of the 128 designs (from 0 to 127)
