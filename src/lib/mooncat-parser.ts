@@ -1,12 +1,19 @@
-import { createCatHash } from '../cat21-parser.service.helper';
 import { CatTraits } from '../types/parsed-cat21';
 import { hexToBytes } from './conversions';
 import { designs, laserDesigns, crownDesigns, laserCrownDesigns, placeholderDesign } from './mooncat-parser.designs';
 import { mooncatDesignsToTraits } from './mooncat-parser.designs-to-traits';
 import { derivePalette } from './mooncat-parser.helper';
 
+/* *********************************************
+
+THE CAT-21 PROJECT UTILIZES MODIFIED CODE FROM THE MOONCATS PROJECT BUT IS ENTIRELY INDEPENDENT AND NOT AFFILIATED WITH, ENDORSED BY, OR RELATED TO PONDERWARE LTD. OR ANY OF ITS CREATORS. THIS PROJECT IS NOT AN OFFICIAL EXTENSION OR RELEASE OF THE MOONCATS PROJECT. ANY USE OF MODIFIED CODE IS DONE SO UNDER THE TERMS OF THE ORIGINAL LICENSE, WHICH CAN BE FOUND AT https://raw.githubusercontent.com/haushoppe/ordpool-parser/main/LICENSE.
+EVERY DISTRIBUTION OF THIS SOFTWARE INCLUDES A COPY OF THE LICENSE TO ENSURE COMPLIANCE AND TRANSPARENCY.
+
+********************************************* */
+
 /*
-ORIGINAL LICENSE
+ORIGINAL MOONCAT LICENSE
+OUR CODE FOLLOWS THE SAME LICENSE!
 
 Copyright © 2017 ponderware ltd.
 Copyright © 2024 HAUS HOPPE
@@ -23,10 +30,18 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
  * Modified Typescript version of
  * https://github.com/ponderware/mooncatparser/blob/master/mooncatparser.js
  *
- * This parser takes a catHash and returns a 2D array of hex color value strings, or null for transparency.
- * New: It generates a SVG file, instead of a pixel image.
- * New: Laser eyes trait
- * New: Orange background trait
+ * This parser takes data from a Bitcoin transaction and returns a pixelated cat image.
+ *
+ * Some of the various modifications to the original algorithm,
+ * that make the artwork clearly differentiated from the original project, are:
+ *
+ * - It generates an SVG file, instead of a pixel image.
+ * - Laser eyes trait for all cats.
+ * - Orange or black background trait.
+ * - Gold or Diamond crown trait.
+ * - Male or Female cats instead of the "inverted" trait.
+ * - Cat color is derived from the paid miner fees (not from the hash), which
+ *   is a new artistic value that is also very related to the canvas (Bitcoin).
  *
  * Learn more:
  * --> https://github.com/cryptocopycats/mooncats/

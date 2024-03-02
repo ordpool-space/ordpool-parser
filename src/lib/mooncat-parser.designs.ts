@@ -1,7 +1,20 @@
+/* *********************************************
+
+THE CAT-21 PROJECT UTILIZES MODIFIED CODE FROM THE MOONCATS PROJECT BUT IS ENTIRELY INDEPENDENT AND NOT AFFILIATED WITH, ENDORSED BY, OR RELATED TO PONDERWARE LTD. OR ANY OF ITS CREATORS. THIS PROJECT IS NOT AN OFFICIAL EXTENSION OR RELEASE OF THE MOONCATS PROJECT. ANY USE OF MODIFIED CODE IS DONE SO UNDER THE TERMS OF THE ORIGINAL LICENSE, WHICH CAN BE FOUND AT
+
+https://raw.githubusercontent.com/haushoppe/ordpool-parser/main/LICENSE and
+https://raw.githubusercontent.com/ponderware/mooncatparser/master/license.txt
+
+EVERY DISTRIBUTION OF THIS SOFTWARE MUST INCLUDE A COPY OF THE LICENSE TO ENSURE COMPLIANCE AND TRANSPARENCY.
+
+********************************************* */
+
 /*
-ORIGINAL LICENSE
+ORIGINAL MOONCAT LICENSE
+OUR CODE FOLLOWS THE SAME LICENSE!
 
 Copyright © 2017 ponderware ltd.
+Copyright © 2024 HAUS HOPPE
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the 'Software'), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
