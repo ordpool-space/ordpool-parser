@@ -17,6 +17,8 @@ export class DigitalArtifactsParserService {
   static parse(transaction: {
     txid: string,
     locktime: number,
+    weight: number, // NEW: to calculate the fee rate
+    fee: number,    // NEW: to calculate the fee rate
     vin: {
       txid: string,
       witness?: string[] }[],

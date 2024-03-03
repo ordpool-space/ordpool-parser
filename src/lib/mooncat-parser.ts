@@ -41,7 +41,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
  *
  * - It generates an SVG file, instead of a pixel image.
  * - Laser eyes trait for all cats.
- * - Orange or black background trait.
+ * - Orange or gray background trait.
  * - Gold or Diamond crown trait.
  * - Male or Female cats instead of the "inverted" trait.
  * - Cat color is derived from the paid miner fees (not from the hash), which
@@ -55,20 +55,19 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 export class MooncatParser {
 
   /**
-   * Parses the Mooncat design based on the given transaction ID.
-   *
-   * Note:
-   * In the original Mooncat algorithm, the first byte was used as a boolean
-   * flag to toggle between genesis status and normal cat status.
-   * However, I hereby define that every cat gets the 'genesis' status if its
-   * transaction ID starts with exactly the ID 98 (hex), which corresponds to
-   * 152 in decimal. This is because the very first CAT-21 had that ID.
-   * Same goes for the other new traits. First Genesis cat has all of them.
+   * Parses a modified Mooncat design based on the given transaction ID + block ID + feeRate.
    *
    * @param catHash - concatenated transactionId and blockId
+   * @param feeRate - the fee rate of the transaction in sat/vB
    * @returns Mooncat design as a 2D array.
    */
-  public static parse(catHash: string): { catData: (string | null)[][]; traits: CatTraits } {
+  public static parse(catHash: string, feeRate: number): { catData: (string | null)[][]; traits: CatTraits } {
+
+    // TODO: @Ethspresso!
+    // this is a number with decimal places, which is equal or larger than 0
+    console.log('Fee Rate in sat/vb', feeRate);
+    debugger; // start here! =)
+
 
     const bytes = hexToBytes(catHash);
 
@@ -218,14 +217,15 @@ export class MooncatParser {
    *
    * @param catHash - transactionId in hex format
    * @param blockId - blockId in hex format
+   * @param feeRate - the fee rate of the transaction in sat/vB
    * @returns The traits and a string containing the SVG markup of the Mooncat.
    */
-  static parseAndGenerateSvg(catHash: string | null): { svg: string; traits: CatTraits | null } {
+  static parseAndGenerateSvg(catHash: string | null, feeRate: number): { svg: string; traits: CatTraits | null } {
 
     let parsed: { catData: (string | null)[][]; traits: CatTraits | null };
 
     if (catHash) {
-      parsed = MooncatParser.parse(catHash);
+      parsed = MooncatParser.parse(catHash, feeRate);
     } else {
       parsed = MooncatParser.parsePlaceholder();
     }
