@@ -80,10 +80,10 @@ export class MooncatParser {
     const b = bytes[4];
 
     // Genesis cat has value 121 here
-    const orangeLaserEyes = bytes[5] >= 0 && bytes[5] <= 63;   // 10%
-    const redLaserEyes = bytes[5] >= 64 && bytes[5] <= 127;    // 20%
-    const greenLaserEyes = bytes[5] >= 128 && bytes[5] <= 191; // 30%
-    const blueLaserEyes = bytes[5] >= 192 && bytes[5] <= 255;  // 40%
+    const orangeLaserEyes = bytes[5] >= 0 && bytes[5] <= 63;
+    const redLaserEyes = bytes[5] >= 64 && bytes[5] <= 127;
+    const greenLaserEyes = bytes[5] >= 128 && bytes[5] <= 191;
+    const blueLaserEyes = bytes[5] >= 192 && bytes[5] <= 255;
 
     // First genesis cat has value 120 here
     // 10% chance of an orange background
