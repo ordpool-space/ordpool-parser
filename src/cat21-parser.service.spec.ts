@@ -87,7 +87,8 @@ describe('Cat21ParserService', () => {
     expect(traits?.designPattern).toEqual('Eyepatch');
     expect(traits?.designFacing).toEqual('Left');
     expect(traits?.laserEyes).toEqual('red');
-    expect(traits?.orangeBackground).toBe(true);
+    expect(traits?.background).toBe('orange');
+    expect(traits?.crown).toBe('none');
 
     fs.writeFileSync('testdist/genesis-cat.svg', parsedCat?.getImage() || '');
   });
@@ -151,9 +152,10 @@ describe('Cat21ParserService', () => {
     // const steps = [0, 28, 56, 84, 112, 140, 168, 196, 224, 255];
     const steps = [0, 51, 102, 153, 204, 255];
 
-    const laserEyesByte = 121; // red
-    // const laserEyesByte = 95; // green
-    // const laserEyesByte = 69; // blue
+    const laserEyesByte = 0; // orange
+    // const laserEyesByte = 121; // red
+    // const laserEyesByte = 128; // green
+    // const laserEyesByte = 192; // blue
 
     let svgContent = '';
 

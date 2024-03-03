@@ -1,6 +1,6 @@
 import { CatTraits } from '../types/parsed-cat21';
 import { hexToBytes } from './conversions';
-import { designs, laserDesigns, crownDesigns, laserCrownDesigns, placeholderDesign } from './mooncat-parser.designs';
+import { laserDesigns, laserCrownDesigns, placeholderDesign } from './mooncat-parser.designs';
 import { mooncatDesignsToTraits } from './mooncat-parser.designs-to-traits';
 import { derivePalette } from './mooncat-parser.helper';
 
@@ -82,12 +82,10 @@ export class MooncatParser {
     const b = bytes[4];
 
     // Genesis cat has value 121 here
-    // Second historic cat has has value 140 here - both should have red laser eyes
-    // 10% chance of red laser eyes
-    // 26 values between: 121 and 146 --> 26/256 --> 0.1015625 --> ~10%
-    const redLaserEyes = bytes[5] >= 121 && bytes[5] <= 146;
-    const greenLaserEyes = bytes[5] >= 95 && bytes[5] <= 120;
-    const blueLaserEyes = bytes[5] >= 69 && bytes[5] <= 94;
+    const orangeLaserEyes = bytes[5] >= 0 && bytes[5] <= 63;   // 10%
+    const redLaserEyes = bytes[5] >= 64 && bytes[5] <= 127;    // 20%
+    const greenLaserEyes = bytes[5] >= 128 && bytes[5] <= 191; // 30%
+    const blueLaserEyes = bytes[5] >= 192 && bytes[5] <= 255;  // 40%
 
     // First genesis cat has value 120 here
     // 10% chance of an orange background
@@ -106,24 +104,21 @@ export class MooncatParser {
     const designIndex = k % 128;
 
     let design;
-    if ((redLaserEyes || greenLaserEyes || blueLaserEyes) && crown) {
+    if (crown) {
       design = laserCrownDesigns[designIndex].split('.');
-    } else if (redLaserEyes || greenLaserEyes || blueLaserEyes) {
-      design = laserDesigns[designIndex].split('.');
-    } else if (crown) {
-      design = crownDesigns[designIndex].split('.');
     } else {
-      design = designs[designIndex].split('.');
+      design = laserDesigns[designIndex].split('.');
     }
+
     let colors: (string | null)[];
 
     let laserEyesColors: (string | null)[] = [null, null]
-    let laserEyesName: 'red' | 'green' | 'blue' | 'none' = 'none';
+    let laserEyesName: 'red' | 'green' | 'blue' | 'orange';
 
     // gold crown
     let crownColors = ["#ffaf51", "#ffcf39"];
     if (orangeBackground) {
-      // diamond crown
+      // diamond crown for better contrast
       crownColors = ["#b8d8e7", "#cbe3f0"];
     }
 
@@ -131,16 +126,17 @@ export class MooncatParser {
     if (redLaserEyes) {
       laserEyesColors = ['#ff0000', '#ff9900'];
       laserEyesName = 'red';
-    }
-
-    if (greenLaserEyes) {
+    } else if (greenLaserEyes) {
       laserEyesColors = ['#009900', '#33ff00'];
       laserEyesName = 'green';
-    }
-
-    if (blueLaserEyes) {
+    } else if (blueLaserEyes) {
       laserEyesColors = ['#0033cc', '#66ccff'];
       laserEyesName = 'blue';
+    } else  if (orangeLaserEyes) {
+      laserEyesColors = ['#ff9900', '#ffffff'];
+      laserEyesName = 'orange';
+    } else  {
+      throw new Error('This should never never happen')!
     }
 
     if (genesis) {
@@ -163,7 +159,9 @@ export class MooncatParser {
     const designTraits = mooncatDesignsToTraits.find(design => design[0] === designIndex)!;
 
     // inverted=false is male cat, inverted=true is a female cat
-    const gender: 'female' | 'male' = inverted ? 'female' : 'male';
+    const genderName: 'female' | 'male' = inverted ? 'female' : 'male';
+    const backgroundName: 'orange' | 'gray' = orangeBackground ? 'orange' : 'gray';
+    const crownName :  'gold' | 'diamond' | 'none' = crown ? orangeBackground ? 'diamond' : 'gold' : 'none';
 
     const traits = {
       genesis,
@@ -175,15 +173,15 @@ export class MooncatParser {
         colors[5]
       ] as string[],
 
-      gender,
+      gender: genderName,
       designIndex,
       designPose: designTraits[1],
       designExpression: designTraits[2],
       designPattern: designTraits[3],
       designFacing: designTraits[4],
       laserEyes: laserEyesName,
-      orangeBackground,
-      crown
+      background: backgroundName,
+      crown: crownName
     }
 
     return {
@@ -247,8 +245,10 @@ export class MooncatParser {
     const yOffset = Math.max(gridHeight - catHeight - 1, 0);
 
     let svgGrid = '';
-    if (traits?.orangeBackground) {
+    if (traits?.background === 'orange') {
       svgGrid += '<rect x="0" y="0" width="22" height="22" fill="#ff9900" />'
+    } else {
+      svgGrid += '<rect x="0" y="0" width="22" height="22" fill="#4d4d4d" />'
     }
 
     for (let i = 0; i < catWidth; i++) {
