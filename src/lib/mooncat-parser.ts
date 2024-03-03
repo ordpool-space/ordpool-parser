@@ -1,6 +1,6 @@
 import { CatTraits } from '../types/parsed-cat21';
 import { hexToBytes } from './conversions';
-import { feeRateToMempoolColor } from './mooncat-parser.colors';
+import { generativeColorPalette } from './mooncat-parser.colors';
 import { laserDesigns, laserCrownDesigns, placeholderDesign } from './mooncat-parser.designs';
 import { mooncatDesignsToTraits } from './mooncat-parser.designs-to-traits';
 import { derivePalette } from './mooncat-parser.helper';
@@ -118,14 +118,8 @@ export class MooncatParser {
     if (genesis) {
       colors = [null, '#555555', '#222222', '#111111', '#bbbbbb', '#ff9999'];
     } else {
-
-      // mooncat colors
-      // colors = derivePalette(r, g, b);
-
-      const mempoolColor = feeRateToMempoolColor(feeRate);
-
-      // now every cat looks like garfield :D
-      colors = derivePalette(mempoolColor.r, mempoolColor.g, mempoolColor.b);
+      const rgb = generativeColorPalette(feeRate/1000, [0.7, 0.6, 0.5], [0.5, 0.5, 0.5], [1.5, 1.0, 0.5], [0.4, 0.8, 0.0]);
+      colors = derivePalette(rgb[0], rgb[1], rgb[2]);
     }
 
     // add laser eye and crown colors
