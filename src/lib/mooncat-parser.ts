@@ -44,7 +44,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
  * - Laser eyes trait for all cats.
  * - Orange or gray background trait.
  * - Gold or Diamond crown trait.
- * - Male or Female cats instead of the "inverted" trait.
+ * - Male or Female cats.
  * - Cat color is derived from the paid miner fees (not from the hash), which
  *   is a new artistic value that is also very related to the canvas (Bitcoin).
  *
@@ -93,10 +93,6 @@ export class MooncatParser {
     // 10% chance of crown
     const crown = bytes[7] >= 120 && bytes[7] <= 145;
 
-    // 50% chance of inverted colors
-    // 128/256  --> 0.5 --> exactly 50%
-    const inverted = k >= 128;
-
     // results in a uniform distribution of values in a range of 0 to 127,
     // which is the exact amount of available designs
     const designIndex = k % 128;
@@ -138,20 +134,16 @@ export class MooncatParser {
     }
 
     if (genesis) {
-      if (designIndex % 2 === 0 && inverted || designIndex % 2 === 1 && !inverted) {
-        colors = [null, '#555555', '#d3d3d3', '#ffffff', '#aaaaaa', '#ff9999'];
-      } else {
-        colors = [null, '#555555', '#222222', '#111111', '#bbbbbb', '#ff9999'];
-      }
+      colors = [null, '#555555', '#222222', '#111111', '#bbbbbb', '#ff9999'];
     } else {
 
       // mooncat colors
-      // colors = derivePalette(r, g, b, inverted);
+      // colors = derivePalette(r, g, b);
 
       const mempoolColor = feeRateToMempoolColor(feeRate);
 
       // now every cat looks like garfield :D
-      colors = derivePalette(mempoolColor.r, mempoolColor.g, mempoolColor.b, inverted);
+      colors = derivePalette(mempoolColor.r, mempoolColor.g, mempoolColor.b);
     }
 
     // add laser eye and crown colors
@@ -163,8 +155,8 @@ export class MooncatParser {
 
     const designTraits = mooncatDesignsToTraits.find(design => design[0] === designIndex)!;
 
-    // inverted=false is male cat, inverted=true is a female cat
-    const genderName: 'female' | 'male' = inverted ? 'female' : 'male';
+    // turning left is female cat, turning right is a male cat
+    const genderName: 'female' | 'male' = designIndex < 64 ? 'female' : 'male';
     const backgroundName: 'orange' | 'gray' = orangeBackground ? 'orange' : 'gray';
     const crownName :  'gold' | 'diamond' | 'none' = crown ? orangeBackground ? 'diamond' : 'gold' : 'none';
 

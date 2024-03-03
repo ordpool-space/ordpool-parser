@@ -130,10 +130,9 @@ export function RGBToHex(arr: [number, number, number]): string {
  * @param r - Red component.
  * @param g - Green component.
  * @param b - Blue component.
- * @param invert - Whether to invert the palette.
  * @returns An array of hex color strings.
  */
-export function derivePalette(r: number, g: number, b: number, invert: boolean): (string | null)[] {
+export function derivePalette(r: number, g: number, b: number): (string | null)[] {
   var hsl = RGBToHSL(r, g, b);
 
   var h = hsl[0];
@@ -143,17 +142,10 @@ export function derivePalette(r: number, g: number, b: number, invert: boolean):
   var hy = (h + 320) % 360;
 
   var c1 = HSLToRGB(hx, 1, 0.1);
-  if (invert) {
-    var c4 = HSLToRGB(hx, 1, 0.2);
-    var c5 = HSLToRGB(hx, 1, 0.45);
-    var c2 = HSLToRGB(hx, 1, 0.7);
-    var c3 = HSLToRGB(hy, 1, 0.8);
-  } else {
-    var c2 = HSLToRGB(hx, 1, 0.2);
-    var c3 = HSLToRGB(hx, 1, 0.45);
-    var c4 = HSLToRGB(hx, 1, 0.7);
-    var c5 = HSLToRGB(hy, 1, 0.8);
-  }
+  var c2 = HSLToRGB(hx, 1, 0.2);
+  var c3 = HSLToRGB(hx, 1, 0.45);
+  var c4 = HSLToRGB(hx, 1, 0.7);
+  var c5 = HSLToRGB(hy, 1, 0.8);
 
   return [
     null,
