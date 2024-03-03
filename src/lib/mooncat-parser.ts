@@ -149,6 +149,8 @@ export class MooncatParser {
       // colors = derivePalette(r, g, b, inverted);
 
       const mempoolColor = feeRateToMempoolColor(feeRate);
+
+      // now every cat looks like garfield :D
       colors = derivePalette(mempoolColor.r, mempoolColor.g, mempoolColor.b, inverted);
     }
 
