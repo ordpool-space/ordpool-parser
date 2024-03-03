@@ -63,21 +63,12 @@ export class MooncatParser {
    * @returns Mooncat design as a 2D array.
    */
   public static parse(catHash: string, feeRate: number): { catData: (string | null)[][]; traits: CatTraits } {
-
-    // TODO: @Ethspresso!
-    // this is a number with decimal places, which is equal or larger than 0
-    // console.log('Fee Rate in sat/vb', feeRate);
-
     const bytes = hexToBytes(catHash);
+    const k = bytes[1];
 
     // Genesis cat has value 79 here
     // Probability: 1/256 --> 0.00390625 --> ~0.4%
     const genesis = bytes[0] === 79;
-
-    const k = bytes[1];
-    const r = bytes[2];
-    const g = bytes[3];
-    const b = bytes[4];
 
     // Genesis cat has value 121 here
     const orangeLaserEyes = bytes[5] >= 0 && bytes[5] <= 63;
@@ -96,25 +87,16 @@ export class MooncatParser {
     // results in a uniform distribution of values in a range of 0 to 127,
     // which is the exact amount of available designs
     const designIndex = k % 128;
-
-    let design;
-    if (crown) {
-      design = laserCrownDesigns[designIndex].split('.');
-    } else {
-      design = laserDesigns[designIndex].split('.');
-    }
+    const design = crown ? laserCrownDesigns[designIndex].split('.') : laserDesigns[designIndex].split('.');
 
     let colors: (string | null)[];
 
     let laserEyesColors: (string | null)[] = [null, null]
     let laserEyesName: 'red' | 'green' | 'blue' | 'orange';
 
-    // gold crown
-    let crownColors = ["#ffaf51", "#ffcf39"];
-    if (orangeBackground) {
-      // diamond crown for better contrast
-      crownColors = ["#b8d8e7", "#cbe3f0"];
-    }
+    // gold crown by default
+    // orange background get diamond crown for better contrast
+    let crownColors = orangeBackground ? ["#b8d8e7", "#cbe3f0"] : ["#ffaf51", "#ffcf39"];
 
     // as a homage to the good old days, only "web save colors" are used here
     if (redLaserEyes) {
