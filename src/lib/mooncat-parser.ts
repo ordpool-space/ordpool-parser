@@ -79,16 +79,17 @@ export class MooncatParser {
     const g = bytes[3];
     const b = bytes[4];
 
-    // Genesis cat has value 121 here
-    const orangeLaserEyes = bytes[5] >= 0 && bytes[5] <= 63;   // 10%
-    const redLaserEyes = bytes[5] >= 64 && bytes[5] <= 127;    // 20%
-    const greenLaserEyes = bytes[5] >= 128 && bytes[5] <= 191; // 30%
-    const blueLaserEyes = bytes[5] >= 192 && bytes[5] <= 255;  // 40%
+    // Genesis cat has value 121 here (redLaserEyes)
+    const orangeLaserEyes = bytes[5] >= 0 && bytes[5] <= 63;   // 25%
+    const redLaserEyes = bytes[5] >= 64 && bytes[5] <= 127;    // 25%
+    const greenLaserEyes = bytes[5] >= 128 && bytes[5] <= 191; // 25%
+    const blueLaserEyes = bytes[5] >= 192 && bytes[5] <= 255;  // 25%
 
-    // First genesis cat has value 120 here
-    // 10% chance of an orange background
-    // 26 values between: 120 and 145 --> 26/256 --> 0.1015625 --> ~10%
-    const orangeBackground = bytes[6] >= 120 && bytes[6] <= 145;
+    // Genesis cat has value 120 here (whitepaperBackground)
+    const block9Background = bytes[6] >= 0 && bytes[6] <= 25;       // 10%
+    const cyberpunkBackground = bytes[6] >= 26 && bytes[6] <= 76;   // 20%
+    const whitepaperBackground = bytes[6] >= 77 && bytes[6] <= 153; // 30%
+    const orangeBackground = bytes[6] >= 154 && bytes[6] <= 255;    // 40%
 
     // 10% chance of crown
     const crown = bytes[7] >= 120 && bytes[7] <= 145;
@@ -165,7 +166,16 @@ export class MooncatParser {
 
     // inverted=false is male cat, inverted=true is a female cat
     const genderName: 'female' | 'male' = inverted ? 'female' : 'male';
-    const backgroundName: 'orange' | 'gray' = orangeBackground ? 'orange' : 'gray';
+
+    let backgroundName: 'block9' | 'cyberpunk' | 'whitepaper' | 'orange' = 'orange';
+    if (block9Background) {
+      backgroundName = 'block9';
+    } else if (cyberpunkBackground) {
+      backgroundName = 'cyberpunk';
+    } else if (whitepaperBackground) {
+      backgroundName = 'whitepaper';
+    }
+
     const crownName :  'gold' | 'diamond' | 'none' = crown ? orangeBackground ? 'diamond' : 'gold' : 'none';
 
     const traits = {
@@ -250,27 +260,104 @@ export class MooncatParser {
     // the -1 adds 1px padding to the bottom if possible otherwise 0
     const yOffset = Math.max(gridHeight - catHeight - 1, 0);
 
-    let svgGrid = '';
-    if (traits?.background === 'orange') {
-      svgGrid += '<rect x="0" y="0" width="22" height="22" fill="#ff9900" />'
-    } else {
-      svgGrid += '<rect x="0" y="0" width="22" height="22" fill="#4d4d4d" />'
+    let svg = `<svg viewBox="0 0 ${gridWidth} ${gridHeight}" xmlns="http://www.w3.org/2000/svg">\n`;
+
+    switch(traits?.background) {
+      case 'block9': {
+
+// Usage example:
+const rows = 10; // Number of rows of cubes
+const columns = 10; // Number of columns of cubes
+const cubeSize = 1; // Size of each cube
+
+const svgPattern = generateAxonometricCubePattern(rows, columns, cubeSize);
+
+        svg += svgPattern;
+        break;
+      }
+      case 'cyberpunk': {
+        svg += '<text x="0" y="0">010101010101</text>'
+        break;
+      }
+      case 'whitepaper': {
+        svg += '<text x="0" y="0">Bitcoin: A Peer-to-Peer Electronic Cash System</text>'
+        break;
+      }
+      default: {
+        svg += '<rect x="0" y="0" width="22" height="22" fill="#ff9900" />'
+        break;
+      }
     }
 
     for (let i = 0; i < catWidth; i++) {
       for (let j = 0; j < catHeight; j++) {
         const color = catData[i][j];
         if (color) {
-          svgGrid += `<rect x="${i + xOffset}" y="${j + yOffset}" width="1" height="1" fill="${color}" stroke="${color}" stroke-width="0.05" />\n`;
+          svg += `<rect x="${i + xOffset}" y="${j + yOffset}" width="1" height="1" fill="${color}" stroke="${color}" stroke-width="0.05" />\n`;
         }
       }
     }
 
-    const svg = `<svg viewBox="0 0 ${gridWidth} ${gridHeight}" xmlns="http://www.w3.org/2000/svg">\n${svgGrid}</svg>`;
+    svg += '</svg>';
 
     return {
       svg,
       traits
     };
   }
+}
+
+
+type Point = { x: number; y: number };
+
+function generateAxonometricCubePattern(rows: number, columns: number, cubeSize: number): string {
+  // Function to generate the points for the cube's faces
+  function getCubePoints(baseX: number, baseY: number, size: number): { top: Point[], left: Point[], right: Point[] } {
+    const height = size * Math.sqrt(3) / 2; // Height of the cube based on equilateral triangles
+    return {
+      top: [
+        { x: baseX, y: baseY },
+        { x: baseX + size, y: baseY },
+        { x: baseX + size / 2, y: baseY - height / 2 },
+        { x: baseX - size / 2, y: baseY - height / 2 },
+      ],
+      left: [
+        { x: baseX, y: baseY },
+        { x: baseX - size / 2, y: baseY - height / 2 },
+        { x: baseX - size / 2, y: baseY + height / 2 },
+        { x: baseX, y: baseY + height },
+      ],
+      right: [
+        { x: baseX, y: baseY },
+        { x: baseX + size, y: baseY },
+        { x: baseX + size, y: baseY + height },
+        { x: baseX, y: baseY + height },
+      ],
+    };
+  }
+
+  // Function to generate a single cube SVG element as a string
+  function cube(x: number, y: number, size: number): string {
+    const points = getCubePoints(x, y, size);
+    return `
+      <polygon points="${points.top.map(p => `${p.x},${p.y}`).join(' ')}" fill="#bbb" />
+      <polygon points="${points.left.map(p => `${p.x},${p.y}`).join(' ')}" fill="#999" />
+      <polygon points="${points.right.map(p => `${p.x},${p.y}`).join(' ')}" fill="#ddd" />
+    `;
+  }
+
+  // Initialize the SVG elements string
+  let svgElements = '';
+
+  // Loop through rows and columns to place cubes
+  for (let i = 0; i < rows; i++) {
+    for (let j = 0; j < columns; j++) {
+      // Calculate the x and y position for each cube, adjusted for axonometric projection
+      const x = (j - i) * cubeSize + columns * cubeSize;
+      const y = (i + j) * cubeSize / 2;
+      svgElements += cube(x, y, cubeSize);
+    }
+  }
+
+  return `<svg width="${columns * cubeSize * 2}" height="${rows * cubeSize * 1.5}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${columns * cubeSize * 2} ${rows * cubeSize * 1.5}">${svgElements}</svg>`;
 }

@@ -60,15 +60,18 @@ export interface CatTraits {
 
   /**
    * The background trait. All images have a background color.
-   * There is a ~10% chance to receive a cat with an orange background instead of a gray background.
-   * The orange color is #ff9900. The gray color is #4d4d4d.
+   * There is a ~10% chance to receive a cat with a Block 9 background.
+   * There is a ~20% chance to receive a cat with a cyberpunk background.
+   * There is a ~30% chance to receive a cat with a background of the Bitcoin Whitepaper.
+   * There is a ~40% chance to receive a cat with an orange background.
+   * The orange color is #ff9900.
    */
-  background: 'orange' | 'gray';
+  background: 'block9' | 'cyberpunk' | 'whitepaper' | 'orange';
 
   /**
    * The crown trait.
    * There is a ~10% chance to receive a cat with a crown.
-   * The crown is golden when the background is black,
+   * The crown is golden when the background is not orange.
    * The crown is made of diamonds if the background is orange.
    */
   crown: 'gold' | 'diamond' | 'none';
