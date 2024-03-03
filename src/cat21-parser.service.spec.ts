@@ -4,6 +4,7 @@ import { cat21GenesisBlockTxIds } from '../testdata/txids_000000000000000000018e
 import { Cat21ParserService } from './cat21-parser.service';
 import { createCatHash } from './cat21-parser.service.helper';
 import { MooncatParser } from './lib/mooncat-parser';
+import { feeLevels } from './lib/mooncat-parser.colors';
 import { readTransaction } from './test.helper';
 
 
@@ -132,6 +133,34 @@ describe('Cat21ParserService', () => {
     }
 
     fs.writeFileSync('testdist/cat-historic-testdrive.html', testdriveHtml.replace('CATS!', svgContent));
+  });
+
+it('should render a wide range of feeRate values', async () => {
+
+    let txIdsAndBlockIdsAndFeeRate: [string, string, number][] = [
+      ['98316dcb21daaa221865208fe0323616ee6dd84e6020b78bc6908e914ac03892', '000000000000000000018e3ea447b11385e3330348010e1b2418d0d8ae4e0ac7', 231.6822695035461],
+    ];
+
+    for (let i = 0; i < feeLevels.length; i++) {
+      const suffix = Math.floor(Math.random() * 90) + 10;
+      const randomTxId = '5a68ffaea166743b41f8ad02bbb77933e1b29729b338098280574cd7482de8' + suffix.toString();
+      const randomBlockId = '00000000000000000000eba9edf761f86002c3ceca8fc49d10a32d079c0af4' + suffix.toString();
+      txIdsAndBlockIdsAndFeeRate.push([randomTxId, randomBlockId, feeLevels[i]]);
+    }
+
+    let svgContent = '';
+    for (let i = 0; i < txIdsAndBlockIdsAndFeeRate.length; i++) {
+
+      const catHash = createCatHash(txIdsAndBlockIdsAndFeeRate[i][0], txIdsAndBlockIdsAndFeeRate[i][1]);
+      const svgAndTraits = MooncatParser.parseAndGenerateSvg(catHash, txIdsAndBlockIdsAndFeeRate[i][2]);
+
+      const traitsJSON = JSON.stringify(svgAndTraits.traits).replaceAll('"', "'");
+      svgContent += `<span title="${traitsJSON}">` + svgAndTraits.svg + '</span>';
+
+      if (i >= 1000) { break; }
+    }
+
+    fs.writeFileSync('testdist/cat-fees-testdrive.html', testdriveHtml.replace('CATS!', svgContent));
   });
 
   it('should render all potential cats of a block!', async () => {
