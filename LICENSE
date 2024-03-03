@@ -36,6 +36,7 @@ EVERY DISTRIBUTION OF THIS SOFTWARE MUST INCLUDE A COPY OF THE LICENSE TO ENSURE
 
 This means that the files
 `mooncat-parser.ts` and
+`mooncat-parser.helper.ts` and
 `mooncat-parser.designs.ts`
 are treated under the following license:
 
