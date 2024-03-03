@@ -1,5 +1,6 @@
 import { CatTraits } from '../types/parsed-cat21';
 import { hexToBytes } from './conversions';
+import { feeRateToMempoolColor } from './mooncat-parser.colors';
 import { laserDesigns, laserCrownDesigns, placeholderDesign } from './mooncat-parser.designs';
 import { mooncatDesignsToTraits } from './mooncat-parser.designs-to-traits';
 import { derivePalette } from './mooncat-parser.helper';
@@ -65,9 +66,7 @@ export class MooncatParser {
 
     // TODO: @Ethspresso!
     // this is a number with decimal places, which is equal or larger than 0
-    console.log('Fee Rate in sat/vb', feeRate);
-    debugger; // start here! =)
-
+    // console.log('Fee Rate in sat/vb', feeRate);
 
     const bytes = hexToBytes(catHash);
 
@@ -145,7 +144,12 @@ export class MooncatParser {
         colors = [null, '#555555', '#222222', '#111111', '#bbbbbb', '#ff9999'];
       }
     } else {
-      colors = derivePalette(r, g, b, inverted);
+
+      // mooncat colors
+      // colors = derivePalette(r, g, b, inverted);
+
+      const mempoolColor = feeRateToMempoolColor(feeRate);
+      colors = derivePalette(mempoolColor.r, mempoolColor.g, mempoolColor.b, inverted);
     }
 
     // add laser eye and crown colors
