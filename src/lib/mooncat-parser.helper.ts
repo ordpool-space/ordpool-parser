@@ -1,7 +1,20 @@
+/* *********************************************
+
+THE CAT-21 PROJECT UTILIZES MODIFIED CODE FROM THE MOONCATS PROJECT BUT IS ENTIRELY INDEPENDENT AND NOT AFFILIATED WITH, ENDORSED BY, OR RELATED TO PONDERWARE LTD. OR ANY OF ITS CREATORS. THIS PROJECT IS NOT AN OFFICIAL EXTENSION OR RELEASE OF THE MOONCATS PROJECT. ANY USE OF MODIFIED CODE IS DONE SO UNDER THE TERMS OF THE ORIGINAL LICENSE, WHICH CAN BE FOUND AT:
+
+https://raw.githubusercontent.com/haushoppe/ordpool-parser/main/LICENSE and
+https://raw.githubusercontent.com/ponderware/mooncatparser/master/license.txt
+
+EVERY DISTRIBUTION OF THIS SOFTWARE MUST INCLUDE A COPY OF THE LICENSE TO ENSURE COMPLIANCE AND TRANSPARENCY.
+
+********************************************* */
+
 /*
-ORIGINAL LICENSE
+ORIGINAL MOONCAT LICENSE
+OUR CODE FOLLOWS THE SAME LICENSE!
 
 Copyright © 2017 ponderware ltd.
+Copyright © 2024 HAUS HOPPE
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -117,10 +130,9 @@ export function RGBToHex(arr: [number, number, number]): string {
  * @param r - Red component.
  * @param g - Green component.
  * @param b - Blue component.
- * @param invert - Whether to invert the palette.
  * @returns An array of hex color strings.
  */
-export function derivePalette(r: number, g: number, b: number, invert: boolean): (string | null)[] {
+export function derivePalette(r: number, g: number, b: number): (string | null)[] {
   var hsl = RGBToHSL(r, g, b);
 
   var h = hsl[0];
@@ -130,17 +142,10 @@ export function derivePalette(r: number, g: number, b: number, invert: boolean):
   var hy = (h + 320) % 360;
 
   var c1 = HSLToRGB(hx, 1, 0.1);
-  if (invert) {
-    var c4 = HSLToRGB(hx, 1, 0.2);
-    var c5 = HSLToRGB(hx, 1, 0.45);
-    var c2 = HSLToRGB(hx, 1, 0.7);
-    var c3 = HSLToRGB(hy, 1, 0.8);
-  } else {
-    var c2 = HSLToRGB(hx, 1, 0.2);
-    var c3 = HSLToRGB(hx, 1, 0.45);
-    var c4 = HSLToRGB(hx, 1, 0.7);
-    var c5 = HSLToRGB(hy, 1, 0.8);
-  }
+  var c2 = HSLToRGB(hx, 1, 0.2);
+  var c3 = HSLToRGB(hx, 1, 0.45);
+  var c4 = HSLToRGB(hx, 1, 0.7);
+  var c5 = HSLToRGB(hy, 1, 0.8);
 
   return [
     null,

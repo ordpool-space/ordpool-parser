@@ -1,12 +1,24 @@
-import { createCatHash } from '../cat21-parser.service.helper';
 import { CatTraits } from '../types/parsed-cat21';
 import { hexToBytes } from './conversions';
-import { designs, laserDesigns, crownDesigns, laserCrownDesigns, placeholderDesign } from './mooncat-parser.designs';
+import { generativeColorPalette } from './mooncat-parser.colors';
+import { laserDesigns, laserCrownDesigns, placeholderDesign } from './mooncat-parser.designs';
 import { mooncatDesignsToTraits } from './mooncat-parser.designs-to-traits';
 import { derivePalette } from './mooncat-parser.helper';
 
+/* *********************************************
+
+THE CAT-21 PROJECT UTILIZES MODIFIED CODE FROM THE MOONCATS PROJECT BUT IS ENTIRELY INDEPENDENT AND NOT AFFILIATED WITH, ENDORSED BY, OR RELATED TO PONDERWARE LTD. OR ANY OF ITS CREATORS. THIS PROJECT IS NOT AN OFFICIAL EXTENSION OR RELEASE OF THE MOONCATS PROJECT. ANY USE OF MODIFIED CODE IS DONE SO UNDER THE TERMS OF THE ORIGINAL LICENSE, WHICH CAN BE FOUND AT:
+
+https://raw.githubusercontent.com/haushoppe/ordpool-parser/main/LICENSE and
+https://raw.githubusercontent.com/ponderware/mooncatparser/master/license.txt
+
+EVERY DISTRIBUTION OF THIS SOFTWARE MUST INCLUDE A COPY OF THE LICENSE TO ENSURE COMPLIANCE AND TRANSPARENCY.
+
+********************************************* */
+
 /*
-ORIGINAL LICENSE
+ORIGINAL MOONCAT LICENSE
+OUR CODE FOLLOWS THE SAME LICENSE!
 
 Copyright © 2017 ponderware ltd.
 Copyright © 2024 HAUS HOPPE
@@ -23,10 +35,18 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
  * Modified Typescript version of
  * https://github.com/ponderware/mooncatparser/blob/master/mooncatparser.js
  *
- * This parser takes a catHash and returns a 2D array of hex color value strings, or null for transparency.
- * New: It generates a SVG file, instead of a pixel image.
- * New: Laser eyes trait
- * New: Orange background trait
+ * This parser takes data from a Bitcoin transaction and returns a pixelated cat image.
+ *
+ * Some of the various modifications to the original algorithm,
+ * that make the artwork clearly differentiated from the original project, are:
+ *
+ * - It generates an SVG file, instead of a pixel image.
+ * - Laser eyes trait for all cats.
+ * - Orange or gray background trait.
+ * - Gold or Diamond crown trait.
+ * - Male or Female cats.
+ * - Cat color is derived from the paid miner fees (not from the hash), which
+ *   is a new artistic value that is also very related to the canvas (Bitcoin).
  *
  * Learn more:
  * --> https://github.com/cryptocopycats/mooncats/
@@ -36,39 +56,25 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 export class MooncatParser {
 
   /**
-   * Parses the Mooncat design based on the given transaction ID.
-   *
-   * Note:
-   * In the original Mooncat algorithm, the first byte was used as a boolean
-   * flag to toggle between genesis status and normal cat status.
-   * However, I hereby define that every cat gets the 'genesis' status if its
-   * transaction ID starts with exactly the ID 98 (hex), which corresponds to
-   * 152 in decimal. This is because the very first CAT-21 had that ID.
-   * Same goes for the other new traits. First Genesis cat has all of them.
+   * Parses a modified Mooncat design based on the given transaction ID + block ID + feeRate.
    *
    * @param catHash - concatenated transactionId and blockId
+   * @param feeRate - the fee rate of the transaction in sat/vB
    * @returns Mooncat design as a 2D array.
    */
-  public static parse(catHash: string): { catData: (string | null)[][]; traits: CatTraits } {
-
+  public static parse(catHash: string, feeRate: number): { catData: (string | null)[][]; traits: CatTraits } {
     const bytes = hexToBytes(catHash);
+    const k = bytes[1];
 
     // Genesis cat has value 79 here
     // Probability: 1/256 --> 0.00390625 --> ~0.4%
     const genesis = bytes[0] === 79;
 
-    const k = bytes[1];
-    const r = bytes[2];
-    const g = bytes[3];
-    const b = bytes[4];
-
     // Genesis cat has value 121 here
-    // Second historic cat has has value 140 here - both should have red laser eyes
-    // 10% chance of red laser eyes
-    // 26 values between: 121 and 146 --> 26/256 --> 0.1015625 --> ~10%
-    const redLaserEyes = bytes[5] >= 121 && bytes[5] <= 146;
-    const greenLaserEyes = bytes[5] >= 95 && bytes[5] <= 120;
-    const blueLaserEyes = bytes[5] >= 69 && bytes[5] <= 94;
+    const orangeLaserEyes = bytes[5] >= 0 && bytes[5] <= 63;
+    const redLaserEyes = bytes[5] >= 64 && bytes[5] <= 127;
+    const greenLaserEyes = bytes[5] >= 128 && bytes[5] <= 191;
+    const blueLaserEyes = bytes[5] >= 192 && bytes[5] <= 255;
 
     // First genesis cat has value 120 here
     // 10% chance of an orange background
@@ -78,60 +84,63 @@ export class MooncatParser {
     // 10% chance of crown
     const crown = bytes[7] >= 120 && bytes[7] <= 145;
 
-    // 50% chance of inverted colors
-    // 128/256  --> 0.5 --> exactly 50%
-    const inverted = k >= 128;
-
     // results in a uniform distribution of values in a range of 0 to 127,
     // which is the exact amount of available designs
     const designIndex = k % 128;
+    const design = crown ? laserCrownDesigns[designIndex].split('.') : laserDesigns[designIndex].split('.');
 
-    let design;
-    if ((redLaserEyes || greenLaserEyes || blueLaserEyes) && crown) {
-      design = laserCrownDesigns[designIndex].split('.');
-    } else if (redLaserEyes || greenLaserEyes || blueLaserEyes) {
-      design = laserDesigns[designIndex].split('.');
-    } else if (crown) {
-      design = crownDesigns[designIndex].split('.');
-    } else {
-      design = designs[designIndex].split('.');
-    }
     let colors: (string | null)[];
 
     let laserEyesColors: (string | null)[] = [null, null]
-    let laserEyesName: 'red' | 'green' | 'blue' | 'none' = 'none';
+    let laserEyesName: 'red' | 'green' | 'blue' | 'orange';
 
-    // gold crown
-    let crownColors = ["#ffaf51", "#ffcf39"];
-    if (orangeBackground) {
-      // diamond crown
-      crownColors = ["#b8d8e7", "#cbe3f0"];
-    }
+    // gold crown by default
+    // orange background get diamond crown for better contrast
+    let crownColors = orangeBackground ? ["#b8d8e7", "#cbe3f0"] : ["#ffaf51", "#ffcf39"];
 
     // as a homage to the good old days, only "web save colors" are used here
     if (redLaserEyes) {
       laserEyesColors = ['#ff0000', '#ff9900'];
       laserEyesName = 'red';
-    }
-
-    if (greenLaserEyes) {
+    } else if (greenLaserEyes) {
       laserEyesColors = ['#009900', '#33ff00'];
       laserEyesName = 'green';
-    }
-
-    if (blueLaserEyes) {
+    } else if (blueLaserEyes) {
       laserEyesColors = ['#0033cc', '#66ccff'];
       laserEyesName = 'blue';
+    } else if (orangeLaserEyes) {
+      laserEyesColors = ['#ff9900', '#ffffff'];
+      laserEyesName = 'orange';
+    } else {
+      throw new Error('This should never never happen')!
+    }
+
+    // Use a phase shifting palette
+    const rgb = generativeColorPalette(
+      feeRate / 300,
+      [0.5, 0.5, 0.5],
+      [-0.9, 0.6, 0.4],
+      [2.0, 1.0, 1.0],
+      [0.0, 0.0, 0.0]
+    );
+    // Fees below 150 get a palette ranging from green to red to light blue
+    // Fees above 150 get a palette that is a mix of red, blue and purple
+    if (feeRate < 150) {
+      colors = derivePalette(
+        rgb[0],
+        rgb[1],
+        0
+      );
+    } else {
+      colors = derivePalette(
+        rgb[0],
+        0,
+        rgb[2]
+      );
     }
 
     if (genesis) {
-      if (designIndex % 2 === 0 && inverted || designIndex % 2 === 1 && !inverted) {
-        colors = [null, '#555555', '#d3d3d3', '#ffffff', '#aaaaaa', '#ff9999'];
-      } else {
-        colors = [null, '#555555', '#222222', '#111111', '#bbbbbb', '#ff9999'];
-      }
-    } else {
-      colors = derivePalette(r, g, b, inverted);
+      colors = [null, '#555555', '#222222', '#111111', '#bbbbbb', '#ff9999'];
     }
 
     // add laser eye and crown colors
@@ -143,8 +152,10 @@ export class MooncatParser {
 
     const designTraits = mooncatDesignsToTraits.find(design => design[0] === designIndex)!;
 
-    // inverted=false is male cat, inverted=true is a female cat
-    const gender: 'female' | 'male' = inverted ? 'female' : 'male';
+    // turning left is female cat, turning right is a male cat
+    const genderName: 'female' | 'male' = designIndex < 64 ? 'female' : 'male';
+    const backgroundName: 'orange' | 'gray' = orangeBackground ? 'orange' : 'gray';
+    const crownName: 'gold' | 'diamond' | 'none' = crown ? orangeBackground ? 'diamond' : 'gold' : 'none';
 
     const traits = {
       genesis,
@@ -156,15 +167,15 @@ export class MooncatParser {
         colors[5]
       ] as string[],
 
-      gender,
+      gender: genderName,
       designIndex,
       designPose: designTraits[1],
       designExpression: designTraits[2],
       designPattern: designTraits[3],
       designFacing: designTraits[4],
       laserEyes: laserEyesName,
-      orangeBackground,
-      crown
+      background: backgroundName,
+      crown: crownName
     }
 
     return {
@@ -201,14 +212,15 @@ export class MooncatParser {
    *
    * @param catHash - transactionId in hex format
    * @param blockId - blockId in hex format
+   * @param feeRate - the fee rate of the transaction in sat/vB
    * @returns The traits and a string containing the SVG markup of the Mooncat.
    */
-  static parseAndGenerateSvg(catHash: string | null): { svg: string; traits: CatTraits | null } {
+  static parseAndGenerateSvg(catHash: string | null, feeRate: number): { svg: string; traits: CatTraits | null } {
 
     let parsed: { catData: (string | null)[][]; traits: CatTraits | null };
 
     if (catHash) {
-      parsed = MooncatParser.parse(catHash);
+      parsed = MooncatParser.parse(catHash, feeRate);
     } else {
       parsed = MooncatParser.parsePlaceholder();
     }
@@ -228,8 +240,10 @@ export class MooncatParser {
     const yOffset = Math.max(gridHeight - catHeight - 1, 0);
 
     let svgGrid = '';
-    if (traits?.orangeBackground) {
+    if (traits?.background === 'orange') {
       svgGrid += '<rect x="0" y="0" width="22" height="22" fill="#ff9900" />'
+    } else {
+      svgGrid += '<rect x="0" y="0" width="22" height="22" fill="#4d4d4d" />'
     }
 
     for (let i = 0; i < catWidth; i++) {

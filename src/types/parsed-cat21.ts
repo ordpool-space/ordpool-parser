@@ -49,25 +49,29 @@ export interface CatTraits {
   designFacing: 'Left' | 'Right',
 
   /**
-   * The laser eyes trait.
-   * There is a ~10% chance to receive a cat with red laser eyes.
-   * There is a ~10% chance to receive a cat with green laser eyes.
-   * There is a ~10% chance to receive a cat with blue laser eyes.
+   * The laser eyes trait. All cats have laser eyes.
+   *
+   * There is a ~10% chance to receive a cat with orange laser eyes.
+   * There is a ~20% chance to receive a cat with red laser eyes.
+   * There is a ~30% chance to receive a cat with green laser eyes.
+   * There is a ~40% chance to receive a cat with blue laser eyes.
    */
-  laserEyes: 'red' | 'green' | 'blue' | 'none';
+  laserEyes: 'orange' | 'red' | 'green' | 'blue';
 
   /**
-   * The orange background trait.
-   * There is a ~10% chance to receive a cat with an orange background instead of an transparent background.
-   * The orange color is #ff9900, because this is the only true orange Bitcoin color!
+   * The background trait. All images have a background color.
+   * There is a ~10% chance to receive a cat with an orange background instead of a gray background.
+   * The orange color is #ff9900. The gray color is #4d4d4d.
    */
-  orangeBackground: boolean;
+  background: 'orange' | 'gray';
 
   /**
    * The crown trait.
    * There is a ~10% chance to receive a cat with a crown.
+   * The crown is golden when the background is black,
+   * The crown is made of diamonds if the background is orange.
    */
-  crown: boolean;
+  crown: 'gold' | 'diamond' | 'none';
 }
 
 export interface ParsedCat21 extends DigitalArtifact {

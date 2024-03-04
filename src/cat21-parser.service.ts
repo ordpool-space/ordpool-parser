@@ -18,6 +18,8 @@ export class Cat21ParserService {
   static parse(transaction: {
     txid: string,
     locktime: number,
+    weight: number,
+    fee: number,
     status: {
       block_hash?: string, // undefined, if unconfirmed txn!
     }
@@ -28,6 +30,9 @@ export class Cat21ParserService {
       if (!this.isValidCat21Transaction(transaction)) {
         return null;
       }
+
+      const vsize = transaction.weight / 4;
+      const feeRate = transaction.fee / vsize;
 
       const type = DigitalArtifactType.Cat21;
       const transactionId = transaction.txid;
@@ -45,13 +50,13 @@ export class Cat21ParserService {
 
         getImage: () => {
           if (!svgAndTraits) {
-            svgAndTraits = MooncatParser.parseAndGenerateSvg(catHash);
+            svgAndTraits = MooncatParser.parseAndGenerateSvg(catHash, feeRate);
           }
           return svgAndTraits.svg
         },
         getTraits: () => {
           if (!svgAndTraits) {
-            svgAndTraits = MooncatParser.parseAndGenerateSvg(catHash);
+            svgAndTraits = MooncatParser.parseAndGenerateSvg(catHash, feeRate);
           }
           return svgAndTraits.traits
         }
