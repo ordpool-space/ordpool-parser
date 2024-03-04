@@ -142,9 +142,9 @@ it('should render a wide range of feeRate values', async () => {
     ];
 
     for (let i = 0; i < feeLevels.length; i++) {
-      const suffix = Math.floor(Math.random() * 90) + 10;
-      const randomTxId = '5a68ffaea166743b41f8ad02bbb77933e1b29729b338098280574cd7482de8' + suffix.toString();
-      const randomBlockId = '00000000000000000000eba9edf761f86002c3ceca8fc49d10a32d079c0af4' + suffix.toString();
+      const prefix = Math.floor(Math.random() * 90000000) + 10000000;
+      const randomTxId =  prefix.toString() + prefix.toString() + prefix.toString() + prefix.toString() + prefix.toString() + prefix.toString() + prefix.toString() + prefix.toString();
+      const randomBlockId = prefix.toString() + prefix.toString() + prefix.toString() + prefix.toString() + prefix.toString() + prefix.toString() + prefix.toString() + prefix.toString();
       txIdsAndBlockIdsAndFeeRate.push([randomTxId, randomBlockId, feeLevels[i]]);
     }
 
