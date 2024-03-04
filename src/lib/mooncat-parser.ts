@@ -1,5 +1,6 @@
 import { CatTraits } from '../types/parsed-cat21';
 import { hexToBytes } from './conversions';
+import { getIsomometricCubePattern } from './mooncat-parser.backgrounds';
 import { feeRateToMempoolColor } from './mooncat-parser.colors';
 import { laserDesigns, laserCrownDesigns, placeholderDesign } from './mooncat-parser.designs';
 import { mooncatDesignsToTraits } from './mooncat-parser.designs-to-traits';
@@ -265,13 +266,13 @@ export class MooncatParser {
     switch(traits?.background) {
       case 'block9': {
 
-// Usage example:
-const rows = 10; // Number of rows of cubes
-const columns = 10; // Number of columns of cubes
-const cubeSize = 1; // Size of each cube
+      const rows = 14;
+      const columns = 17;
+      const cubeSize = 2.21;
 
-const svgPattern = generateAxonometricCubePattern(rows, columns, cubeSize);
+      const svgPattern = getIsomometricCubePattern(rows, columns, cubeSize, gridWidth, gridHeight);
 
+        svg += '<rect x="0" y="0" width="22" height="22" fill="#ffffff" />'
         svg += svgPattern;
         break;
       }
@@ -308,56 +309,3 @@ const svgPattern = generateAxonometricCubePattern(rows, columns, cubeSize);
 }
 
 
-type Point = { x: number; y: number };
-
-function generateAxonometricCubePattern(rows: number, columns: number, cubeSize: number): string {
-  // Function to generate the points for the cube's faces
-  function getCubePoints(baseX: number, baseY: number, size: number): { top: Point[], left: Point[], right: Point[] } {
-    const height = size * Math.sqrt(3) / 2; // Height of the cube based on equilateral triangles
-    return {
-      top: [
-        { x: baseX, y: baseY },
-        { x: baseX + size, y: baseY },
-        { x: baseX + size / 2, y: baseY - height / 2 },
-        { x: baseX - size / 2, y: baseY - height / 2 },
-      ],
-      left: [
-        { x: baseX, y: baseY },
-        { x: baseX - size / 2, y: baseY - height / 2 },
-        { x: baseX - size / 2, y: baseY + height / 2 },
-        { x: baseX, y: baseY + height },
-      ],
-      right: [
-        { x: baseX, y: baseY },
-        { x: baseX + size, y: baseY },
-        { x: baseX + size, y: baseY + height },
-        { x: baseX, y: baseY + height },
-      ],
-    };
-  }
-
-  // Function to generate a single cube SVG element as a string
-  function cube(x: number, y: number, size: number): string {
-    const points = getCubePoints(x, y, size);
-    return `
-      <polygon points="${points.top.map(p => `${p.x},${p.y}`).join(' ')}" fill="#bbb" />
-      <polygon points="${points.left.map(p => `${p.x},${p.y}`).join(' ')}" fill="#999" />
-      <polygon points="${points.right.map(p => `${p.x},${p.y}`).join(' ')}" fill="#ddd" />
-    `;
-  }
-
-  // Initialize the SVG elements string
-  let svgElements = '';
-
-  // Loop through rows and columns to place cubes
-  for (let i = 0; i < rows; i++) {
-    for (let j = 0; j < columns; j++) {
-      // Calculate the x and y position for each cube, adjusted for axonometric projection
-      const x = (j - i) * cubeSize + columns * cubeSize;
-      const y = (i + j) * cubeSize / 2;
-      svgElements += cube(x, y, cubeSize);
-    }
-  }
-
-  return `<svg width="${columns * cubeSize * 2}" height="${rows * cubeSize * 1.5}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${columns * cubeSize * 2} ${rows * cubeSize * 1.5}">${svgElements}</svg>`;
-}
