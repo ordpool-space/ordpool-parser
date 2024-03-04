@@ -1,5 +1,7 @@
 type Point = { x: number; y: number };
 
+/* *** CUBES *** */
+
 // Generates the top, left, right points for the cube illusion
 function getCubePoints(baseX: number, baseY: number, size: number): { top: Point[], left: Point[], right: Point[] } {
   const halfSize = size / 2;
@@ -83,6 +85,8 @@ export function getIsomometricCubePattern(rows: number, columns: number, cubeSiz
   return svg;
 }
 
+/* *** CYBERBUNG BACKGROUND *** */
+
 /**
  * Converts a text string into its binary representation.
  * Each character in the text is represented by its 8-bit binary code.
@@ -113,14 +117,19 @@ export function wrapTextInSvg(text: string, maxCharsPerLine: number): string {
   // Split the text into lines with maximum characters per line
   const lines = [];
   for (let i = 0; i < text.length; i += maxCharsPerLine) {
-      lines.push(text.substring(i, i + maxCharsPerLine));
+    lines.push(text.substring(i, i + maxCharsPerLine));
   }
 
   // Wrap each line in a <tspan> element
   for (const line of lines) {
-      wrappedText += `<tspan x="0" dy="2">${line}</tspan>\n`;
+    wrappedText += `<tspan x="0" dy="2">${line}</tspan>\n`;
   }
 
   // Return the wrapped text
   return wrappedText;
+}
+
+// from "A Cypherpunk's Manifesto by Eric Hughes", 9 March 1993
+export function getCypherpunksManifestoText() {
+  return `<text y="-0.5" font-family="Courier New" font-weight="bold" font-size="2px" fill="#a5a5a5">${ wrapTextInSvg(textToBinary('Cypherpunks write code. 1993'), 20)}</text>`
 }

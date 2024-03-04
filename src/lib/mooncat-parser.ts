@@ -1,6 +1,6 @@
 import { CatTraits } from '../types/parsed-cat21';
 import { hexToBytes } from './conversions';
-import { getIsomometricCubePattern, textToBinary, wrapTextInSvg } from './mooncat-parser.backgrounds';
+import { getCypherpunksManifestoText, getIsomometricCubePattern, textToBinary, wrapTextInSvg } from './mooncat-parser.backgrounds';
 import { feeRateToMempoolColor } from './mooncat-parser.colors';
 import { laserDesigns, laserCrownDesigns, placeholderDesign } from './mooncat-parser.designs';
 import { mooncatDesignsToTraits } from './mooncat-parser.designs-to-traits';
@@ -266,29 +266,25 @@ export class MooncatParser {
     switch(traits?.background) {
       case 'block9': {
 
-      const rows = 14;
-      const columns = 17;
-      const cubeSize = 2.21;
+        const rows = 14;
+        const columns = 17;
+        const cubeSize = 2.21;
 
-      const svgPattern = getIsomometricCubePattern(rows, columns, cubeSize, gridWidth, gridHeight);
-
-        svg += '<rect x="0" y="0" width="22" height="22" fill="#ffffff" />'
-        svg += svgPattern;
+        svg += '<rect x="0" y="0" width="22" height="22" fill="#ffffff" />';
+        svg += getIsomometricCubePattern(rows, columns, cubeSize, gridWidth, gridHeight);
         break;
       }
       case 'cyberpunk': {
-        svg += '<rect x="0" y="0" width="22" height="22" fill="#1600ae" />'
-
-        // from "A Cypherpunk's Manifesto by Eric Hughes", 9 March 1993
-        svg += `<text y="-0.5" font-family="Courier New" font-weight="bold" font-size="2px" fill="#a5a5a5">${ wrapTextInSvg(textToBinary('Cypherpunks write code. 1993'), 20)}</text>`
+        svg += '<rect x="0" y="0" width="22" height="22" fill="#1600ae" />';
+        svg += getCypherpunksManifestoText();
         break;
       }
       case 'whitepaper': {
-        svg += '<text x="0" y="0">Bitcoin: A Peer-to-Peer Electronic Cash System</text>'
+        svg += '<text x="0" y="0">Bitcoin: A Peer-to-Peer Electronic Cash System</text>';
         break;
       }
       default: {
-        svg += '<rect x="0" y="0" width="22" height="22" fill="#ff9900" />'
+        svg += '<rect x="0" y="0" width="22" height="22" fill="#ff9900" />';
         break;
       }
     }
