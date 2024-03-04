@@ -1,6 +1,6 @@
 import { CatTraits } from '../types/parsed-cat21';
 import { hexToBytes } from './conversions';
-import { getIsomometricCubePattern } from './mooncat-parser.backgrounds';
+import { getIsomometricCubePattern, textToBinary, wrapTextInSvg } from './mooncat-parser.backgrounds';
 import { feeRateToMempoolColor } from './mooncat-parser.colors';
 import { laserDesigns, laserCrownDesigns, placeholderDesign } from './mooncat-parser.designs';
 import { mooncatDesignsToTraits } from './mooncat-parser.designs-to-traits';
@@ -277,7 +277,10 @@ export class MooncatParser {
         break;
       }
       case 'cyberpunk': {
-        svg += '<text x="0" y="0">010101010101</text>'
+        svg += '<rect x="0" y="0" width="22" height="22" fill="#1600ae" />'
+
+        // from "A Cypherpunk's Manifesto by Eric Hughes", 9 March 1993
+        svg += `<text y="-0.5" font-family="Courier New" font-weight="bold" font-size="2px" fill="#a5a5a5">${ wrapTextInSvg(textToBinary('Cypherpunks write code. 1993'), 20)}</text>`
         break;
       }
       case 'whitepaper': {
@@ -307,5 +310,8 @@ export class MooncatParser {
     };
   }
 }
+
+
+
 
 

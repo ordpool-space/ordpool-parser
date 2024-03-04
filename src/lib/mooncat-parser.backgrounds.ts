@@ -82,3 +82,45 @@ export function getIsomometricCubePattern(rows: number, columns: number, cubeSiz
   }
   return svg;
 }
+
+/**
+ * Converts a text string into its binary representation.
+ * Each character in the text is represented by its 8-bit binary code.
+ * @param text - The text to convert to binary.
+ * @returns The binary representation of the input text.
+ */
+export function textToBinary(text: string): string {
+  let binaryString = '';
+
+  for (let i = 0; i < text.length; i++) {
+
+      // Get the binary representation of the current character
+      const binaryChar = text[i].charCodeAt(0).toString(2);
+
+      // Ensure each binary representation is 8 bits long by padding with leading zeros if necessary
+      const paddedBinaryChar = '0'.repeat(8 - binaryChar.length) + binaryChar;
+
+      binaryString += paddedBinaryChar;
+  }
+
+  return binaryString;
+}
+
+export function wrapTextInSvg(text: string, maxCharsPerLine: number): string {
+
+  let wrappedText = '';
+
+  // Split the text into lines with maximum characters per line
+  const lines = [];
+  for (let i = 0; i < text.length; i += maxCharsPerLine) {
+      lines.push(text.substring(i, i + maxCharsPerLine));
+  }
+
+  // Wrap each line in a <tspan> element
+  for (const line of lines) {
+      wrappedText += `<tspan x="0" dy="2">${line}</tspan>\n`;
+  }
+
+  // Return the wrapped text
+  return wrappedText;
+}
