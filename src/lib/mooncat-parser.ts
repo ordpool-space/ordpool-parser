@@ -108,18 +108,39 @@ export class MooncatParser {
     } else if (blueLaserEyes) {
       laserEyesColors = ['#0033cc', '#66ccff'];
       laserEyesName = 'blue';
-    } else  if (orangeLaserEyes) {
+    } else if (orangeLaserEyes) {
       laserEyesColors = ['#ff9900', '#ffffff'];
       laserEyesName = 'orange';
-    } else  {
+    } else {
       throw new Error('This should never never happen')!
+    }
+
+    // Use a phase shifting palette
+    const rgb = generativeColorPalette(
+      feeRate / 300,
+      [0.5, 0.5, 0.5],
+      [-0.9, 0.6, 0.4],
+      [2.0, 1.0, 1.0],
+      [0.0, 0.0, 0.0]
+    );
+    // Fees below 150 get a palette ranging from green to red to light blue
+    // Fees above 150 get a palette that is a mix of red, blue and purple
+    if (feeRate < 150) {
+      colors = derivePalette(
+        rgb[0],
+        rgb[1],
+        0
+      );
+    } else {
+      colors = derivePalette(
+        rgb[0],
+        0,
+        rgb[2]
+      );
     }
 
     if (genesis) {
       colors = [null, '#555555', '#222222', '#111111', '#bbbbbb', '#ff9999'];
-    } else {
-      const rgb = generativeColorPalette(feeRate/1000, [0.7, 0.6, 0.5], [0.5, 0.5, 0.5], [1.5, 1.0, 0.5], [0.4, 0.8, 0.0]);
-      colors = derivePalette(rgb[0], rgb[1], rgb[2]);
     }
 
     // add laser eye and crown colors
@@ -134,7 +155,7 @@ export class MooncatParser {
     // turning left is female cat, turning right is a male cat
     const genderName: 'female' | 'male' = designIndex < 64 ? 'female' : 'male';
     const backgroundName: 'orange' | 'gray' = orangeBackground ? 'orange' : 'gray';
-    const crownName :  'gold' | 'diamond' | 'none' = crown ? orangeBackground ? 'diamond' : 'gold' : 'none';
+    const crownName: 'gold' | 'diamond' | 'none' = crown ? orangeBackground ? 'diamond' : 'gold' : 'none';
 
     const traits = {
       genesis,
