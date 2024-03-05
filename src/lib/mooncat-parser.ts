@@ -148,7 +148,14 @@ export class MooncatParser {
     }
 
     if (genesis) {
-      colors = [null, '#555555', '#222222', '#111111', '#bbbbbb', '#ff9999'];
+
+      // 50% chance
+      const whiteGenesisCat = k >= 128;
+      if (whiteGenesisCat) {
+        colors = [null, '#555555', '#d3d3d3', '#ffffff', '#aaaaaa', '#ff9999'];
+      } else {
+        colors = [null, '#555555', '#222222', '#111111', '#bbbbbb', '#ff9999'];
+      }
     }
 
     // add laser eye and crown colors
