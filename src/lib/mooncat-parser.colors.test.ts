@@ -12,9 +12,9 @@ describe('colors', () => {
     // --- ethspresso version
 
     let htmlEthspresso = '';
-    for (let feeRate = 0; feeRate < 2000; feeRate++) {
+    for (let feeRate = 0; feeRate < 1000; feeRate++) {
 
-      const x = feeRate / 715; // with this value 300 sat/vB are the last red (before going purple->blue)
+      const x = feeRate / 300;
       const rgb = generativeColorPalette(
         x,
         [0.5, 0.5, 0.5],
@@ -23,27 +23,29 @@ describe('colors', () => {
         [0.0, 0.0, 0.0]
       );
 
-      // If feeRate is less than 150, the palette will emphasize variations in the red and green channels
-      if (feeRate <= 300) {
+      // If feeRate is less than 150, the palette will emphasize variations in the red and green channels,
+      // resulting in colors that primarily vary along these axes.
+      if (feeRate < 150) {
         colors = derivePalette(rgb[0], rgb[1], 0);
 
-      // If feeRate is greater than or equal to 150, the palette will emphasize variations in the red and blue channels
+      // If feeRate is greater than or equal to 150, the palette will emphasize variations in the red and blue channels,
+      // leading to colors that primarily vary along these axes instead.
       } else {
         colors = derivePalette(rgb[0], 0, rgb[2]);
       }
 
       htmlEthspresso += `Fee rate ${(feeRate + '').padStart(3, ' ')} / ${ x.toFixed(3) }: `
-        + `<span style="color:${colors[1]};font-weight:bold;">${colors[1]}</span> `
-        + `<span style="color:${colors[2]};font-weight:bold;">${colors[2]}</span> `
-        + `<span style="color:${colors[3]};font-weight:bold;">${colors[3]}</span> `
-        + `<span style="color:${colors[4]};font-weight:bold;">${colors[4]}</span> `
-        + `<span style="color:${colors[5]};font-weight:bold;">${colors[5]}</span>\n`
+        + `<span style="color:${colors[1]}">${colors[1]}</span> `
+        + `<span style="color:${colors[2]}">${colors[2]}</span> `
+        + `<span style="color:${colors[3]}">${colors[3]}</span> `
+        + `<span style="color:${colors[4]}">${colors[4]}</span> `
+        + `<span style="color:${colors[5]}">${colors[5]}</span>\n`
     }
 
-    // --- rainbow version
+    // --- rainbow version to understand the algo
 
     let html2 = '';
-    for (let feeRate = 0; feeRate < 2000; feeRate++) {
+    for (let feeRate = 0; feeRate < 1000; feeRate++) {
 
       const x = feeRate / 100;
       const rgb = generativeColorPalette(

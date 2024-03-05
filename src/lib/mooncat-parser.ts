@@ -123,18 +123,26 @@ export class MooncatParser {
 
     // Use a phase shifting palette
     const rgb = generativeColorPalette(
-      feeRate / 715, // with thus value 300 sat/vB are the last red (before going purple->blue),
+      feeRate / 300,
       [0.5, 0.5, 0.5],
       [-0.9, 0.6, 0.4],
       [2.0, 1.0, 1.0],
       [0.0, 0.0, 0.0]
     );
-    // Fees below 300 get a palette ranging from green to red
-    // Fees above 300 get a palette that is oscillates between blue -> purple -> red
-    if (feeRate <= 300) {
-      colors = derivePalette(rgb[0], rgb[1], 0);
+    // Fees below 150 get a palette ranging from green to red to light blue
+    // Fees above 150 get a palette that is a mix of red, blue and purple
+    if (feeRate < 150) {
+      colors = derivePalette(
+        rgb[0],
+        rgb[1],
+        0
+      );
     } else {
-      colors = derivePalette(rgb[0], 0, rgb[2]);
+      colors = derivePalette(
+        rgb[0],
+        0,
+        rgb[2]
+      );
     }
 
     if (genesis) {
