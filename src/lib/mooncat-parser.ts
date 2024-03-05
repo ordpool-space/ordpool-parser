@@ -2,7 +2,6 @@ import { CatTraits } from '../types/parsed-cat21';
 import { hexToBytes } from './conversions';
 import { generativeColorPalette } from './mooncat-parser.colors';
 import { getCypherpunksManifestoText, getIsomometricCubePattern, getWhitepaperText, textToBinary, splitAndWrapTextWithTspan, getBgRect } from './mooncat-parser.backgrounds';
-import { feeRateToMempoolColor } from './mooncat-parser.colors';
 import { laserDesigns, laserCrownDesigns, placeholderDesign } from './mooncat-parser.designs';
 import { mooncatDesignsToTraits } from './mooncat-parser.designs-to-traits';
 import { derivePalette } from './mooncat-parser.helper';

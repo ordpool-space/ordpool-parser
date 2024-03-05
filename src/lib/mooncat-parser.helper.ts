@@ -32,11 +32,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
  * @returns The HSL representation.
  */
 export function RGBToHSL(r: number, g: number, b: number): [number, number, number] {
-  // if (Array.isArray(r)) {
-  //   g = r[1];
-  //   b = r[2];
-  //   r = r[0];
-  // }
   var r = r / 255;
   var g = g / 255;
   var b = b / 255;
@@ -74,11 +69,6 @@ export function RGBToHSL(r: number, g: number, b: number): [number, number, numb
  * @returns The RGB representation.
  */
 export function HSLToRGB(h: number, s: number, l: number): [number, number, number] {
-  // if (Array.isArray(h)) {
-  //   s = h[1];
-  //   l = h[2];
-  //   h = h[0];
-  // }
   var c = (1 - Math.abs(2 * l - 1)) * s;
   var x = c * (1 - Math.abs((h / 60) % 2 - 1));
   var m = l - c / 2;
@@ -126,7 +116,7 @@ export function RGBToHex(arr: [number, number, number]): string {
 }
 
 /**
- * Derives a color palette based on RGB values and an invert flag.
+ * Derives a color palette based on RGB values.
  * @param r - Red component.
  * @param g - Green component.
  * @param b - Blue component.
