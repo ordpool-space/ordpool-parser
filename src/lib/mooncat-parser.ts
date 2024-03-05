@@ -65,13 +65,12 @@ export class MooncatParser {
    */
   public static parse(catHash: string, feeRate: number): { catData: (string | null)[][]; traits: CatTraits } {
     const bytes = hexToBytes(catHash);
-    const k = bytes[1];
 
     // Genesis cat has value 79 here
     // Probability: 1/256 --> 0.00390625 --> ~0.4%
     const genesis = bytes[0] === 79;
 
-    // const k = bytes[1];
+    const k = bytes[1];
     // const r = bytes[2];
     // const g = bytes[3];
     // const b = bytes[4];

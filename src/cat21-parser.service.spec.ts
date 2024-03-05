@@ -4,7 +4,6 @@ import { cat21GenesisBlockTxIds } from '../testdata/txids_000000000000000000018e
 import { Cat21ParserService } from './cat21-parser.service';
 import { createCatHash } from './cat21-parser.service.helper';
 import { MooncatParser } from './lib/mooncat-parser';
-import { feeLevels } from './lib/mooncat-parser.colors';
 import { readTransaction } from './test.helper';
 
 
@@ -137,6 +136,14 @@ describe('Cat21ParserService', () => {
 
 it('should render a wide range of feeRate values', async () => {
 
+    const feeLevels = [
+      1, 5, 8, 10, 12, 15, 20, 24, 27, 30, 33, 36, 40, 43,
+      47, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115,
+      120, 125, 130, 135, 140, 145, 150, 155, 160, 165, 170, 175, 180, 185, 190,
+      195, 200, 205, 210, 215, 220, 225, 230, 235, 240, 245, 250, 260, 270, 280,
+      300, 350, 400, 500, 600, 700, 800, 900, 1000, 1200, 1400, 1600, 1800, 2000
+    ];
+
     let txIdsAndBlockIdsAndFeeRate: [string, string, number][] = [
       ['98316dcb21daaa221865208fe0323616ee6dd84e6020b78bc6908e914ac03892', '000000000000000000018e3ea447b11385e3330348010e1b2418d0d8ae4e0ac7', 231.6822695035461],
     ];
@@ -200,12 +207,12 @@ it('should render a wide range of feeRate values', async () => {
 
           for (let b = 0; b < steps.length; b++) {
 
-            const catHash = '00' +
-              steps[k].toString(16).padStart(2, '0') +
-              steps[r].toString(16).padStart(2, '0') +
-              steps[g].toString(16).padStart(2, '0') +
-              steps[b].toString(16).padStart(2, '0') +
-              (laserEyesByte).toString(16).padStart(2, '0');
+            const catHash = '00' +                            // genesis
+              steps[k].toString(16).padStart(2, '0') +        // k
+              steps[r].toString(16).padStart(2, '0') +        // r - NOT USED ANYMORE
+              steps[g].toString(16).padStart(2, '0') +        // g - NOT USED ANYMORE
+              steps[b].toString(16).padStart(2, '0') +        // b - NOT USED ANYMORE
+              (laserEyesByte).toString(16).padStart(2, '0');  // laser eyes
 
             const svgAndTraits = MooncatParser.parseAndGenerateSvg(catHash, feeRate);
             const traitsJSON = JSON.stringify(svgAndTraits.traits).replaceAll('"', "'");
@@ -233,12 +240,12 @@ it('should render a wide range of feeRate values', async () => {
     for (let k = 0; k < 256; k++) {
 
       const catHash =
-        (0).toString(16).padStart(2, '0') +
-        k.toString(16).padStart(2, '0') +
-        (50).toString(16).padStart(2, '0') +
-        (200).toString(16).padStart(2, '0') +
-        (0).toString(16).padStart(2, '0') +
-        (laserEyesByte).toString(16).padStart(2, '0');
+        (0).toString(16).padStart(2, '0') +             // genesis
+        k.toString(16).padStart(2, '0') +               // k
+        (50).toString(16).padStart(2, '0') +            // r - NOT USED ANYMORE
+        (200).toString(16).padStart(2, '0') +           // g - NOT USED ANYMORE
+        (0).toString(16).padStart(2, '0') +             // b - NOT USED ANYMORE
+        (laserEyesByte).toString(16).padStart(2, '0');  // laser eyes
 
       svgContent += `<span title="${k}">` + MooncatParser.parseAndGenerateSvg(catHash, feeRate).svg + '</span>';
     }
@@ -259,9 +266,9 @@ it('should render a wide range of feeRate values', async () => {
       const catHash =
         (0).toString(16).padStart(2, '0') +    // genesis
         (0).toString(16).padStart(2, '0') +    // k
-        (50).toString(16).padStart(2, '0') +   // r
-        (200).toString(16).padStart(2, '0') +  // g
-        (0).toString(16).padStart(2, '0') +    // b
+        (50).toString(16).padStart(2, '0') +   // r - NOT USED ANYMORE
+        (200).toString(16).padStart(2, '0') +  // g - NOT USED ANYMORE
+        (0).toString(16).padStart(2, '0') +    // b - NOT USED ANYMORE
         (0).toString(16).padStart(2, '0') +    // laser eyes
         (bg).toString(16).padStart(2, '0') +   // background
         (0).toString(16).padStart(2, '0');     // crown
