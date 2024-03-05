@@ -1,6 +1,8 @@
 import { CatTraits } from '../types/parsed-cat21';
 import { hexToBytes } from './conversions';
 import { generativeColorPalette } from './mooncat-parser.colors';
+import { getCypherpunksManifestoText, getIsomometricCubePattern, getWhitepaperText, textToBinary, splitAndWrapTextWithTspan, getBgRect } from './mooncat-parser.backgrounds';
+import { feeRateToMempoolColor } from './mooncat-parser.colors';
 import { laserDesigns, laserCrownDesigns, placeholderDesign } from './mooncat-parser.designs';
 import { mooncatDesignsToTraits } from './mooncat-parser.designs-to-traits';
 import { derivePalette } from './mooncat-parser.helper';
@@ -70,16 +72,22 @@ export class MooncatParser {
     // Probability: 1/256 --> 0.00390625 --> ~0.4%
     const genesis = bytes[0] === 79;
 
-    // Genesis cat has value 121 here
-    const orangeLaserEyes = bytes[5] >= 0 && bytes[5] <= 63;
-    const redLaserEyes = bytes[5] >= 64 && bytes[5] <= 127;
-    const greenLaserEyes = bytes[5] >= 128 && bytes[5] <= 191;
-    const blueLaserEyes = bytes[5] >= 192 && bytes[5] <= 255;
+    // const k = bytes[1];
+    // const r = bytes[2];
+    // const g = bytes[3];
+    // const b = bytes[4];
 
-    // First genesis cat has value 120 here
-    // 10% chance of an orange background
-    // 26 values between: 120 and 145 --> 26/256 --> 0.1015625 --> ~10%
-    const orangeBackground = bytes[6] >= 120 && bytes[6] <= 145;
+    // Genesis cat has value 121 here (redLaserEyes)
+    const orangeLaserEyes = bytes[5] >= 0 && bytes[5] <= 63;   // 25%
+    const redLaserEyes = bytes[5] >= 64 && bytes[5] <= 127;    // 25%
+    const greenLaserEyes = bytes[5] >= 128 && bytes[5] <= 191; // 25%
+    const blueLaserEyes = bytes[5] >= 192 && bytes[5] <= 255;  // 25%
+
+    // Genesis cat has value 120 here (whitepaperBackground)
+    const block9Background = bytes[6] >= 0 && bytes[6] <= 25;       // 10%
+    const cyberpunkBackground = bytes[6] >= 26 && bytes[6] <= 76;   // 20%
+    const whitepaperBackground = bytes[6] >= 77 && bytes[6] <= 153; // 30%
+    const orangeBackground = bytes[6] >= 154 && bytes[6] <= 255;    // 40%
 
     // 10% chance of crown
     const crown = bytes[7] >= 120 && bytes[7] <= 145;
@@ -154,8 +162,17 @@ export class MooncatParser {
 
     // turning left is female cat, turning right is a male cat
     const genderName: 'female' | 'male' = designIndex < 64 ? 'female' : 'male';
-    const backgroundName: 'orange' | 'gray' = orangeBackground ? 'orange' : 'gray';
-    const crownName: 'gold' | 'diamond' | 'none' = crown ? orangeBackground ? 'diamond' : 'gold' : 'none';
+
+    let backgroundName: 'block9' | 'cyberpunk' | 'whitepaper' | 'orange' = 'orange';
+    if (block9Background) {
+      backgroundName = 'block9';
+    } else if (cyberpunkBackground) {
+      backgroundName = 'cyberpunk';
+    } else if (whitepaperBackground) {
+      backgroundName = 'whitepaper';
+    }
+
+    const crownName :  'gold' | 'diamond' | 'none' = crown ? orangeBackground ? 'diamond' : 'gold' : 'none';
 
     const traits = {
       genesis,
@@ -239,23 +256,45 @@ export class MooncatParser {
     // the -1 adds 1px padding to the bottom if possible otherwise 0
     const yOffset = Math.max(gridHeight - catHeight - 1, 0);
 
-    let svgGrid = '';
-    if (traits?.background === 'orange') {
-      svgGrid += '<rect x="0" y="0" width="22" height="22" fill="#ff9900" />'
-    } else {
-      svgGrid += '<rect x="0" y="0" width="22" height="22" fill="#4d4d4d" />'
+    let svg = `<svg viewBox="0 0 ${gridWidth} ${gridHeight}" xmlns="http://www.w3.org/2000/svg">\n`;
+
+    switch(traits?.background) {
+      case 'block9': {
+
+        const rows = 14;
+        const columns = 17;
+        const cubeSize = 2.21;
+
+        svg += getBgRect('ffffff');
+        svg += getIsomometricCubePattern(rows, columns, cubeSize, gridWidth, gridHeight);
+        break;
+      }
+      case 'cyberpunk': {
+        svg += getBgRect('1600ae');
+        svg += getCypherpunksManifestoText();
+        break;
+      }
+      case 'whitepaper': {
+        svg += getBgRect('ffffff');
+        svg += getWhitepaperText();
+        break;
+      }
+      default: {
+        svg += getBgRect('ff9900');
+        break;
+      }
     }
 
     for (let i = 0; i < catWidth; i++) {
       for (let j = 0; j < catHeight; j++) {
         const color = catData[i][j];
         if (color) {
-          svgGrid += `<rect x="${i + xOffset}" y="${j + yOffset}" width="1" height="1" fill="${color}" stroke="${color}" stroke-width="0.05" />\n`;
+          svg += `<rect x="${i + xOffset}" y="${j + yOffset}" width="1" height="1" fill="${color}" stroke="${color}" stroke-width="0.05" />\n`;
         }
       }
     }
 
-    const svg = `<svg viewBox="0 0 ${gridWidth} ${gridHeight}" xmlns="http://www.w3.org/2000/svg">\n${svgGrid}</svg>`;
+    svg += '</svg>';
 
     return {
       svg,
@@ -263,3 +302,8 @@ export class MooncatParser {
     };
   }
 }
+
+
+
+
+

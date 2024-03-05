@@ -90,7 +90,7 @@ describe('Cat21ParserService', () => {
     expect(traits?.designPattern).toEqual('Eyepatch');
     expect(traits?.designFacing).toEqual('Left');
     expect(traits?.laserEyes).toEqual('red');
-    expect(traits?.background).toBe('orange');
+    expect(traits?.background).toBe('whitepaper');
     expect(traits?.crown).toBe('none');
 
     fs.writeFileSync('testdist/genesis-cat.svg', parsedCat?.getImage() || '');
@@ -244,5 +244,31 @@ it('should render a wide range of feeRate values', async () => {
     }
 
     fs.writeFileSync('testdist/cat-lasereye-poses-testdrive.html', testdriveHtml.replace('CATS!', svgContent));
+  });
+
+  it('should generate 4 different backgrounds', () => {
+
+    const steps = [0, 26, 77, 154];
+    const feeRate = 100; // change this value to test other colors!
+
+    let svgContent = '';
+
+    for (let i = 0; i < steps.length; i++) {
+
+      const bg = steps[i];
+      const catHash =
+        (0).toString(16).padStart(2, '0') +    // genesis
+        (0).toString(16).padStart(2, '0') +    // k
+        (50).toString(16).padStart(2, '0') +   // r
+        (200).toString(16).padStart(2, '0') +  // g
+        (0).toString(16).padStart(2, '0') +    // b
+        (0).toString(16).padStart(2, '0') +    // laser eyes
+        (bg).toString(16).padStart(2, '0') +   // background
+        (0).toString(16).padStart(2, '0');     // crown
+
+      svgContent += `<span title="${bg}">` + MooncatParser.parseAndGenerateSvg(catHash, feeRate).svg + '</span>';
+    }
+
+    fs.writeFileSync('testdist/cat-backgrounds-testdrive.html', testdriveHtml.replace('CATS!', svgContent));
   });
 });
