@@ -1,5 +1,5 @@
 import fs from 'fs';
-import { getCypherpunksManifestoText, getIsomometricCubePattern, textToBinary } from './mooncat-parser.backgrounds';
+import { getCypherpunksManifestoText, getIsomometricCubePattern, getWhitepaperText, textToBinary } from './mooncat-parser.backgrounds';
 
 describe('block9 background', () => {
 
@@ -33,7 +33,6 @@ describe('cyberpunk background', () => {
   it('should render a nice background with a cyberpunk vibes', () => {
 
     const svg = `<svg viewBox="0 0 30 30" xmlns="http://www.w3.org/2000/svg">${ getCypherpunksManifestoText() }</svg>`
-
     expect(svg).toContain('<svg');
 
     fs.writeFileSync('testdist/background-cyberpunks.svg', svg);
@@ -44,10 +43,9 @@ describe('whitepaper background', () => {
 
   it('should render the first lines of the whitepaper', () => {
 
-    const svg = `<svg viewBox="0 0 30 30" xmlns="http://www.w3.org/2000/svg">${ getCypherpunksManifestoText() }</svg>`
-
+    const svg = `<svg viewBox="0 0 30 30" xmlns="http://www.w3.org/2000/svg">${ getWhitepaperText() }</svg>`
     expect(svg).toContain('<svg');
 
-    fs.writeFileSync('testdist/background-cyberpunks.svg', svg);
+    fs.writeFileSync('testdist/background-whitepaper.svg', svg);
   });
 });
