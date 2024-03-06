@@ -1,7 +1,8 @@
+import { alterDesign, decodeTraits, eyesOffset, laserEyesPattern } from "./mooncat-parser.traits";
 
 // extracted from here:
 // https://github.com/cryptocopycats/awesome-mooncatrescue-bubble/blob/master/DESIGNS.md
-export const mooncatDesignsToTraits: [
+export const expectedMooncatDesignsToTraits: [
   number,
   'Standing' | 'Sleeping' | 'Pouncing' | 'Stalking',  // Pose
   'Smile' | 'Grumpy' | 'Pouting' | 'Shy', // Expression
@@ -140,3 +141,76 @@ export const mooncatDesignsToTraits: [
   [123, 'Stalking', 'Shy', 'Eyepatch', 'Right'],
   [127, 'Stalking', 'Shy', 'Half/Half', 'Right']
 ];
+
+describe('decodeTraits', () => {
+  it('should correctly decode all mooncat traits', () => {
+    expectedMooncatDesignsToTraits.forEach((expectedTraits) => {
+      
+      const designIndex = expectedTraits[0];
+      const decodedTraits = decodeTraits(designIndex);
+
+      const actualTraits = [
+        designIndex,
+        decodedTraits.pose,
+        decodedTraits.expression,
+        decodedTraits.pattern,
+        decodedTraits.facing,
+      ];
+
+      expect(actualTraits).toEqual(expectedTraits);
+    });
+  });
+});
+
+describe('alterDesign function', () => {
+
+  it('should correctly apply the laserEyesPattern to a cat design', () => {
+
+    // cat 0 (Standing)
+    const beforeDesign = [
+      [0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      [0, 1, 3, 1, 0, 0, 0, 1, 3, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      [0, 1, 5, 3, 1, 1, 1, 3, 5, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      [1, 1, 3, 3, 3, 3, 3, 3, 3, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0],
+      [1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 0, 0, 0, 0, 0, 0, 1, 3, 1, 0],
+      [1, 3, 3, 1, 3, 3, 3, 1, 3, 3, 1, 1, 1, 1, 1, 1, 0, 1, 1, 3, 1],
+      [1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 3, 3, 3, 3, 1, 1, 0, 1, 3, 1],
+      [1, 3, 3, 4, 3, 5, 3, 4, 3, 3, 1, 3, 3, 3, 3, 3, 1, 0, 1, 3, 1],
+      [1, 3, 3, 3, 4, 3, 4, 3, 3, 3, 1, 3, 3, 3, 3, 3, 1, 1, 1, 3, 1],
+      [0, 1, 3, 3, 3, 3, 3, 3, 3, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1],
+      [0, 0, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 0],
+      [0, 0, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 0, 0, 0],
+      [0, 0, 1, 3, 3, 3, 3, 3, 1, 4, 4, 4, 1, 3, 3, 3, 1, 1, 0, 0, 0],
+      [0, 0, 0, 1, 3, 3, 1, 3, 3, 1, 4, 1, 3, 3, 3, 1, 1, 0, 0, 0, 0],
+      [0, 0, 0, 0, 1, 3, 1, 1, 3, 1, 4, 1, 3, 3, 1, 1, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 1, 5, 1, 1, 5, 1, 1, 5, 3, 1, 1, 0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0]
+    ];
+
+    // cat 0 with laser eyes (color 6 and 7)
+    const afterDesign = [
+      [0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      [0, 1, 3, 1, 0, 0, 0, 1, 3, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      [0, 1, 5, 3, 1, 1, 1, 3, 5, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      [1, 1, 3, 3, 3, 3, 3, 3, 3, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0],
+      [1, 3, 3, 6, 3, 3, 3, 6, 3, 3, 1, 0, 0, 0, 0, 0, 0, 1, 3, 1, 0],
+      [1, 3, 6, 7, 6, 3, 6, 7, 6, 3, 1, 1, 1, 1, 1, 1, 0, 1, 1, 3, 1],
+      [1, 3, 3, 6, 3, 3, 3, 6, 3, 3, 1, 3, 3, 3, 3, 1, 1, 0, 1, 3, 1],
+      [1, 3, 3, 4, 3, 5, 3, 4, 3, 3, 1, 3, 3, 3, 3, 3, 1, 0, 1, 3, 1],
+      [1, 3, 3, 3, 4, 3, 4, 3, 3, 3, 1, 3, 3, 3, 3, 3, 1, 1, 1, 3, 1],
+      [0, 1, 3, 3, 3, 3, 3, 3, 3, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1],
+      [0, 0, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 0],
+      [0, 0, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 0, 0, 0],
+      [0, 0, 1, 3, 3, 3, 3, 3, 1, 4, 4, 4, 1, 3, 3, 3, 1, 1, 0, 0, 0],
+      [0, 0, 0, 1, 3, 3, 1, 3, 3, 1, 4, 1, 3, 3, 3, 1, 1, 0, 0, 0, 0],
+      [0, 0, 0, 0, 1, 3, 1, 1, 3, 1, 4, 1, 3, 3, 1, 1, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 1, 5, 1, 1, 5, 1, 1, 5, 3, 1, 1, 0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0]
+    ];
+
+    const headOffset = [4, 2];
+    const result = alterDesign(beforeDesign, headOffset, laserEyesPattern);
+
+    expect(result).toEqual(afterDesign);
+  });
+});

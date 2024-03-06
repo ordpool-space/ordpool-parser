@@ -9,7 +9,7 @@ import {
 import { generativeColorPalette } from './mooncat-parser.colors';
 import { designs } from './mooncat-parser.design2';
 import { laserCrownDesigns, laserDesigns, placeholderDesign } from './mooncat-parser.designs';
-import { mooncatDesignsToTraits } from './mooncat-parser.designs-to-traits';
+import { decodeTraits } from './mooncat-parser.traits';
 import { derivePalette } from './mooncat-parser.helper';
 
 /* *********************************************
@@ -175,7 +175,7 @@ export class MooncatParser {
       return row.map(cell => colors[cell]);
     });
 
-    const designTraits = mooncatDesignsToTraits.find(design => design[0] === designIndex)!;
+    const designTraits = decodeTraits(designIndex);
 
     // turning left is a female cat, turning right is a male cat
     const genderName: 'female' | 'male' = designIndex < 64 ? 'female' : 'male';
@@ -209,10 +209,10 @@ export class MooncatParser {
       backgroundColors,
       gender: genderName,
       designIndex,
-      designPose: designTraits[1],
-      designExpression: designTraits[2],
-      designPattern: designTraits[3],
-      designFacing: designTraits[4],
+      designPose: designTraits.pose,
+      designExpression: designTraits.expression,
+      designPattern: designTraits.pattern,
+      designFacing: designTraits.facing,
       laserEyes: laserEyesName,
       background: backgroundName,
       crown: crownName
