@@ -9,7 +9,7 @@ import {
 import { generativeColorPalette } from './mooncat-parser.colors';
 import { designs } from './mooncat-parser.design2';
 import { laserCrownDesigns, laserDesigns, placeholderDesign } from './mooncat-parser.designs';
-import { decodeTraits } from './mooncat-parser.traits';
+import { applyLaserEyes, decodeTraits } from './mooncat-parser.traits';
 import { derivePalette } from './mooncat-parser.helper';
 
 /* *********************************************
@@ -82,10 +82,11 @@ export class MooncatParser {
     const b = bytes[4];
 
     // Genesis cat has value 121 here (redLaserEyes)
-    const orangeLaserEyes = bytes[5] >= 0 && bytes[5] <= 63;   // 25%
-    const redLaserEyes = bytes[5] >= 64 && bytes[5] <= 127;    // 25%
-    const greenLaserEyes = bytes[5] >= 128 && bytes[5] <= 191; // 25%
-    const blueLaserEyes = bytes[5] >= 192 && bytes[5] <= 255;  // 25%
+    const orangeLaserEyes = bytes[5] >= 0 && bytes[5] <= 50;   // 20%
+    const greenLaserEyes = bytes[5] >= 51 && bytes[5] <= 101;  // 20%
+    const redLaserEyes = bytes[5] >= 102 && bytes[5] <= 152;   // 20%
+    const blueLaserEyes = bytes[5] >= 153 && bytes[5] <= 203;  // 20%
+    const noLaserEyes = bytes[5] >= 204 && bytes[5] <= 255;    // ~20% (+ one more)
 
     // Genesis cat has value 120 here (orangeBackground)
     const block9Background = bytes[5] >= 0 && bytes[5] <= 63;        // 25%
@@ -103,35 +104,35 @@ export class MooncatParser {
     // which is the exact amount of available designs
     const designIndex = k % 128;
 
-
-
     // const design = crown ? laserCrownDesigns[designIndex].split('.') : laserDesigns[designIndex].split('.');
-    const design = designs[designIndex];
+    let design = designs[designIndex];
+
+    if (!noLaserEyes) {
+      design = applyLaserEyes(design, designIndex);
+    }
 
     let colors: (string | null)[];
 
     let laserEyesColors: (string | null)[] = [null, null]
-    let laserEyesName: 'red' | 'green' | 'blue' | 'orange';
+    let laserEyesName: 'Orange' | 'Red' | 'Green' | 'Blue' | 'None' = 'None';
 
     // gold crown by default
-    // orange background get diamond crown for better contrast
+    // orange background gets diamond crown for better contrast
     let crownColors = orangeBackground ? ["#b8d8e7", "#cbe3f0"] : ["#ffaf51", "#ffcf39"];
 
     // as a homage to the good old days, only "web save colors" are used here
     if (redLaserEyes) {
       laserEyesColors = ['#ff0000', '#ff9900'];
-      laserEyesName = 'red';
+      laserEyesName = 'Red';
     } else if (greenLaserEyes) {
       laserEyesColors = ['#009900', '#33ff00'];
-      laserEyesName = 'green';
+      laserEyesName = 'Green';
     } else if (blueLaserEyes) {
       laserEyesColors = ['#0033cc', '#66ccff'];
-      laserEyesName = 'blue';
+      laserEyesName = 'Blue';
     } else if (orangeLaserEyes) {
       laserEyesColors = ['#ff9900', '#ffffff'];
-      laserEyesName = 'orange';
-    } else {
-      throw new Error('This should never never happen')!
+      laserEyesName = 'Orange';
     }
 
     // Use a phase shifting palette
@@ -178,24 +179,24 @@ export class MooncatParser {
     const designTraits = decodeTraits(designIndex);
 
     // turning left is a female cat, turning right is a male cat
-    const genderName: 'female' | 'male' = designIndex < 64 ? 'female' : 'male';
+    const genderName: 'Female' | 'Male' = designIndex < 64 ? 'Female' : 'Male';
     const c = derivePalette(r, g, b);
 
     let backgroundColors: string[] = ['#ff9900'];
-    let backgroundName: 'block9' | 'cyberpunk' | 'whitepaper' | 'orange' = 'orange';
+    let backgroundName: 'Block9' | 'Cyberpunk' | 'Whitepaper' | 'Orange' = 'Orange';
     if (block9Background) {
-      backgroundName = 'block9';
+      backgroundName = 'Block9';
       backgroundColors = (inverted ? [c[3], c[2], c[1]] : [c[1], c[2], c[3]]) as string[];
     } else if (cyberpunkBackground) {
       const c = derivePalette(r, g, b);
       backgroundColors = (inverted ? [c[2], c[1]] : [c[1], c[2]]) as string[];
-      backgroundName = 'cyberpunk';
+      backgroundName = 'Cyberpunk';
     } else if (whitepaperBackground) {
       backgroundColors = (inverted ? [c[4], c[2]] : [c[2], c[4]]) as string[];
-      backgroundName = 'whitepaper';
+      backgroundName = 'Whitepaper';
     }
 
-    const crownName :  'gold' | 'diamond' | 'none' = crown ? orangeBackground ? 'diamond' : 'gold' : 'none';
+    const crownName :  'Gold' | 'Diamond' | 'None' = crown ? orangeBackground ? 'Diamond' : 'Gold' : 'None';
 
     const traits = {
       genesis,
@@ -282,7 +283,7 @@ export class MooncatParser {
     let svg = `<svg viewBox="0 0 ${gridWidth} ${gridHeight}" xmlns="http://www.w3.org/2000/svg">\n`;
 
     switch(traits?.background) {
-      case 'block9': {
+      case 'Block9': {
 
         const rows = 14;
         const columns = 17;
@@ -291,11 +292,11 @@ export class MooncatParser {
         svg += getIsomometricCubePattern(rows, columns, cubeSize, gridWidth, gridHeight, traits.backgroundColors);
         break;
       }
-      case 'cyberpunk': {
+      case 'Cyberpunk': {
         svg += getCypherpunksManifestoText(traits.backgroundColors);
         break;
       }
-      case 'whitepaper': {
+      case 'Whitepaper': {
         svg += getWhitepaperText(traits.backgroundColors);
         break;
       }
@@ -307,7 +308,7 @@ export class MooncatParser {
 
     for (let rowIndex = 0; rowIndex < catHeight; rowIndex++) {
       for (let colIndex = 0; colIndex < catWidth; colIndex++) {
-        const color = catData[rowIndex][colIndex]; // Access the color at the current row and column
+        const color = catData[rowIndex][colIndex];
         if (color) {
           svg += `<rect x="${colIndex + xOffset}" y="${rowIndex + yOffset}" width="1" height="1" fill="${color}" stroke="${color}" stroke-width="0.05" />\n`;
         }

@@ -1,12 +1,38 @@
 
 
-
-// TODO!!
-export const eyesOffset = [
-  [0,3],  // pose - standing (21×17)
-  [1,3],  // pose - sleeping (20×14)
-  [1,3],  // pose - pouncing (17×22)
-  [0,9],  // pose - stalking (20×21)
+export const eyePositions = [
+  {
+    traits: 'Standing-Left',
+    position:  [4, 2]
+  },
+  {
+    traits: 'Sleeping-Left',
+    position:  [4, 3]
+  },
+  {
+    traits: 'Pouncing-Left',
+    position:  [4, 3]
+  },
+  {
+    traits: 'Stalking-Left',
+    position: [10, 2]
+  },
+  {
+    traits: 'Standing-Right',
+    position:  [4, 12]
+  },
+  {
+    traits: 'Sleeping-Right',
+    position:  [4, 10]
+  },
+  {
+    traits: 'Pouncing-Right',
+    position:  [4, 7]
+  },
+  {
+    traits: 'Stalking-Right',
+    position: [10, 11]
+  }
 ]
 
 export const laserEyesPattern = [
@@ -92,4 +118,18 @@ export function alterDesign(design: number[][], position: number[], newPattern: 
     }
   }
   return alteredDesign;
+}
+
+export function applyLaserEyes(design: number[][], designIndex: number): number[][] {
+
+  const traits = decodeTraits(designIndex);
+  const poseFacingKey = `${traits.pose}-${traits.facing}`;
+  const eyePosition = eyePositions.find(x => x.traits == poseFacingKey);
+
+  // ignore missing data (should never happeN)
+  if (!eyePosition) {
+    return design;
+  }
+
+  return alterDesign(design, eyePosition.position, laserEyesPattern)
 }

@@ -29,7 +29,7 @@ export interface CatTraits {
    * There is a 50% chance to receive a female cat.
    * Turning left is a female cat. Turning right is a male cat.
    */
-  gender: 'male' | 'female';
+  gender: 'Male' | 'Female';
 
   /**
    * One of the 128 designs (from 0 to 127)
@@ -50,14 +50,15 @@ export interface CatTraits {
   designFacing: 'Left' | 'Right',
 
   /**
-   * The laser eyes trait. All cats have laser eyes.
+   * The laser eyes trait.
    *
-   * There is a ~10% chance to receive a cat with orange laser eyes.
+   * There is a ~20% chance to receive a cat with orange laser eyes.
    * There is a ~20% chance to receive a cat with red laser eyes.
-   * There is a ~30% chance to receive a cat with green laser eyes.
-   * There is a ~40% chance to receive a cat with blue laser eyes.
+   * There is a ~20% chance to receive a cat with green laser eyes.
+   * There is a ~20% chance to receive a cat with blue laser eyes.
+   * There is a ~20% chance to receive a cat with no laser eyes.
    */
-  laserEyes: 'orange' | 'red' | 'green' | 'blue';
+  laserEyes: 'Orange' | 'Red' | 'Green' | 'Blue' | 'None';
 
   /**
    * The background trait. All images have a background color.
@@ -67,7 +68,7 @@ export interface CatTraits {
    * There is a ~40% chance to receive a cat with an orange background.
    * The orange color is #ff9900.
    */
-  background: 'block9' | 'cyberpunk' | 'whitepaper' | 'orange';
+  background: 'Block9' | 'Cyberpunk' | 'Whitepaper' | 'Orange';
 
   /**
    * The crown trait.
@@ -75,7 +76,7 @@ export interface CatTraits {
    * The crown is golden when the background is not orange.
    * The crown is made of diamonds if the background is orange.
    */
-  crown: 'gold' | 'diamond' | 'none';
+  crown: 'Gold' | 'Diamond' | 'None';
 }
 
 export interface ParsedCat21 extends DigitalArtifact {

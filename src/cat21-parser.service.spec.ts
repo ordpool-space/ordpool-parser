@@ -82,15 +82,15 @@ describe('Cat21ParserService', () => {
     const traits = parsedCat?.getTraits();
 
     expect(traits?.genesis).toBe(true);
-    expect(traits?.gender).toBe('female');
+    expect(traits?.gender).toBe('Female');
     expect(traits?.designIndex).toEqual(24);
     expect(traits?.designPose).toEqual('Standing');
     expect(traits?.designExpression).toEqual('Grumpy');
     expect(traits?.designPattern).toEqual('Eyepatch');
     expect(traits?.designFacing).toEqual('Left');
-    expect(traits?.laserEyes).toEqual('red');
-    expect(traits?.background).toBe('orange');
-    expect(traits?.crown).toBe('none');
+    expect(traits?.laserEyes).toEqual('Red');
+    expect(traits?.background).toBe('Orange');
+    expect(traits?.crown).toBe('None');
 
     fs.writeFileSync('testdist/genesis-cat.svg', parsedCat?.getImage() || '');
   });
