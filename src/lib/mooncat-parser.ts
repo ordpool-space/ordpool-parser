@@ -7,6 +7,7 @@ import {
   getWhitepaperText,
 } from './mooncat-parser.backgrounds';
 import { generativeColorPalette } from './mooncat-parser.colors';
+import { designs } from './mooncat-parser.design2';
 import { laserCrownDesigns, laserDesigns, placeholderDesign } from './mooncat-parser.designs';
 import { mooncatDesignsToTraits } from './mooncat-parser.designs-to-traits';
 import { derivePalette } from './mooncat-parser.helper';
@@ -101,7 +102,11 @@ export class MooncatParser {
     // results in a uniform distribution of values in a range of 0 to 127,
     // which is the exact amount of available designs
     const designIndex = k % 128;
-    const design = crown ? laserCrownDesigns[designIndex].split('.') : laserDesigns[designIndex].split('.');
+
+
+
+    // const design = crown ? laserCrownDesigns[designIndex].split('.') : laserDesigns[designIndex].split('.');
+    const design = designs[designIndex];
 
     let colors: (string | null)[];
 
@@ -167,7 +172,7 @@ export class MooncatParser {
     colors = [...colors, laserEyesColors[0], laserEyesColors[1], crownColors[0], crownColors[1]];
 
     const catData = design.map(row => {
-      return row.split('').map(cell => colors[parseInt(cell, 10)]);
+      return row.map(cell => colors[cell]);
     });
 
     const designTraits = mooncatDesignsToTraits.find(design => design[0] === designIndex)!;
@@ -264,8 +269,8 @@ export class MooncatParser {
 
     const gridWidth = 22;
     const gridHeight = 22;
-    const catWidth = catData.length;
-    const catHeight = catData[0].length;
+    const catWidth = catData[0].length; // Width is now determined by the length of the first row
+    const catHeight = catData.length; // Height is determined by the number of rows
 
     // Calculate x-offset to center the cat
     const xOffset = Math.floor((gridWidth - catWidth) / 2);
@@ -300,11 +305,11 @@ export class MooncatParser {
       }
     }
 
-    for (let i = 0; i < catWidth; i++) {
-      for (let j = 0; j < catHeight; j++) {
-        const color = catData[i][j];
+    for (let rowIndex = 0; rowIndex < catHeight; rowIndex++) {
+      for (let colIndex = 0; colIndex < catWidth; colIndex++) {
+        const color = catData[rowIndex][colIndex]; // Access the color at the current row and column
         if (color) {
-          svg += `<rect x="${i + xOffset}" y="${j + yOffset}" width="1" height="1" fill="${color}" stroke="${color}" stroke-width="0.05" />\n`;
+          svg += `<rect x="${colIndex + xOffset}" y="${rowIndex + yOffset}" width="1" height="1" fill="${color}" stroke="${color}" stroke-width="0.05" />\n`;
         }
       }
     }

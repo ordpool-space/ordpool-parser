@@ -48,10 +48,10 @@ describe('whitepaper background', () => {
 
   it('should render the first lines of the whitepaper', () => {
 
-    const c = derivePalette(100, 0, 0);
+    const c = derivePalette(0, 100, 100);
     const backgroundColors = [c[2] + '', c[3]+ ''];
 
-    const svg = `<svg viewBox="0 0 30 30" xmlns="http://www.w3.org/2000/svg">${ getWhitepaperText(backgroundColors) }</svg>`
+    const svg = `<svg viewBox="0 0 22 22" xmlns="http://www.w3.org/2000/svg">${ getWhitepaperText(backgroundColors) }</svg>`
     expect(svg).toContain('<svg');
 
     fs.writeFileSync('testdist/background-whitepaper.svg', svg);
