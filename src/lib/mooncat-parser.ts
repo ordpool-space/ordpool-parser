@@ -1,8 +1,13 @@
 import { CatTraits } from '../types/parsed-cat21';
 import { hexToBytes } from './conversions';
+import {
+  getBgRect,
+  getCypherpunksManifestoText,
+  getIsomometricCubePattern,
+  getWhitepaperText,
+} from './mooncat-parser.backgrounds';
 import { generativeColorPalette } from './mooncat-parser.colors';
-import { getCypherpunksManifestoText, getIsomometricCubePattern, getWhitepaperText, textToBinary, splitAndWrapTextWithTspan, getBgRect } from './mooncat-parser.backgrounds';
-import { laserDesigns, laserCrownDesigns, placeholderDesign } from './mooncat-parser.designs';
+import { laserCrownDesigns, laserDesigns, placeholderDesign } from './mooncat-parser.designs';
 import { mooncatDesignsToTraits } from './mooncat-parser.designs-to-traits';
 import { derivePalette } from './mooncat-parser.helper';
 
@@ -71,9 +76,9 @@ export class MooncatParser {
     const genesis = bytes[0] === 79;
 
     const k = bytes[1];
-    // const r = bytes[2];
-    // const g = bytes[3];
-    // const b = bytes[4];
+    const r = bytes[2];
+    const g = bytes[3];
+    const b = bytes[4];
 
     // Genesis cat has value 121 here (redLaserEyes)
     const orangeLaserEyes = bytes[5] >= 0 && bytes[5] <= 63;   // 25%
@@ -81,14 +86,17 @@ export class MooncatParser {
     const greenLaserEyes = bytes[5] >= 128 && bytes[5] <= 191; // 25%
     const blueLaserEyes = bytes[5] >= 192 && bytes[5] <= 255;  // 25%
 
-    // Genesis cat has value 120 here (whitepaperBackground)
-    const block9Background = bytes[6] >= 0 && bytes[6] <= 25;       // 10%
-    const cyberpunkBackground = bytes[6] >= 26 && bytes[6] <= 76;   // 20%
-    const whitepaperBackground = bytes[6] >= 77 && bytes[6] <= 153; // 30%
-    const orangeBackground = bytes[6] >= 154 && bytes[6] <= 255;    // 40%
+    // Genesis cat has value 120 here (orangeBackground)
+    const block9Background = bytes[5] >= 0 && bytes[5] <= 63;        // 25%
+    const orangeBackground = bytes[5] >= 64 && bytes[5] <= 127;      // 25%
+    const whitepaperBackground = bytes[5] >= 128 && bytes[5] <= 191; // 25%
+    const cyberpunkBackground = bytes[5] >= 192 && bytes[5] <= 255;  // 25%
 
     // 10% chance of crown
     const crown = bytes[7] >= 120 && bytes[7] <= 145;
+
+    // 50% chance of inverted colors
+    const inverted = k >= 128;
 
     // results in a uniform distribution of values in a range of 0 to 127,
     // which is the exact amount of available designs
@@ -148,8 +156,7 @@ export class MooncatParser {
     if (genesis) {
 
       // 50% chance
-      const whiteGenesisCat = k >= 128;
-      if (whiteGenesisCat) {
+      if (inverted) {
         colors = [null, '#555555', '#d3d3d3', '#ffffff', '#aaaaaa', '#ff9999'];
       } else {
         colors = [null, '#555555', '#222222', '#111111', '#bbbbbb', '#ff9999'];
@@ -165,15 +172,21 @@ export class MooncatParser {
 
     const designTraits = mooncatDesignsToTraits.find(design => design[0] === designIndex)!;
 
-    // turning left is female cat, turning right is a male cat
+    // turning left is a female cat, turning right is a male cat
     const genderName: 'female' | 'male' = designIndex < 64 ? 'female' : 'male';
+    const c = derivePalette(r, g, b);
 
+    let backgroundColors: string[] = ['#ff9900'];
     let backgroundName: 'block9' | 'cyberpunk' | 'whitepaper' | 'orange' = 'orange';
     if (block9Background) {
       backgroundName = 'block9';
+      backgroundColors = (inverted ? [c[3], c[2], c[1]] : [c[1], c[2], c[3]]) as string[];
     } else if (cyberpunkBackground) {
+      const c = derivePalette(r, g, b);
+      backgroundColors = (inverted ? [c[2], c[1]] : [c[1], c[2]]) as string[];
       backgroundName = 'cyberpunk';
     } else if (whitepaperBackground) {
+      backgroundColors = (inverted ? [c[4], c[2]] : [c[2], c[4]]) as string[];
       backgroundName = 'whitepaper';
     }
 
@@ -188,7 +201,7 @@ export class MooncatParser {
         colors[4],
         colors[5]
       ] as string[],
-
+      backgroundColors,
       gender: genderName,
       designIndex,
       designPose: designTraits[1],
@@ -270,22 +283,19 @@ export class MooncatParser {
         const columns = 17;
         const cubeSize = 2.21;
 
-        svg += getBgRect('ffffff');
-        svg += getIsomometricCubePattern(rows, columns, cubeSize, gridWidth, gridHeight);
+        svg += getIsomometricCubePattern(rows, columns, cubeSize, gridWidth, gridHeight, traits.backgroundColors);
         break;
       }
       case 'cyberpunk': {
-        svg += getBgRect('1600ae');
-        svg += getCypherpunksManifestoText();
+        svg += getCypherpunksManifestoText(traits.backgroundColors);
         break;
       }
       case 'whitepaper': {
-        svg += getBgRect('ffffff');
-        svg += getWhitepaperText();
+        svg += getWhitepaperText(traits.backgroundColors);
         break;
       }
       default: {
-        svg += getBgRect('ff9900');
+        svg += getBgRect(traits?.backgroundColors[0] as string);
         break;
       }
     }

@@ -89,7 +89,7 @@ describe('Cat21ParserService', () => {
     expect(traits?.designPattern).toEqual('Eyepatch');
     expect(traits?.designFacing).toEqual('Left');
     expect(traits?.laserEyes).toEqual('red');
-    expect(traits?.background).toBe('whitepaper');
+    expect(traits?.background).toBe('orange');
     expect(traits?.crown).toBe('none');
 
     fs.writeFileSync('testdist/genesis-cat.svg', parsedCat?.getImage() || '');
@@ -256,7 +256,7 @@ it('should render a wide range of feeRate values', async () => {
   it('should generate 4 different backgrounds', () => {
 
     const steps = [0, 26, 77, 154];
-    const feeRate = 100; // change this value to test other colors!
+    const feeRate = 20; // change this value to test other colors!
 
     let svgContent = '';
 

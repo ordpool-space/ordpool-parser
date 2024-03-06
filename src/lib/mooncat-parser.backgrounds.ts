@@ -1,7 +1,7 @@
 type Point = { x: number; y: number };
 
 export function getBgRect(fill: string) {
-  return `<rect x="0" y="0" width="22" height="22" fill="#${fill}" />\n`;
+  return `<rect x="0" y="0" width="22" height="22" fill="${fill}" />\n`;
 }
 
 
@@ -34,12 +34,12 @@ function getCubePoints(baseX: number, baseY: number, size: number): { top: Point
 }
 
 // Generates a cube illusion from three polygon
-function getCubeFromPolygons(x: number, y: number, size: number, orangeCube: boolean, gridWidth: number, gridHeight: number): string {
+function getCubeFromPolygons(x: number, y: number, size: number, orangeCube: boolean, gridWidth: number, gridHeight: number, backgroundColors: string[]): string {
   const points = getCubePoints(x, y, size);
 
-  let colorTop = '#232838';
-  let colorLeft = '#191c27';
-  let colorRight = '#2d3348';
+  let colorTop = backgroundColors[1];
+  let colorLeft = backgroundColors[0];
+  let colorRight = backgroundColors[2];
 
   if (orangeCube) {
     colorTop = '#ff9900';
@@ -69,9 +69,9 @@ function getCubeFromPolygons(x: number, y: number, size: number, orangeCube: boo
   `;
 }
 
-export function getIsomometricCubePattern(rows: number, columns: number, cubeSize: number, gridWidth: number, gridHeight: number): string {
+export function getIsomometricCubePattern(rows: number, columns: number, cubeSize: number, gridWidth: number, gridHeight: number, backgroundColors: string[]): string {
 
-  let svg = '';
+  let svg = getBgRect('#ffffff');
 
   // Starting point for drawing cubes in the top left corner
   const startX = cubeSize / 2;
@@ -84,7 +84,7 @@ export function getIsomometricCubePattern(rows: number, columns: number, cubeSiz
 
       const isCube9 = r == 0 && c == 9;
 
-      svg += getCubeFromPolygons(x, y, cubeSize, isCube9, gridWidth, gridHeight);
+      svg += getCubeFromPolygons(x, y, cubeSize, isCube9, gridWidth, gridHeight, backgroundColors);
     }
   }
   return svg;
@@ -138,31 +138,37 @@ export function splitAndWrapTextWithTspan(text: string, maxCharsPerLine: number,
 }
 
 // from "A Cypherpunk's Manifesto by Eric Hughes", 9 March 1993
-export function getCypherpunksManifestoText() {
-  return `<text y="-0.38" font-family="Courier New, Courier" font-weight="bold" font-size="1.8px" fill="#a5a5a5">${ splitAndWrapTextWithTspan(textToBinary('Cypherpunks write code. 1993'), 20, 0.2)}</text>\n`
+export function getCypherpunksManifestoText(backgroundColors: string[]) {
+  let svg = getBgRect(backgroundColors[0]);
+  svg += `<text y="-0.38" font-family="Courier New, Courier" font-weight="bold" font-size="1.8px" fill="${ backgroundColors[1] }">${ splitAndWrapTextWithTspan(textToBinary('Cypherpunks write code. 1993'), 20, 0.2)}</text>\n`;
+  return svg;
 }
 
 /* *** WHITEPAPER BACKGROUND *** */
 
-export function getWhitepaperText() {
+export function getWhitepaperText(backgroundColors: string[]) {
 
-  let svg = '<svg viewBox="-4 -5 50 78" xmlns="http://www.w3.org/2000/svg">';
+  const fill = backgroundColors[0];
+  const bg = backgroundColors[1];
+  let svg = getBgRect(bg);
 
-  svg += `<text y="2" font-family="Times New Roman, Times" font-weight="bold" font-size="2px" fill="#000000">\n`;
+  svg += '<svg viewBox="-4 -5 50 78" xmlns="http://www.w3.org/2000/svg">';
+
+  svg += `<text y="2" font-family="Times New Roman, Times" font-weight="bold" font-size="2px" fill="${ fill }">\n`;
   svg += wrapTextWithTspan('Bitcoin: A Peer-to-Peer Electronic Cash System');
   svg += `</text>\n`;
 
-  svg += `<text y="7" font-family="Times New Roman, Times" font-size="1.12px" fill="#000000" text-anchor="middle">\n`;
+  svg += `<text y="7" font-family="Times New Roman, Times" font-size="1.12px" fill="${ fill }" text-anchor="middle">\n`;
   svg += wrapTextWithTspan('Satoshi Nakamoto', 20.2, 1.3);
   svg += wrapTextWithTspan('satoshin@gmx.com', 20.2, 1.3);
   svg += wrapTextWithTspan('www.bitcoin.org', 20.2, 1.3);
   svg += `</text>\n`;
 
-  svg += `<text y="16" font-family="Times New Roman, Times" font-weight="bold" font-size="1.12px" fill="#000000">\n`;
+  svg += `<text y="16" font-family="Times New Roman, Times" font-weight="bold" font-size="1.12px" fill="${ fill }">\n`;
   svg += wrapTextWithTspan('Abstract.', 1.4, 0);
   svg += `</text>\n`;
 
-  svg += `<text y="16" font-family="Times New Roman, Times" font-size="1.12px" fill="#000000" xml:space="preserve">\n`;
+  svg += `<text y="16" font-family="Times New Roman, Times" font-size="1.12px" fill="${ fill }" xml:space="preserve">\n`;
   svg += wrapTextWithTspan('A purely peer-to-peer version of electronic cash would allow online', 6.8, 0, 0.03);
   svg += wrapTextWithTspan('payments to be sent directly from one party to another without going through a', 1.4, 1.3, 0.03);
   svg += wrapTextWithTspan('financial institution.  Digital signatures provide part of the solution, but the main', 1.4, 1.32, 0.02);
@@ -179,11 +185,11 @@ export function getWhitepaperText() {
   svg += wrapTextWithTspan('proof-of-work chain as proof of what happened while they were gone.', 1.4, 1.3, 0.004);
   svg += `</text>\n`;
 
-  svg += `<text y="35" font-family="Times New Roman, Times" font-weight="bold" font-size="1.3px" fill="#000000" xml:space="preserve">\n`;
+  svg += `<text y="35" font-family="Times New Roman, Times" font-weight="bold" font-size="1.3px" fill="${ fill }" xml:space="preserve">\n`;
   svg += wrapTextWithTspan('1.    Introduction', -2);
   svg += `</text>\n`;
 
-  svg += `<text y="40" font-family="Times New Roman, Times" font-size="1.12px" fill="#000000" xml:space="preserve">\n`;
+  svg += `<text y="40" font-family="Times New Roman, Times" font-size="1.12px" fill="${ fill }" xml:space="preserve">\n`;
   svg += wrapTextWithTspan('Commerce on the Internet has come to rely almost exclusively on financial institutions serving as', -2, 0, 0.01);
   svg += wrapTextWithTspan('trusted third parties to process electronic payments.  While the system works well enough for', -2, 1.3, 0.03);
   svg += wrapTextWithTspan('most transactions, it still suffers from the inherent weaknesses of the trust based model.', -2, 1.3, 0.062);
@@ -205,7 +211,7 @@ export function getWhitepaperText() {
   svg += wrapTextWithTspan('cooperating group of attacker nodes.', -2, 1.3, 0.02);
   svg += `</text>\n`;
 
-  svg += `<text y="68" font-family="Times New Roman, Times" font-size="1.12px" fill="#000000">\n`;
+  svg += `<text y="68" font-family="Times New Roman, Times" font-size="1.12px" fill="${ fill }">\n`;
   svg += wrapTextWithTspan('1', 21, 0);
   svg += `</text>\n`;
 

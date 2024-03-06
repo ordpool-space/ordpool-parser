@@ -16,17 +16,18 @@ export interface CatTraits {
    * "#555555", "#d3d3d3", "#ffffff", "#aaaaaa", "#ff9999"
    * or
    * "#555555", "#222222", "#111111", "#bbbbbb", "#ff9999"
-   *
-   * see https://github.com/cryptocopycats/awesome-mooncatrescue-bubble/blob/master/COLORS.md
    */
   colors: string[];
 
   /**
+   * All colors that are used to generate the background.
+   *   */
+  backgroundColors: string[];
+
+  /**
    * The gender (sex) of a cat.
    * There is a 50% chance to receive a female cat.
-   * Female cats have a inverted color palette, so that it's easy to identify them.
-   *
-   * see https://github.com/cryptocopycats/awesome-mooncatrescue-bubble/blob/master/COLORS.md
+   * Turning left is a female cat. Turning right is a male cat.
    */
   gender: 'male' | 'female';
 
