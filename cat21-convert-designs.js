@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { designs } = require('./src/lib/mooncat-parser.designs.original');
 
-const newFile = '/src/lib/mooncat-parser.design2.ts';
+const newFile = '/src/lib/mooncat-parser.designs.ts';
 
 /**
  * Adjusts the orientation of all mooncat designs from a string representation to a nested array format
@@ -32,12 +32,12 @@ function adjustAllDesignsOrientationAndConvert(designs) {
 
 const newDesigns = adjustAllDesignsOrientationAndConvert(designs);
 
-const formattedNewDesigns = newDesigns.map(design =>
-  `  [\n${
+const formattedNewDesigns = newDesigns.map((design, i) =>
+  `  // ${i}\n  [\n${
       design.map(row => `    [${row.map(pixel => `${pixel}`).join(',')}]`).join(',\n')}\n  ]`
 ).join(',\n');
 
-const fileContent = `// generated file, do not edit manually! \nexport const designs = [\n${formattedNewDesigns}\n]\n`;
+const fileContent = `// generated file, do not edit manually! \nexport const designs = [\n${formattedNewDesigns}\n];\n`;
 
 const outputFilePath = path.join(__dirname, newFile);
 

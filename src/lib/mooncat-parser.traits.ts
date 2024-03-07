@@ -1,5 +1,3 @@
-
-
 export const eyePositions = [
   {
     traits: 'Standing-Left',
@@ -41,6 +39,12 @@ export const laserEyesPattern = [
   [0,6,0,0,0,6,0]
 ];
 
+export const crownPattern = [
+  [8,9,0,0,0,8,0,0,0,9,8],
+  [8,9,9,0,8,8,8,0,9,9,8],
+  [8,8,9,8,8,9,8,8,9,8,8],
+  [0,8,8,9,9,8,9,9,8,8,0]
+];
 
 /**
  * Decodes the traits for a given Mooncat design index, translating numerical values into trait descriptions.
@@ -126,10 +130,27 @@ export function applyLaserEyes(design: number[][], designIndex: number): number[
   const poseFacingKey = `${traits.pose}-${traits.facing}`;
   const eyePosition = eyePositions.find(x => x.traits == poseFacingKey);
 
-  // ignore missing data (should never happeN)
+  // ignore missing data (should never happen)
   if (!eyePosition) {
     return design;
   }
 
   return alterDesign(design, eyePosition.position, laserEyesPattern)
+}
+
+
+export function applyCrown(design: number[][], designIndex: number): number[][] {
+
+  const traits = decodeTraits(designIndex);
+  const poseFacingKey = `${traits.pose}-${traits.facing}`;
+  const eyePosition = eyePositions.find(x => x.traits == poseFacingKey);
+
+  // ignore missing data (should never happen)
+  if (!eyePosition) {
+    return design;
+  }
+
+  // the crown is larger
+  const finalPosition = [eyePosition.position[0] - 4, eyePosition.position[1] - 2]
+  return alterDesign(design, finalPosition, crownPattern);
 }

@@ -233,7 +233,7 @@ it('should render a wide range of feeRate values', async () => {
   it('should generate examples with laser eyes in all poses', () => {
 
     const laserEyesByte = 121; // red
-    const feeRate = 100; // change this value to test other colors!
+    const feeRate = 1; // change this value to test other colors!
 
     let svgContent = '';
 

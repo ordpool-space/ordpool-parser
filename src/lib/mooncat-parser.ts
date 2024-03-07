@@ -7,10 +7,9 @@ import {
   getWhitepaperText,
 } from './mooncat-parser.backgrounds';
 import { generativeColorPalette } from './mooncat-parser.colors';
-import { designs } from './mooncat-parser.design2';
-import { laserCrownDesigns, laserDesigns, placeholderDesign } from './mooncat-parser.designs';
-import { applyLaserEyes, decodeTraits } from './mooncat-parser.traits';
+import { designs } from './mooncat-parser.designs';
 import { derivePalette } from './mooncat-parser.helper';
+import { applyCrown, applyLaserEyes, decodeTraits } from './mooncat-parser.traits';
 
 /* *********************************************
 
@@ -104,11 +103,14 @@ export class MooncatParser {
     // which is the exact amount of available designs
     const designIndex = k % 128;
 
-    // const design = crown ? laserCrownDesigns[designIndex].split('.') : laserDesigns[designIndex].split('.');
     let design = designs[designIndex];
 
     if (!noLaserEyes) {
       design = applyLaserEyes(design, designIndex);
+    }
+
+    if (crown) {
+      design = applyCrown(design, designIndex);
     }
 
     let colors: (string | null)[];
@@ -234,10 +236,10 @@ export class MooncatParser {
 
     let colors: (string | null)[] = [null, '#bbbbbb', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#555555'];
 
-    const catData = placeholderDesign.split('.')
-      .map(row => {
-        return row.split('').map(cell => colors[parseInt(cell, 10)]);
-      });
+    const design = designs[128];
+    const catData = design.map(row => {
+      return row.map(cell => colors[cell]);
+    });
 
     return {
       catData,
