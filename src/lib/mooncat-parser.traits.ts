@@ -46,19 +46,29 @@ export const crownPattern = [
   [0,8,8,9,9,8,9,9,8,8,0]
 ];
 
-// you see no eyes
+// completely opaque glasses
 export const sunglassesPattern = [
   [10,10,10,10,10,10,10,10,10,10,10],
   [ 0,10,10,10,10, 0,10,10,10,10, 0],
-  [ 0, 0,10,10, 0, 0, 0,10,10,0,  0],
+  [ 0, 0,10,10, 0, 0, 0,10,10, 0, 0],
 ];
 
-// you see only 1px of the eyes
+// glasses where you can see 1px of the eyes
 export const laserEyesSunglassesPattern = [
   [10,10,10,10,10,10,10,10,10,10,10],
-  [ 0,10,10,0,10, 0,10,0,10,10, 0],
-  [ 0, 0,10,10, 0, 0, 0,10,10,0,  0],
+  [ 0,10,10, 0,10, 0,10, 0,10,10, 0],
+  [ 0, 0,10,10, 0, 0, 0,10,10, 0, 0],
 ];
+
+// completely opaque glasses
+export const sunglasses2Pattern = [
+  [0,1,1,1,1,1,0,1,1,1,1,1],
+  [0,1,2,2,2,1,1,1,2,2,2,1],
+  [1,1,3,3,3,1,0,1,3,3,3,1],
+  [0,1,4,4,4,1,0,1,4,4,4,1],
+  [0,0,1,1,1,0,0,0,1,1,1,0],
+];
+
 
 /**
  * Decodes the traits for a given Mooncat design index, translating numerical values into trait descriptions.
@@ -138,43 +148,64 @@ export function alterDesign(design: number[][], position: number[], newPattern: 
   return alteredDesign;
 }
 
-export function getEyesPosition(designIndex: number) {
+/**
+ * Retrieves the position of eyes based on the design index.
+ * @param  designIndex - The design index to decode traits.
+ * @returns The position of eyes, or undefined if not found (should not happen).
+ */
+export function getEyesPosition(designIndex: number, rowOffset: number = 0, colOffset: number = 0) {
   const traits = decodeTraits(designIndex);
   const poseFacingKey = `${traits.pose}-${traits.facing}`;
-  return eyesPositions.find(x => x.traits == poseFacingKey);
+  const eyesPosition = eyesPositions.find(x => x.traits == poseFacingKey);
+
+  // this code should always return a valid position,
+  // but even if not - then these large negate numbers will make sure that the coordinates
+  // are just outside bounds of the design – so nothing will happen
+  if (!eyesPosition) { return [-99, -99]; }
+
+  return [eyesPosition.position[0] + rowOffset, eyesPosition.position[1] + colOffset]
 }
 
+/**
+ * Applies laser eyes to the design.
+ * @param design - The design to alter.
+ * @param designIndex - The design index to retrieve eyes position.
+ * @returns The altered design with laser eyes applied.
+ */
 export function applyLaserEyes(design: number[][], designIndex: number): number[][] {
-
-  const eyesPosition = getEyesPosition(designIndex);
-  if (!eyesPosition) { return design; }
-
-  return alterDesign(design, eyesPosition.position, laserEyesPattern)
+  const position = getEyesPosition(designIndex);
+  return alterDesign(design, position, laserEyesPattern)
 }
 
+/**
+ * Applies a crown to the design.
+ * @param design - The design to alter.
+ * @param The design index to retrieve eyes position.
+ * @returns The altered design with a crown applied.
+ */
 export function applyCrown(design: number[][], designIndex: number): number[][] {
-
-  const eyesPosition = getEyesPosition(designIndex);
-  if (!eyesPosition) { return design; }
-
-  const finalPosition = [eyesPosition.position[0] - 4, eyesPosition.position[1] - 2]
-  return alterDesign(design, finalPosition, crownPattern);
+  const position = getEyesPosition(designIndex, -4, -2);
+  return alterDesign(design, position, crownPattern);
 }
 
+/**
+ * Applies sunglasses to the design (completely opaque glasses).
+ * @param design - The design to alter.
+ * @param designIndex - The design index to retrieve eyes position.
+ * @returns The altered design with sunglasses applied.
+ */
 export function applySunglasses(design: number[][], designIndex: number): number[][] {
-
-  const eyesPosition = getEyesPosition(designIndex);
-  if (!eyesPosition) { return design; }
-
-  const finalPosition = [eyesPosition.position[0], eyesPosition.position[1]-2]
-  return alterDesign(design, finalPosition, sunglassesPattern);
+  const position = getEyesPosition(designIndex, 0, -2);
+  return alterDesign(design, position, sunglassesPattern);
 }
 
+/**
+ * Applies sunglasses to the design (glasses where you can see 1px of the eyes).
+ * @param design - The design to alter.
+ * @param designIndex - The design index to retrieve eyes position.
+ * @returns The altered design with sunglasses applied.
+ */
 export function applyLaserEyesSunglasses(design: number[][], designIndex: number): number[][] {
-
-  const eyesPosition = getEyesPosition(designIndex);
-  if (!eyesPosition) { return design; }
-
-  const finalPosition = [eyesPosition.position[0], eyesPosition.position[1]-2]
-  return alterDesign(design, finalPosition, laserEyesSunglassesPattern);
+  const position = getEyesPosition(designIndex, 0, -2);
+  return alterDesign(design, position, laserEyesSunglassesPattern);
 }
