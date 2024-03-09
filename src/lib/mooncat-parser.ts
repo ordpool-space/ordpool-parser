@@ -88,10 +88,10 @@ export class MooncatParser {
     const noLaserEyes = bytes[5] >= 204 && bytes[5] <= 255;    // ~20% (+ one more)
 
     // Genesis cat has value 120 here (orangeBackground)
-    const block9Background = bytes[5] >= 0 && bytes[5] <= 63;        // 25%
-    const orangeBackground = bytes[5] >= 64 && bytes[5] <= 127;      // 25%
-    const whitepaperBackground = bytes[5] >= 128 && bytes[5] <= 191; // 25%
-    const cyberpunkBackground = bytes[5] >= 192 && bytes[5] <= 255;  // 25%
+    const block9Background = bytes[6] >= 0 && bytes[6] <= 63;        // 25%
+    const orangeBackground = bytes[6] >= 64 && bytes[6] <= 127;      // 25%
+    const whitepaperBackground = bytes[6] >= 128 && bytes[6] <= 191; // 25%
+    const cyberpunkBackground = bytes[6] >= 192 && bytes[6] <= 255;  // 25%
 
     // 10% chance of crown
     const crown = bytes[7] >= 120 && bytes[7] <= 145;
