@@ -173,7 +173,7 @@ it('should render a wide range of feeRate values', async () => {
   it('should render all potential cats of a block!', async () => {
 
     const blockId = '000000000000000000018e3ea447b11385e3330348010e1b2418d0d8ae4e0ac7';
-    const feeRate = 50; // change this value to test other colors!
+    const feeRate = 60; // change this value to test other colors!
 
     let svgContent = '';
     for (let i = 0; i < cat21GenesisBlockTxIds.length; i++) {
@@ -196,6 +196,8 @@ it('should render a wide range of feeRate values', async () => {
     // const laserEyesByte = 121; // red
     // const laserEyesByte = 128; // green
     // const laserEyesByte = 192; // blue
+    const backgroundByte = 0;
+    const crownByte = 120
 
     const feeRate = 20; // change this value to test other colors!
 
@@ -209,10 +211,12 @@ it('should render a wide range of feeRate values', async () => {
 
             const catHash = '00' +                            // genesis
               steps[k].toString(16).padStart(2, '0') +        // k
-              steps[r].toString(16).padStart(2, '0') +        // r - NOT USED ANYMORE
-              steps[g].toString(16).padStart(2, '0') +        // g - NOT USED ANYMORE
-              steps[b].toString(16).padStart(2, '0') +        // b - NOT USED ANYMORE
-              (laserEyesByte).toString(16).padStart(2, '0');  // laser eyes
+              steps[r].toString(16).padStart(2, '0') +        // r - used for bg
+              steps[g].toString(16).padStart(2, '0') +        // g - used for bg
+              steps[b].toString(16).padStart(2, '0') +        // b - used for bg
+              (laserEyesByte).toString(16).padStart(2, '0') + 
+              (backgroundByte).toString(16).padStart(2, '0') +
+              (crownByte).toString(16).padStart(2, '0');
 
             const svgAndTraits = MooncatParser.parseAndGenerateSvg(catHash, feeRate);
             const traitsJSON = JSON.stringify(svgAndTraits.traits).replaceAll('"', "'");
@@ -232,7 +236,12 @@ it('should render a wide range of feeRate values', async () => {
 
   it('should generate examples with laser eyes in all poses', () => {
 
-    const laserEyesByte = 121; // red
+    const laserEyesByte = 121;
+    const backgroundByte = 0;
+    const crownByte = 120;
+    const sunglassesByte = 0
+
+
     const feeRate = 1; // change this value to test other colors!
 
     let svgContent = '';
@@ -242,10 +251,13 @@ it('should render a wide range of feeRate values', async () => {
       const catHash =
         (0).toString(16).padStart(2, '0') +             // genesis
         k.toString(16).padStart(2, '0') +               // k
-        (50).toString(16).padStart(2, '0') +            // r - NOT USED ANYMORE
-        (200).toString(16).padStart(2, '0') +           // g - NOT USED ANYMORE
-        (0).toString(16).padStart(2, '0') +             // b - NOT USED ANYMORE
-        (laserEyesByte).toString(16).padStart(2, '0');  // laser eyes
+        (50).toString(16).padStart(2, '0') +            // r - used for bg
+        (200).toString(16).padStart(2, '0') +           // g - used for bg
+        (0).toString(16).padStart(2, '0') +             // b - used for bg
+        (laserEyesByte).toString(16).padStart(2, '0') + 
+        (backgroundByte).toString(16).padStart(2, '0') +
+        (crownByte).toString(16).padStart(2, '0') +
+        (sunglassesByte).toString(16).padStart(2, '0');
 
       svgContent += `<span title="${k}">` + MooncatParser.parseAndGenerateSvg(catHash, feeRate).svg + '</span>';
     }
@@ -255,7 +267,7 @@ it('should render a wide range of feeRate values', async () => {
 
   it('should generate 4 different backgrounds', () => {
 
-    const steps = [0, 26, 77, 154];
+    const steps = [0, 64, 128, 192];
     const feeRate = 20; // change this value to test other colors!
 
     let svgContent = '';
@@ -266,12 +278,13 @@ it('should render a wide range of feeRate values', async () => {
       const catHash =
         (0).toString(16).padStart(2, '0') +    // genesis
         (0).toString(16).padStart(2, '0') +    // k
-        (50).toString(16).padStart(2, '0') +   // r - NOT USED ANYMORE
-        (200).toString(16).padStart(2, '0') +  // g - NOT USED ANYMORE
-        (0).toString(16).padStart(2, '0') +    // b - NOT USED ANYMORE
+        (50).toString(16).padStart(2, '0') +   // r - used for bg
+        (200).toString(16).padStart(2, '0') +  // g - used for bg
+        (0).toString(16).padStart(2, '0') +    // b - used for bg
         (0).toString(16).padStart(2, '0') +    // laser eyes
         (bg).toString(16).padStart(2, '0') +   // background
-        (0).toString(16).padStart(2, '0');     // crown
+        (0).toString(16).padStart(2, '0') +    // crown
+        (0).toString(16).padStart(2, '0');     // sunglasses
 
       svgContent += `<span title="${bg}">` + MooncatParser.parseAndGenerateSvg(catHash, feeRate).svg + '</span>';
     }

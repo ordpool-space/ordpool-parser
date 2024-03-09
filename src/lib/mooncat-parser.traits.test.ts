@@ -1,5 +1,5 @@
 import { designs } from "./mooncat-parser.designs";
-import { alterDesign, applyCrown, applyLaserEyes, decodeTraits, eyePositions, laserEyesPattern } from "./mooncat-parser.traits";
+import { alterDesign, applyCrown, applyLaserEyes, decodeTraits, eyesPositions, laserEyesPattern } from "./mooncat-parser.traits";
 
 // extracted from here:
 // https://github.com/cryptocopycats/awesome-mooncatrescue-bubble/blob/master/DESIGNS.md

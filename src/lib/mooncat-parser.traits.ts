@@ -1,4 +1,4 @@
-export const eyePositions = [
+export const eyesPositions = [
   {
     traits: 'Standing-Left',
     position:  [4, 2]
@@ -44,6 +44,20 @@ export const crownPattern = [
   [8,9,9,0,8,8,8,0,9,9,8],
   [8,8,9,8,8,9,8,8,9,8,8],
   [0,8,8,9,9,8,9,9,8,8,0]
+];
+
+// you see no eyes
+export const sunglassesPattern = [
+  [10,10,10,10,10,10,10,10,10,10,10],
+  [ 0,10,10,10,10, 0,10,10,10,10, 0],
+  [ 0, 0,10,10, 0, 0, 0,10,10,0,  0],
+];
+
+// you see only 1px of the eyes
+export const laserEyesSunglassesPattern = [
+  [10,10,10,10,10,10,10,10,10,10,10],
+  [ 0,10,10,0,10, 0,10,0,10,10, 0],
+  [ 0, 0,10,10, 0, 0, 0,10,10,0,  0],
 ];
 
 /**
@@ -124,33 +138,43 @@ export function alterDesign(design: number[][], position: number[], newPattern: 
   return alteredDesign;
 }
 
-export function applyLaserEyes(design: number[][], designIndex: number): number[][] {
-
+export function getEyesPosition(designIndex: number) {
   const traits = decodeTraits(designIndex);
   const poseFacingKey = `${traits.pose}-${traits.facing}`;
-  const eyePosition = eyePositions.find(x => x.traits == poseFacingKey);
-
-  // ignore missing data (should never happen)
-  if (!eyePosition) {
-    return design;
-  }
-
-  return alterDesign(design, eyePosition.position, laserEyesPattern)
+  return eyesPositions.find(x => x.traits == poseFacingKey);
 }
 
+export function applyLaserEyes(design: number[][], designIndex: number): number[][] {
+
+  const eyesPosition = getEyesPosition(designIndex);
+  if (!eyesPosition) { return design; }
+
+  return alterDesign(design, eyesPosition.position, laserEyesPattern)
+}
 
 export function applyCrown(design: number[][], designIndex: number): number[][] {
 
-  const traits = decodeTraits(designIndex);
-  const poseFacingKey = `${traits.pose}-${traits.facing}`;
-  const eyePosition = eyePositions.find(x => x.traits == poseFacingKey);
+  const eyesPosition = getEyesPosition(designIndex);
+  if (!eyesPosition) { return design; }
 
-  // ignore missing data (should never happen)
-  if (!eyePosition) {
-    return design;
-  }
-
-  // the crown is larger
-  const finalPosition = [eyePosition.position[0] - 4, eyePosition.position[1] - 2]
+  const finalPosition = [eyesPosition.position[0] - 4, eyesPosition.position[1] - 2]
   return alterDesign(design, finalPosition, crownPattern);
+}
+
+export function applySunglasses(design: number[][], designIndex: number): number[][] {
+
+  const eyesPosition = getEyesPosition(designIndex);
+  if (!eyesPosition) { return design; }
+
+  const finalPosition = [eyesPosition.position[0], eyesPosition.position[1]-2]
+  return alterDesign(design, finalPosition, sunglassesPattern);
+}
+
+export function applyLaserEyesSunglasses(design: number[][], designIndex: number): number[][] {
+
+  const eyesPosition = getEyesPosition(designIndex);
+  if (!eyesPosition) { return design; }
+
+  const finalPosition = [eyesPosition.position[0], eyesPosition.position[1]-2]
+  return alterDesign(design, finalPosition, laserEyesSunglassesPattern);
 }

@@ -9,7 +9,7 @@ import {
 import { generativeColorPalette } from './mooncat-parser.colors';
 import { designs } from './mooncat-parser.designs';
 import { derivePalette } from './mooncat-parser.helper';
-import { applyCrown, applyLaserEyes, decodeTraits } from './mooncat-parser.traits';
+import { applyCrown, applyLaserEyes, applyLaserEyesSunglasses, applySunglasses, decodeTraits } from './mooncat-parser.traits';
 
 /* *********************************************
 
@@ -96,6 +96,9 @@ export class MooncatParser {
     // 10% chance of crown
     const crown = bytes[7] >= 120 && bytes[7] <= 145;
 
+    // 10% chance of sunglasses
+    const sunglasses = bytes[8] >= 0 && bytes[8] <= 25; // 10%
+
     // 50% chance of inverted colors
     const inverted = k >= 128;
 
@@ -107,6 +110,14 @@ export class MooncatParser {
 
     if (!noLaserEyes) {
       design = applyLaserEyes(design, designIndex);
+    }
+
+    if (noLaserEyes && sunglasses) {
+      design = applySunglasses(design, designIndex);
+    }
+
+    if (!noLaserEyes && sunglasses) {
+      design = applyLaserEyesSunglasses(design, designIndex);
     }
 
     if (crown) {
@@ -133,7 +144,7 @@ export class MooncatParser {
       laserEyesColors = ['#0033cc', '#66ccff'];
       laserEyesName = 'Blue';
     } else if (orangeLaserEyes) {
-      laserEyesColors = ['#ff9900', '#ffffff'];
+      laserEyesColors = ['#ff9900', '#ffebcc'];
       laserEyesName = 'Orange';
     }
 
@@ -171,8 +182,10 @@ export class MooncatParser {
       }
     }
 
+    const sunglassesColor = '#000000';
+
     // add laser eye and crown colors
-    colors = [...colors, laserEyesColors[0], laserEyesColors[1], crownColors[0], crownColors[1]];
+    colors = [...colors, laserEyesColors[0], laserEyesColors[1], crownColors[0], crownColors[1], sunglassesColor];
 
     const catData = design.map(row => {
       return row.map(cell => colors[cell]);
