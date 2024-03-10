@@ -8,7 +8,7 @@ import {
 } from './mooncat-parser.backgrounds';
 import { generativeColorPalette } from './mooncat-parser.colors';
 import { designs } from './mooncat-parser.designs';
-import { deriveDarkPalette, derivePalette } from './mooncat-parser.helper';
+import { map, deriveDarkPalette, derivePalette } from './mooncat-parser.helper';
 import { applyCrown, applyLaserEyes, applyLaserEyesSunglasses, applyLaserEyesSunglasses2, applySunglasses, applySunglasses2, decodeTraits } from './mooncat-parser.traits';
 
 /* *********************************************
@@ -162,24 +162,19 @@ export class MooncatParser {
       feeRate / 300,
       [0.5, 0.5, 0.5],
       [-0.9, 0.6, 0.4],
-      [2.0, 1.0, 1.0],
+      [2.5, 2.5, 2.5],
       [0.0, 0.0, 0.0]
     );
-    // Fees below 150 get a palette ranging from green to red to light blue
-    // Fees above 150 get a palette that is a mix of red, blue and purple
-    if (feeRate < 150) {
-      colors = derivePalette(
-        rgb[0],
-        rgb[1],
-        0
-      );
+
+    const saturation = map(feeRate % 40, 0, 39, 0.6, 1.0);
+    if (feeRate < 75) {
+      rgb[0] += 0.4;
+      rgb[2] = 0;
     } else {
-      colors = derivePalette(
-        rgb[0],
-        0,
-        rgb[2]
-      );
+      rgb[1] = 0;
     }
+    colors = derivePalette(rgb[0], rgb[1], rgb[2], saturation);
+
 
     if (genesis) {
 

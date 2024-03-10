@@ -37,7 +37,7 @@ describe('colors', () => {
       htmlEthspresso += `Fee rate ${(feeRate + '').padStart(3, ' ')} / ${ x.toFixed(3) }: `
         + `<span style="color:${colors[1]}">${colors[1]}</span> `
         + `<span style="color:${colors[2]}">${colors[2]}</span> `
-        + `<span style="color:${colors[3]}">${colors[3]}</span> `
+        + `<span style="color:${colors[3]};font-weight:bold;">${colors[3]}</span> `
         + `<span style="color:${colors[4]}">${colors[4]}</span> `
         + `<span style="color:${colors[5]}">${colors[5]}</span>\n`
     }
@@ -59,11 +59,11 @@ describe('colors', () => {
       colors = derivePalette(rgb[0], rgb[1], rgb[2]);
 
       html2 += `Fee rate ${(feeRate + '').padStart(3, ' ')} / ${ x.toFixed(3) }: `
-      + `<span style="color:${colors[1]};font-weight:bold;">${colors[1]}</span> `
-      + `<span style="color:${colors[2]};font-weight:bold;">${colors[2]}</span> `
-      + `<span style="color:${colors[3]};font-weight:bold;">${colors[3]}</span> `
-      + `<span style="color:${colors[4]};font-weight:bold;">${colors[4]}</span> `
-      + `<span style="color:${colors[5]};font-weight:bold;">${colors[5]}</span>\n`
+      + `<span style="color:${colors[1]}">${colors[1]}</span> `
+      + `<span style="color:${colors[2]}">${colors[2]}</span> `
+      + `<span style="color:${colors[3]}">${colors[3]}</span> `
+      + `<span style="color:${colors[4]}">${colors[4]}</span> `
+      + `<span style="color:${colors[5]}">${colors[5]}</span>\n`
     }
 
 
