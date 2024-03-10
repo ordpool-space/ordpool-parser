@@ -9,7 +9,7 @@ import {
 import { generativeColorPalette } from './mooncat-parser.colors';
 import { designs } from './mooncat-parser.designs';
 import { map, deriveDarkPalette, derivePalette } from './mooncat-parser.helper';
-import { applyBlackSunglasses, applyCoolSunglasses, applyCrown, applyLaserEyes, applyLaserEyesBlackSunglasses, applyLaserEyesCoolSunglasses, decodeTraits } from './mooncat-parser.traits';
+import { applyBlackSunglasses, applyCoolSunglasses, applyCrown, applyLaserEyes, applyLaserEyesBlackSunglasses, applyLaserEyesCoolSunglasses, applyThreeDimensionsGlasses, decodeTraits } from './mooncat-parser.traits';
 
 /* *********************************************
 
@@ -96,12 +96,11 @@ export class MooncatParser {
     // 10% chance of crown
     const crown = bytes[7] >= 120 && bytes[7] <= 145;
 
-    // 10% chance of sunglasses
     const blackSunglasses = bytes[8] >= 0 && bytes[8] <= 25;         // 10%
     const coolSunglasses = bytes[8] >= 26 && bytes[8] <= 51;         // 10%
     const threeDimensionsGlasses = bytes[8] >= 52 && bytes[8] <= 77; // 10%
-    const nounsGlasses = bytes[8] >= 78 && bytes[8] <= 153; // 10%
-    // const range5 = bytes[8] >= 154 && bytes[8] <= 255; // 10%
+    const nounsGlasses = bytes[8] >= 78 && bytes[8] <= 153;          // 10%
+    // const range5 = bytes[8] >= 154 && bytes[8] <= 255;            // 10%
 
     // 50% chance of inverted colors
     const inverted = k >= 128;
@@ -112,7 +111,14 @@ export class MooncatParser {
 
     let design = designs[designIndex];
 
-    let glassesName: 'Black' | 'Cool' | 'None' = 'None';
+    // very dark colors
+    const [dark1, dark2, dark3, dark4] = deriveDarkPalette(r, g, b);
+
+    // black for the black sunglasses
+    // black for the frame of the cool sunglasses + three colored shades
+    let sunglassesColors = ['#000000', dark3, dark2, dark1];
+
+    let glassesName: 'Black' | 'Cool' | '3D' | 'None' = 'None';
     if (!noLaserEyes) {
       design = applyLaserEyes(design, designIndex);
     }
@@ -135,6 +141,13 @@ export class MooncatParser {
     if (!noLaserEyes && coolSunglasses) {
       glassesName = 'Cool';
       design = applyLaserEyesCoolSunglasses(design, designIndex);
+    }
+
+    // hint: 3d glasses will hide the laser eyes, but I think that's fine
+    if (threeDimensionsGlasses) {
+      glassesName = '3D';
+      sunglassesColors = ['#ffffff', '#328dfd', '#fd3232'];
+      design = applyThreeDimensionsGlasses(design, designIndex);
     }
     
     if (crown) {
@@ -193,14 +206,6 @@ export class MooncatParser {
         colors = [null, '#555555', '#222222', '#111111', '#bbbbbb', '#ff9999'];
       }
     }
-
-    // very dark colors
-    const [dark1, dark2, dark3, dark4] = deriveDarkPalette(r, g, b);
-
-    // black for the black sunglasses
-    // black for the frame of the cool sunglasses + three colored shades
-    const sunglassesColors = ['#000000', dark3, dark2, dark1];
-
 
     // add laser eye and crown colors
     colors = [

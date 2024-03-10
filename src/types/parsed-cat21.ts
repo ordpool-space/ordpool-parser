@@ -82,8 +82,9 @@ export interface CatTraits {
    * The glasses trait.
    * There is a 10% chance to receive a cat with black sunglasses.
    * There is a 10% chance to receive a cat with cool sunglasses.
+   * There is a 10% chance to receive a cat with 3D glasses.
    */
-  glasses: 'Black' | 'Cool' | 'None';
+  glasses: 'Black' | 'Cool' | '3D' | 'None';
 }
 
 export interface ParsedCat21 extends DigitalArtifact {

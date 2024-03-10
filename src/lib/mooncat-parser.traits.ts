@@ -49,8 +49,8 @@ export const crownPattern = [
 // completely opaque glasses
 export const blackSunglassesPattern = [
   [10, 10,10,10,10,10,10,10,10,10,10,10],
-  [ 0, 0,10,10,10,10, 0,10,10,10,10, 0],
-  [ 0, 0, 0,10,10, 0, 0, 0,10,10, 0, 0],
+  [ 0, 0, 10,10,10,10, 0,10,10,10,10, 0],
+  [ 0, 0,  0,10,10, 0, 0, 0,10,10, 0, 0],
 ];
 
 // glasses where you can see 1px of the eyes
@@ -72,10 +72,18 @@ export const coolSunglassesPattern = [
 // glasses where you can see 1px of the eyes
 export const laserEyesCoolSunglassesPattern = [
   [ 0,10,10,10,10,10, 0,10,10,10,10,10],
-  [ 0,10,11,11,0,10,10,10, 0,11,11,10],
+  [ 0,10,11,11 ,0,10,10,10, 0,11,11,10],
   [10,10,12,12,12,10, 0,10,12,12,12,10],
   [ 0,10,13,13,13,10, 0,10,13,13,13,10],
   [ 0, 0,10,10,10, 0, 0, 0,10,10,10, 0],
+];
+
+// 3D glasses
+export const threeDimensionsGlassesPattern = [
+  [10, 10,10,10,10,10,10,10,10,10,10,10],
+  [ 0,  0,10,11,11,11,10,12,12,12,10, 0],
+  [ 0,  0,10,11,11,11,10,12,12,12,10, 0],
+  [ 0,  0,10,10,10,10, 0,10,10,10,10, 0],
 ];
 
 
@@ -240,4 +248,15 @@ export function applyCoolSunglasses(design: number[][], designIndex: number): nu
 export function applyLaserEyesCoolSunglasses(design: number[][], designIndex: number): number[][] {
   const position = getEyesPosition(designIndex, 0, -3);
   return alterDesign(design, position, laserEyesCoolSunglassesPattern);
+}
+
+/**
+ * Applies 3D glasses to the design (completely opaque glasses).
+ * @param design - The design to alter.
+ * @param designIndex - The design index to retrieve eyes position.
+ * @returns The altered design with 3D glasses applied.
+ */
+export function applyThreeDimensionsGlasses(design: number[][], designIndex: number): number[][] {
+  const position = getEyesPosition(designIndex, 0, -3);
+  return alterDesign(design, position, threeDimensionsGlassesPattern);
 }

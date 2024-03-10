@@ -239,7 +239,7 @@ it('should render a wide range of feeRate values', async () => {
     const laserEyesByte = 121;
     const backgroundByte = 100;
     const crownByte = 120;
-    const sunglassesByte = 0;
+    const sunglassesByte = 60;
 
 
     const feeRate = 1; // change this value to test other colors!
