@@ -47,21 +47,21 @@ export const crownPattern = [
 ];
 
 // completely opaque glasses
-export const sunglassesPattern = [
+export const blackSunglassesPattern = [
   [10, 10,10,10,10,10,10,10,10,10,10,10],
   [ 0, 0,10,10,10,10, 0,10,10,10,10, 0],
   [ 0, 0, 0,10,10, 0, 0, 0,10,10, 0, 0],
 ];
 
 // glasses where you can see 1px of the eyes
-export const laserEyesSunglassesPattern = [
+export const laserEyesBlackSunglassesPattern = [
   [10, 10,10,10,10,10,10,10,10,10,10,10],
   [ 0, 0,10,10, 0,10, 0,10, 0,10,10, 0],
   [ 0, 0, 0,10,10, 0, 0, 0,10,10, 0, 0],
 ];
 
 // completely opaque glasses
-export const sunglasses2Pattern = [
+export const coolSunglassesPattern = [
   [ 0,10,10,10,10,10, 0,10,10,10,10,10],
   [ 0,10,11,11,11,10,10,10,11,11,11,10],
   [10,10,12,12,12,10, 0,10,12,12,12,10],
@@ -70,7 +70,7 @@ export const sunglasses2Pattern = [
 ];
 
 // glasses where you can see 1px of the eyes
-export const laserEyesSunglasses2Pattern = [
+export const laserEyesCoolSunglassesPattern = [
   [ 0,10,10,10,10,10, 0,10,10,10,10,10],
   [ 0,10,11,11,0,10,10,10, 0,11,11,10],
   [10,10,12,12,12,10, 0,10,12,12,12,10],
@@ -199,45 +199,45 @@ export function applyCrown(design: number[][], designIndex: number): number[][] 
 }
 
 /**
- * Applies sunglasses to the design (completely opaque glasses).
+ * Applies black sunglasses to the design (completely opaque glasses).
  * @param design - The design to alter.
  * @param designIndex - The design index to retrieve eyes position.
  * @returns The altered design with sunglasses applied.
  */
-export function applySunglasses(design: number[][], designIndex: number): number[][] {
+export function applyBlackSunglasses(design: number[][], designIndex: number): number[][] {
   const position = getEyesPosition(designIndex, 0, -3);
-  return alterDesign(design, position, sunglassesPattern);
+  return alterDesign(design, position, blackSunglassesPattern);
 }
 
 /**
- * Applies sunglasses to the design (glasses where you can see 1px of the eyes).
+ * Applies black sunglasses to the design (glasses where you can see 1px of the eyes).
  * @param design - The design to alter.
  * @param designIndex - The design index to retrieve eyes position.
  * @returns The altered design with sunglasses applied.
  */
-export function applyLaserEyesSunglasses(design: number[][], designIndex: number): number[][] {
+export function applyLaserEyesBlackSunglasses(design: number[][], designIndex: number): number[][] {
   const position = getEyesPosition(designIndex, 0, -3);
-  return alterDesign(design, position, laserEyesSunglassesPattern);
+  return alterDesign(design, position, laserEyesBlackSunglassesPattern);
 }
 
 /**
- * Applies alternative sunglasses to the design (completely opaque glasses).
+ * Applies cool sunglasses to the design (completely opaque glasses).
  * @param design - The design to alter.
  * @param designIndex - The design index to retrieve eyes position.
  * @returns The altered design with sunglasses applied.
  */
-export function applySunglasses2(design: number[][], designIndex: number): number[][] {
+export function applyCoolSunglasses(design: number[][], designIndex: number): number[][] {
   const position = getEyesPosition(designIndex, 0, -3);
-  return alterDesign(design, position, sunglasses2Pattern);
+  return alterDesign(design, position, coolSunglassesPattern);
 }
 
 /**
- * Applies alternative sunglasses to the design (glasses where you can see 1px of the eyes).
+ * Applies cool sunglasses to the design (glasses where you can see 1px of the eyes).
  * @param design - The design to alter.
  * @param designIndex - The design index to retrieve eyes position.
  * @returns The altered design with sunglasses applied.
  */
-export function applyLaserEyesSunglasses2(design: number[][], designIndex: number): number[][] {
+export function applyLaserEyesCoolSunglasses(design: number[][], designIndex: number): number[][] {
   const position = getEyesPosition(designIndex, 0, -3);
-  return alterDesign(design, position, laserEyesSunglasses2Pattern);
+  return alterDesign(design, position, laserEyesCoolSunglassesPattern);
 }

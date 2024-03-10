@@ -9,7 +9,7 @@ import {
 import { generativeColorPalette } from './mooncat-parser.colors';
 import { designs } from './mooncat-parser.designs';
 import { map, deriveDarkPalette, derivePalette } from './mooncat-parser.helper';
-import { applyCrown, applyLaserEyes, applyLaserEyesSunglasses as applyLaserEyesBlackSunglasses, applyLaserEyesSunglasses2 as applyLaserEyesCoolSunglasses, applySunglasses as applyBlackSunglasses, applySunglasses2 as applyCoolSunglasses, decodeTraits } from './mooncat-parser.traits';
+import { applyBlackSunglasses, applyCoolSunglasses, applyCrown, applyLaserEyes, applyLaserEyesBlackSunglasses, applyLaserEyesCoolSunglasses, decodeTraits } from './mooncat-parser.traits';
 
 /* *********************************************
 
@@ -97,8 +97,11 @@ export class MooncatParser {
     const crown = bytes[7] >= 120 && bytes[7] <= 145;
 
     // 10% chance of sunglasses
-    const blackSunglasses = bytes[8] >= 0 && bytes[8] <= 25;   // 10%
-    const coolSunglasses = bytes[8] >= 26 && bytes[8] <= 51; // 10%
+    const blackSunglasses = bytes[8] >= 0 && bytes[8] <= 25;         // 10%
+    const coolSunglasses = bytes[8] >= 26 && bytes[8] <= 51;         // 10%
+    const threeDimensionsGlasses = bytes[8] >= 52 && bytes[8] <= 77; // 10%
+    const nounsGlasses = bytes[8] >= 78 && bytes[8] <= 153; // 10%
+    // const range5 = bytes[8] >= 154 && bytes[8] <= 255; // 10%
 
     // 50% chance of inverted colors
     const inverted = k >= 128;
@@ -194,6 +197,8 @@ export class MooncatParser {
     // very dark colors
     const [dark1, dark2, dark3, dark4] = deriveDarkPalette(r, g, b);
 
+    // black for the black sunglasses
+    // black for the frame of the cool sunglasses + three colored shades
     const sunglassesColors = ['#000000', dark3, dark2, dark1];
 
 
