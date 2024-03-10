@@ -9,7 +9,7 @@ import {
 import { generativeColorPalette } from './mooncat-parser.colors';
 import { designs } from './mooncat-parser.designs';
 import { map, deriveDarkPalette, derivePalette } from './mooncat-parser.helper';
-import { applyBlackSunglasses, applyCoolSunglasses, applyCrown, applyLaserEyes, applyLaserEyesBlackSunglasses, applyLaserEyesCoolSunglasses, applyThreeDimensionsGlasses, decodeTraits } from './mooncat-parser.traits';
+import { applyBlackSunglasses, applyCoolSunglasses, applyCrown, applyLaserEyes, applyLaserEyesBlackSunglasses, applyLaserEyesCoolSunglasses, applyThreeDimensionsGlasses, decodeTraits, enlargeAndAlignDesign } from './mooncat-parser.traits';
 
 /* *********************************************
 
@@ -109,7 +109,7 @@ export class MooncatParser {
     // which is the exact amount of available designs
     const designIndex = k % 128;
 
-    let design = designs[designIndex];
+    let design = enlargeAndAlignDesign(designs[designIndex]);
 
     // very dark colors
     const [dark1, dark2, dark3, dark4] = deriveDarkPalette(r, g, b);
@@ -275,13 +275,13 @@ export class MooncatParser {
   /**
    * Returns a placeholder cat 2D array
    *
-   * @returns Mooncat design as a 2D array.
+   * @returns Mooncat design.
    */
   public static parsePlaceholder(): { catData: (string | null)[][]; traits: null } {
 
     let colors: (string | null)[] = [null, '#bbbbbb', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#555555'];
+    const design = enlargeAndAlignDesign(designs[128]);
 
-    const design = designs[128];
     const catData = design.map(row => {
       return row.map(cell => colors[cell]);
     });
@@ -315,19 +315,7 @@ export class MooncatParser {
     const catData = parsed.catData;
     const traits = parsed.traits
 
-    const gridWidth = 22;
-    const gridHeight = 22;
-    const catWidth = catData[0].length; // Width is now determined by the length of the first row
-    const catHeight = catData.length; // Height is determined by the number of rows
-
-    // Calculate x-offset to center the cat
-    const xOffset = Math.floor((gridWidth - catWidth) / 2);
-
-    // Calculate the y-offset to align the cat at the bottom of the 22x22 grid
-    // the -1 adds 1px padding to the bottom if possible otherwise 0
-    const yOffset = Math.max(gridHeight - catHeight - 1, 0);
-
-    let svg = `<svg viewBox="0 0 ${gridWidth} ${gridHeight}" xmlns="http://www.w3.org/2000/svg">\n`;
+    let svg = `<svg viewBox="0 0 22 22" xmlns="http://www.w3.org/2000/svg">\n`;
 
     switch(traits?.background) {
       case 'Block9': {
@@ -336,7 +324,7 @@ export class MooncatParser {
         const columns = 17;
         const cubeSize = 2.21;
 
-        svg += getIsomometricCubePattern(rows, columns, cubeSize, gridWidth, gridHeight, traits.backgroundColors);
+        svg += getIsomometricCubePattern(rows, columns, cubeSize, 22, 22, traits.backgroundColors);
         break;
       }
       case 'Cyberpunk': {
@@ -353,11 +341,11 @@ export class MooncatParser {
       }
     }
 
-    for (let rowIndex = 0; rowIndex < catHeight; rowIndex++) {
-      for (let colIndex = 0; colIndex < catWidth; colIndex++) {
+    for (let rowIndex = 0; rowIndex < 22; rowIndex++) {
+      for (let colIndex = 0; colIndex < 22; colIndex++) {
         const color = catData[rowIndex][colIndex];
         if (color) {
-          svg += `<rect x="${colIndex + xOffset}" y="${rowIndex + yOffset}" width="1" height="1" fill="${color}" stroke="${color}" stroke-width="0.05" />\n`;
+          svg += `<rect x="${colIndex}" y="${rowIndex}" width="1" height="1" fill="${color}" stroke="${color}" stroke-width="0.05" />\n`;
         }
       }
     }

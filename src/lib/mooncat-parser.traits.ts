@@ -1,37 +1,44 @@
 export const eyesPositions = [
   {
     traits: 'Standing-Left',
-    position:  [4, 2]
+    position:  [8, 2]
   },
   {
     traits: 'Sleeping-Left',
-    position:  [4, 3]
+    position:  [11, 4]
   },
   {
     traits: 'Pouncing-Left',
-    position:  [4, 3]
+    position:  [4, 5]
   },
   {
     traits: 'Stalking-Left',
-    position: [10, 2]
+    position: [10, 3]
   },
   {
     traits: 'Standing-Right',
-    position:  [4, 12]
+    position:  [8, 12]
   },
   {
     traits: 'Sleeping-Right',
-    position:  [4, 10]
+    position:  [11, 11]
   },
   {
     traits: 'Pouncing-Right',
-    position:  [4, 7]
+    position:  [4, 9]
   },
   {
     traits: 'Stalking-Right',
-    position: [10, 11]
+    position: [10, 12]
   }
 ]
+
+// just for debugging - 1px eye for finding the eyesPositions
+// export const laserEyesPattern = [
+//   [0,0,0,0,0,0,0],
+//   [0,6,0,0,0,6,0],
+//   [0,0,0,0,0,0,0]
+// ];
 
 export const laserEyesPattern = [
   [0,6,0,0,0,6,0],
@@ -86,13 +93,48 @@ export const threeDimensionsGlassesPattern = [
   [ 0,  0,10,10,10,10, 0,10,10,10,10, 0],
 ];
 
+/**
+ * Enlarges and aligns a cat design to a fixed 22x22 grid.
+ * The original design is centered horizontally and aligned to the bottom vertically.
+ * This adjustment ensures that the design fits within the standard grid size,
+ * allowing for consistent application of patterns or alterations across various designs.
+ *
+ * @param originalDesign - The original cat design as a 2D array of numbers.
+ * @returns The enlarged and aligned cat design as a 22x22 2D array of numbers.
+ */
+export function enlargeAndAlignDesign(originalDesign: number[][]): number[][] {
+  const gridWidth = 22;
+  const gridHeight = 22;
+  const bottomPadding = 1; // Adds 1px padding to the bottom if possible, otherwise 0
+
+  const catWidth = originalDesign[0].length; // Width is now determined by the length of the first row
+  const catHeight = originalDesign.length; // Height is determined by the number of rows
+
+  // Calculate offsets for centering and bottom alignment
+  const xOffset = Math.floor((gridWidth - catWidth) / 2);
+  const yOffset = Math.max(gridHeight - catHeight - bottomPadding, 0);
+
+  // Initialize a new 22x22 grid filled with zeros
+  const enlargedDesign = Array.from({ length: gridHeight }, () => Array(gridWidth).fill(0));
+
+  // Copy the original design into the center-bottom of the new grid
+  for (let rowIndex = 0; rowIndex < catHeight; rowIndex++) {
+    for (let colIndex = 0; colIndex < catWidth; colIndex++) {
+      const newRow = rowIndex + yOffset;
+      const newCol = colIndex + xOffset;
+      enlargedDesign[newRow][newCol] = originalDesign[rowIndex][colIndex];
+    }
+  }
+
+  return enlargedDesign;
+}
 
 /**
  * Decodes the traits for a given Mooncat design index, translating numerical values into trait descriptions.
  * This function mirrors the logic used in the original Ruby implementation, applying operations to extract
  * pose, expression, pattern, and facing direction from the design index.
  *
- * @param {number} designIndex - The design index (0-127) representing specific traits of a Mooncat.
+ * @param designIndex - The design index (0-127) representing specific traits of a Mooncat.
  * @returns An object containing the decoded traits: pose, expression, pattern, and facing direction.
  *
  * Trait decoding logic:

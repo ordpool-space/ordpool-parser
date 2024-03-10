@@ -1,5 +1,12 @@
-import { designs } from "./mooncat-parser.designs";
-import { alterDesign, applyCrown, applyLaserEyes, decodeTraits, eyesPositions, laserEyesPattern } from "./mooncat-parser.traits";
+import { designs } from './mooncat-parser.designs';
+import {
+  alterDesign,
+  applyCrown,
+  applyLaserEyes,
+  decodeTraits,
+  enlargeAndAlignDesign,
+  laserEyesPattern,
+} from './mooncat-parser.traits';
 
 // extracted from here:
 // https://github.com/cryptocopycats/awesome-mooncatrescue-bubble/blob/master/DESIGNS.md
@@ -2978,8 +2985,8 @@ describe('applyLaserEyes', () => {
 
     for (let designIndex = 0; designIndex < 128; designIndex++) {
 
-      const design = designs[designIndex];
-      const expectedDesign = expectedLaserEyesDesigns[designIndex];
+      const design = enlargeAndAlignDesign(designs[designIndex]);
+      const expectedDesign = enlargeAndAlignDesign(expectedLaserEyesDesigns[designIndex]);
       const alteredDesign = applyLaserEyes(design, designIndex);
 
       expect(alteredDesign).toEqual(expectedDesign);
@@ -3058,8 +3065,8 @@ describe('applyCrown', () => {
 
     for (let designIndex = 0; designIndex < 3; designIndex++) {
 
-      const design = designs[designIndex];
-      const expectedDesign = expectedCrownDesigns[designIndex];
+      const design = enlargeAndAlignDesign(designs[designIndex]);
+      const expectedDesign = enlargeAndAlignDesign(expectedCrownDesigns[designIndex]);
       const alteredDesign = applyCrown(design, designIndex);
 
       expect(alteredDesign).toEqual(expectedDesign);
