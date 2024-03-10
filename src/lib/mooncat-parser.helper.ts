@@ -172,3 +172,16 @@ export function deriveDarkPalette(r: number, g: number, b: number): string[] {
     RGBToHex(c4)
   ];
 }
+
+/**
+ * Map a number from one range to another. Heavily inspired by p5.js map() at https://p5js.org/reference/#/p5/map
+ * @param n - Number to map
+ * @param from1 - Start of range for n
+ * @param to1 - End of range for n
+ * @param from2 - Start of destination range for result
+ * @param to2 - End of destination range for result
+ * @returns The number mapped to the destination range
+ */
+export function map(n: number, from1: number, to1: number, from2: number, to2: number): number {
+  return (n - from1) / (to1 - from1) * (to2 - from2) + from2;
+}
