@@ -34,18 +34,12 @@ function getCubePoints(baseX: number, baseY: number, size: number): { top: Point
 }
 
 // Generates a cube illusion from three polygon
-function getCubeFromPolygons(x: number, y: number, size: number, orangeCube: boolean, gridWidth: number, gridHeight: number, backgroundColors: string[]): string {
+function getCubeFromPolygons(x: number, y: number, size: number, gridWidth: number, gridHeight: number, backgroundColors: string[]): string {
   const points = getCubePoints(x, y, size);
 
-  let colorTop = backgroundColors[1];
-  let colorLeft = backgroundColors[0];
+  let colorTop = backgroundColors[0];
+  let colorLeft = backgroundColors[1];
   let colorRight = backgroundColors[2];
-
-  if (orangeCube) {
-    colorTop = '#ff9900';
-    colorLeft = '#cc7a00';
-    colorRight = '#ffad33';
-  }
 
   // not visible, because even the left side is out of the grid (right overflow)
   if(points.left[0].x > gridWidth) {
@@ -69,9 +63,12 @@ function getCubeFromPolygons(x: number, y: number, size: number, orangeCube: boo
   `;
 }
 
-export function getIsomometricCubePattern(rows: number, columns: number, cubeSize: number, gridWidth: number, gridHeight: number, backgroundColors: string[]): string {
+export function getIsomometricCubePattern(rows: number, columns: number, cubeSize: number, gridWidth: number, gridHeight: number, [n1, n2, n3, o1, o2, o3]: string[]): string {
 
   let svg = getBgRect('#ffffff');
+
+  const normalCubesColors = [n1, n2, n3];
+  const orangeColors = [o1, o2, o3];
 
   // Starting point for drawing cubes in the top left corner
   const startX = cubeSize / 2;
@@ -83,8 +80,7 @@ export function getIsomometricCubePattern(rows: number, columns: number, cubeSiz
       const y = startY + r * cubeSize * 0.75;
 
       const isCube9 = r == 0 && c == 9;
-
-      svg += getCubeFromPolygons(x, y, cubeSize, isCube9, gridWidth, gridHeight, backgroundColors);
+      svg += getCubeFromPolygons(x, y, cubeSize, gridWidth, gridHeight, isCube9 ? orangeColors : normalCubesColors);
     }
   }
   return svg;

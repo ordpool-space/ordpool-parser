@@ -8,8 +8,8 @@ import {
 } from './mooncat-parser.backgrounds';
 import { generativeColorPalette } from './mooncat-parser.colors';
 import { designs } from './mooncat-parser.designs';
-import { derivePalette } from './mooncat-parser.helper';
-import { applyCrown, applyLaserEyes, applyLaserEyesSunglasses, applySunglasses, decodeTraits } from './mooncat-parser.traits';
+import { deriveDarkPalette, derivePalette } from './mooncat-parser.helper';
+import { applyCrown, applyLaserEyes, applyLaserEyesSunglasses, applyLaserEyesSunglasses2, applySunglasses, applySunglasses2, decodeTraits } from './mooncat-parser.traits';
 
 /* *********************************************
 
@@ -97,7 +97,8 @@ export class MooncatParser {
     const crown = bytes[7] >= 120 && bytes[7] <= 145;
 
     // 10% chance of sunglasses
-    const sunglasses = bytes[8] >= 0 && bytes[8] <= 25; // 10%
+    const sunglasses = bytes[8] >= 0 && bytes[8] <= 25;   // 10%
+    const sunglasses2 = bytes[8] >= 26 && bytes[8] <= 51; // 10%
 
     // 50% chance of inverted colors
     const inverted = k >= 128;
@@ -120,6 +121,14 @@ export class MooncatParser {
       design = applyLaserEyesSunglasses(design, designIndex);
     }
 
+    if (noLaserEyes && sunglasses2) {
+      design = applySunglasses2(design, designIndex);
+    }
+
+    if (!noLaserEyes && sunglasses2) {
+      design = applyLaserEyesSunglasses2(design, designIndex);
+    }
+    
     if (crown) {
       design = applyCrown(design, designIndex);
     }
@@ -144,7 +153,7 @@ export class MooncatParser {
       laserEyesColors = ['#0033cc', '#66ccff'];
       laserEyesName = 'Blue';
     } else if (orangeLaserEyes) {
-      laserEyesColors = ['#ff9900', '#ffebcc'];
+      laserEyesColors = ['#ff9900', '#ffe0b3'];
       laserEyesName = 'Orange';
     }
 
@@ -182,10 +191,21 @@ export class MooncatParser {
       }
     }
 
-    const sunglassesColor = '#000000';
+    // very dark colors
+    const [dark1, dark2, dark3, dark4] = deriveDarkPalette(r, g, b);
+
+    const sunglassesColors = ['#000000', dark3, dark2, dark1];
+
 
     // add laser eye and crown colors
-    colors = [...colors, laserEyesColors[0], laserEyesColors[1], crownColors[0], crownColors[1], sunglassesColor];
+    colors = [
+      ...colors,          // 0 to 5
+      laserEyesColors[0], // 6
+      laserEyesColors[1], // 7
+      crownColors[0],     // 8
+      crownColors[1],     // 9
+      ...sunglassesColors // 10 to 13
+    ];
 
     const catData = design.map(row => {
       return row.map(cell => colors[cell]);
@@ -195,19 +215,20 @@ export class MooncatParser {
 
     // turning left is a female cat, turning right is a male cat
     const genderName: 'Female' | 'Male' = designIndex < 64 ? 'Female' : 'Male';
-    const c = derivePalette(r, g, b);
 
     let backgroundColors: string[] = ['#ff9900'];
     let backgroundName: 'Block9' | 'Cyberpunk' | 'Whitepaper' | 'Orange' = 'Orange';
     if (block9Background) {
       backgroundName = 'Block9';
-      backgroundColors = (inverted ? [c[3], c[2], c[1]] : [c[1], c[2], c[3]]) as string[];
+      backgroundColors = inverted ? [dark2, dark4, dark3, '#ff9900', '#cc7a00', '#ffad33'] :
+                                    [dark2, dark3, dark4, '#ff9900', '#ffad33', '#cc7a00'];
     } else if (cyberpunkBackground) {
-      const c = derivePalette(r, g, b);
-      backgroundColors = (inverted ? [c[2], c[1]] : [c[1], c[2]]) as string[];
+      const [,,, c4] = derivePalette(r, g, b);
+      backgroundColors = (inverted ? [dark1, c4] : [c4, dark1]) as string[];
       backgroundName = 'Cyberpunk';
     } else if (whitepaperBackground) {
-      backgroundColors = (inverted ? [c[4], c[2]] : [c[2], c[4]]) as string[];
+      const [,,, c4] = derivePalette(r, g, b);
+      backgroundColors = (inverted ? ['#ffffff', dark2] : [c4, '#ffffff']) as string[];
       backgroundName = 'Whitepaper';
     }
 

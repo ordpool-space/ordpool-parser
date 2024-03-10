@@ -1,6 +1,6 @@
 import fs from 'fs';
 import { getCypherpunksManifestoText, getIsomometricCubePattern, getWhitepaperText, textToBinary } from './mooncat-parser.backgrounds';
-import { derivePalette } from './mooncat-parser.helper';
+import { deriveDarkPalette, derivePalette } from './mooncat-parser.helper';
 
 describe('block9 background', () => {
 
@@ -12,8 +12,13 @@ describe('block9 background', () => {
     const gridWidth = 22;
     const gridHeight = 22;
 
-    const c = derivePalette(44, 33, 22);
-    const backgroundColors = [c[1] + '', c[2] + '', c[3]+ ''];
+    const inverted = !true;
+    const [, dark2, dark3, dark4] = deriveDarkPalette(44, 33, 22);
+
+    const backgroundColors = inverted ? 
+      [dark2, dark4, dark3, '#ff9900', '#cc7a00', '#ffad33'] :
+      [dark2, dark3, dark4, '#ff9900', '#ffad33', '#cc7a00'];
+
     const svgPattern = getIsomometricCubePattern(rows, columns, cubeSize, gridWidth, gridHeight, backgroundColors);
     const svg = `<svg viewBox="0 0 30 30" xmlns="http://www.w3.org/2000/svg">${ svgPattern }</svg>`
 
@@ -34,8 +39,11 @@ describe('cyberpunk background', () => {
 
   it('should render a nice background with a cyberpunk vibes', () => {
 
-    const c = derivePalette(100, 0, 0);
-    const backgroundColors = [c[2] + '', c[3]+ ''];
+    const inverted = true;
+    const [dark1] = deriveDarkPalette(100, 20, 777);
+    const [c4] = derivePalette(100, 20, 777);
+
+    const backgroundColors = (inverted ? [dark1, c4] : [c4, dark1]) as string[];
 
     const svg = `<svg viewBox="0 0 30 30" xmlns="http://www.w3.org/2000/svg">${ getCypherpunksManifestoText(backgroundColors) }</svg>`
     expect(svg).toContain('<svg');
@@ -48,8 +56,11 @@ describe('whitepaper background', () => {
 
   it('should render the first lines of the whitepaper', () => {
 
-    const c = derivePalette(0, 100, 100);
-    const backgroundColors = [c[2] + '', c[3]+ ''];
+    const inverted = false;
+    const [,dark2] = deriveDarkPalette(100, 20, 777);
+    const [c1,c2,c3,c4] = derivePalette(100, 20, 777);
+
+    const backgroundColors = (inverted ? ['#ffffff', dark2] : [c4, '#ffffff']) as string[];
 
     const svg = `<svg viewBox="0 0 22 22" xmlns="http://www.w3.org/2000/svg">${ getWhitepaperText(backgroundColors) }</svg>`
     expect(svg).toContain('<svg');

@@ -146,3 +146,29 @@ export function derivePalette(r: number, g: number, b: number): (string | null)[
     RGBToHex(c5)
   ];
 }
+
+/**
+ * Derives a darker color palette based on RGB values.
+ * @param r - Red component.
+ * @param g - Green component.
+ * @param b - Blue component.
+ * @returns An array of hex color strings.
+ */
+export function deriveDarkPalette(r: number, g: number, b: number): string[] {
+  var hsl = RGBToHSL(r, g, b);
+
+  var h = hsl[0];
+  var hx = h % 360;
+
+  var c1 = HSLToRGB(hx, 1, 0.15);
+  var c2 = HSLToRGB(hx, 1, 0.1);
+  var c3 = HSLToRGB(hx, 1, 0.075);
+  var c4 = HSLToRGB(hx, 1, 0.05);
+
+  return [
+    RGBToHex(c1),
+    RGBToHex(c2),
+    RGBToHex(c3),
+    RGBToHex(c4)
+  ];
+}

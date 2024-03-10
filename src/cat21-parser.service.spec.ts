@@ -173,7 +173,7 @@ it('should render a wide range of feeRate values', async () => {
   it('should render all potential cats of a block!', async () => {
 
     const blockId = '000000000000000000018e3ea447b11385e3330348010e1b2418d0d8ae4e0ac7';
-    const feeRate = 60; // change this value to test other colors!
+    const feeRate = 150; // change this value to test other colors!
 
     let svgContent = '';
     for (let i = 0; i < cat21GenesisBlockTxIds.length; i++) {
@@ -239,7 +239,7 @@ it('should render a wide range of feeRate values', async () => {
     const laserEyesByte = 121;
     const backgroundByte = 0;
     const crownByte = 120;
-    const sunglassesByte = 0
+    const sunglassesByte = 26;
 
 
     const feeRate = 1; // change this value to test other colors!
@@ -284,7 +284,7 @@ it('should render a wide range of feeRate values', async () => {
         (0).toString(16).padStart(2, '0') +    // laser eyes
         (bg).toString(16).padStart(2, '0') +   // background
         (0).toString(16).padStart(2, '0') +    // crown
-        (0).toString(16).padStart(2, '0');     // sunglasses
+        (26).toString(16).padStart(2, '0');     // sunglasses
 
       svgContent += `<span title="${bg}">` + MooncatParser.parseAndGenerateSvg(catHash, feeRate).svg + '</span>';
     }

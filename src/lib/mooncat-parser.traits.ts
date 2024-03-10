@@ -62,11 +62,20 @@ export const laserEyesSunglassesPattern = [
 
 // completely opaque glasses
 export const sunglasses2Pattern = [
-  [0,1,1,1,1,1,0,1,1,1,1,1],
-  [0,1,2,2,2,1,1,1,2,2,2,1],
-  [1,1,3,3,3,1,0,1,3,3,3,1],
-  [0,1,4,4,4,1,0,1,4,4,4,1],
-  [0,0,1,1,1,0,0,0,1,1,1,0],
+  [ 0,10,10,10,10,10, 0,10,10,10,10,10],
+  [ 0,10,11,11,11,10,10,10,11,11,11,10],
+  [10,10,12,12,12,10, 0,10,12,12,12,10],
+  [ 0,10,13,13,13,10, 0,10,13,13,13,10],
+  [ 0, 0,10,10,10, 0, 0, 0,10,10,10, 0],
+];
+
+// glasses where you can see 1px of the eyes
+export const laserEyesSunglasses2Pattern = [
+  [ 0,10,10,10,10,10, 0,10,10,10,10,10],
+  [ 0,10,11,11,0,10,10,10, 0,11,11,10],
+  [10,10,12,12,12,10, 0,10,12,12,12,10],
+  [ 0,10,13,13,13,10, 0,10,13,13,13,10],
+  [ 0, 0,10,10,10, 0, 0, 0,10,10,10, 0],
 ];
 
 
@@ -137,7 +146,8 @@ export function alterDesign(design: number[][], position: number[], newPattern: 
       const designColumn = startColumn + column;
 
       // Ensure the position is within the bounds of the design
-      if (designRow < alteredDesign.length && designColumn < alteredDesign[designRow].length) {
+      if (alteredDesign[designRow] !== undefined && 
+          alteredDesign[designRow][designColumn] !== undefined) {
         // Only apply non-zero values from the new pattern
         if (newPattern[row][column] > 0) {
           alteredDesign[designRow][designColumn] = newPattern[row][column];
@@ -208,4 +218,26 @@ export function applySunglasses(design: number[][], designIndex: number): number
 export function applyLaserEyesSunglasses(design: number[][], designIndex: number): number[][] {
   const position = getEyesPosition(designIndex, 0, -2);
   return alterDesign(design, position, laserEyesSunglassesPattern);
+}
+
+/**
+ * Applies alternative sunglasses to the design (completely opaque glasses).
+ * @param design - The design to alter.
+ * @param designIndex - The design index to retrieve eyes position.
+ * @returns The altered design with sunglasses applied.
+ */
+export function applySunglasses2(design: number[][], designIndex: number): number[][] {
+  const position = getEyesPosition(designIndex, 0, -3);
+  return alterDesign(design, position, sunglasses2Pattern);
+}
+
+/**
+ * Applies alternative sunglasses to the design (glasses where you can see 1px of the eyes).
+ * @param design - The design to alter.
+ * @param designIndex - The design index to retrieve eyes position.
+ * @returns The altered design with sunglasses applied.
+ */
+export function applyLaserEyesSunglasses2(design: number[][], designIndex: number): number[][] {
+  const position = getEyesPosition(designIndex, 0, -3);
+  return alterDesign(design, position, laserEyesSunglasses2Pattern);
 }
