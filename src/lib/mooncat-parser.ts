@@ -9,7 +9,7 @@ import {
 import { generativeColorPalette } from './mooncat-parser.colors';
 import { designs } from './mooncat-parser.designs';
 import { map, deriveDarkPalette, derivePalette } from './mooncat-parser.helper';
-import { applyCrown, applyLaserEyes, applyLaserEyesSunglasses, applyLaserEyesSunglasses2, applySunglasses, applySunglasses2, decodeTraits } from './mooncat-parser.traits';
+import { applyCrown, applyLaserEyes, applyLaserEyesSunglasses as applyLaserEyesBlackSunglasses, applyLaserEyesSunglasses2 as applyLaserEyesCoolSunglasses, applySunglasses as applyBlackSunglasses, applySunglasses2 as applyCoolSunglasses, decodeTraits } from './mooncat-parser.traits';
 
 /* *********************************************
 
@@ -97,8 +97,8 @@ export class MooncatParser {
     const crown = bytes[7] >= 120 && bytes[7] <= 145;
 
     // 10% chance of sunglasses
-    const sunglasses = bytes[8] >= 0 && bytes[8] <= 25;   // 10%
-    const sunglasses2 = bytes[8] >= 26 && bytes[8] <= 51; // 10%
+    const blackSunglasses = bytes[8] >= 0 && bytes[8] <= 25;   // 10%
+    const coolSunglasses = bytes[8] >= 26 && bytes[8] <= 51; // 10%
 
     // 50% chance of inverted colors
     const inverted = k >= 128;
@@ -109,24 +109,29 @@ export class MooncatParser {
 
     let design = designs[designIndex];
 
+    let glassesName: 'Black' | 'Cool' | 'None' = 'None';
     if (!noLaserEyes) {
       design = applyLaserEyes(design, designIndex);
     }
 
-    if (noLaserEyes && sunglasses) {
-      design = applySunglasses(design, designIndex);
+    if (noLaserEyes && blackSunglasses) {
+      glassesName = 'Black'
+      design = applyBlackSunglasses(design, designIndex);
     }
 
-    if (!noLaserEyes && sunglasses) {
-      design = applyLaserEyesSunglasses(design, designIndex);
+    if (!noLaserEyes && blackSunglasses) {
+      glassesName = 'Black'
+      design = applyLaserEyesBlackSunglasses(design, designIndex);
     }
 
-    if (noLaserEyes && sunglasses2) {
-      design = applySunglasses2(design, designIndex);
+    if (noLaserEyes && coolSunglasses) {
+      glassesName = 'Cool';
+      design = applyCoolSunglasses(design, designIndex);
     }
 
-    if (!noLaserEyes && sunglasses2) {
-      design = applyLaserEyesSunglasses2(design, designIndex);
+    if (!noLaserEyes && coolSunglasses) {
+      glassesName = 'Cool';
+      design = applyLaserEyesCoolSunglasses(design, designIndex);
     }
     
     if (crown) {
@@ -247,7 +252,8 @@ export class MooncatParser {
       designFacing: designTraits.facing,
       laserEyes: laserEyesName,
       background: backgroundName,
-      crown: crownName
+      crown: crownName,
+      glasses: glassesName
     }
 
     return {

@@ -4,7 +4,7 @@ export interface CatTraits {
 
   /**
    * The super rare genesis trait. Genesis cats are white or black, and have no bright colors.
-   * Probability: ~0.4%
+   * Probability: 0.4%
    */
   genesis: boolean;
 
@@ -17,12 +17,7 @@ export interface CatTraits {
    * or
    * "#555555", "#222222", "#111111", "#bbbbbb", "#ff9999"
    */
-  colors: string[];
-
-  /**
-   * All colors that are used to generate the background.
-   *   */
-  backgroundColors: string[];
+  catColors: string[];
 
   /**
    * The gender (sex) of a cat.
@@ -52,31 +47,43 @@ export interface CatTraits {
   /**
    * The laser eyes trait.
    *
-   * There is a ~20% chance to receive a cat with orange laser eyes.
-   * There is a ~20% chance to receive a cat with red laser eyes.
-   * There is a ~20% chance to receive a cat with green laser eyes.
-   * There is a ~20% chance to receive a cat with blue laser eyes.
-   * There is a ~20% chance to receive a cat with no laser eyes.
+   * There is a 20% chance to receive a cat with orange laser eyes.
+   * There is a 20% chance to receive a cat with red laser eyes.
+   * There is a 20% chance to receive a cat with green laser eyes.
+   * There is a 20% chance to receive a cat with blue laser eyes.
+   * There is a 20% chance to receive a cat with no laser eyes.
    */
   laserEyes: 'Orange' | 'Red' | 'Green' | 'Blue' | 'None';
 
   /**
    * The background trait. All images have a background color.
-   * There is a ~10% chance to receive a cat with a Block 9 background.
-   * There is a ~20% chance to receive a cat with a cyberpunk background.
-   * There is a ~30% chance to receive a cat with a background of the Bitcoin Whitepaper.
-   * There is a ~40% chance to receive a cat with an orange background.
+   * There is a 25% chance to receive a cat with a Block 9 background.
+   * There is a 25% chance to receive a cat with a cyberpunk background.
+   * There is a 25% chance to receive a cat with a background of the Bitcoin Whitepaper.
+   * There is a 25% chance to receive a cat with an orange background.
    * The orange color is #ff9900.
    */
   background: 'Block9' | 'Cyberpunk' | 'Whitepaper' | 'Orange';
 
   /**
+   * All colors that are used to generate the background.
+   */
+  backgroundColors: string[];
+
+  /**
    * The crown trait.
-   * There is a ~10% chance to receive a cat with a crown.
+   * There is a 10% chance to receive a cat with a crown.
    * The crown is golden when the background is not orange.
    * The crown is made of diamonds if the background is orange.
    */
   crown: 'Gold' | 'Diamond' | 'None';
+
+  /**
+   * The glasses trait.
+   * There is a 10% chance to receive a cat with black sunglasses.
+   * There is a 10% chance to receive a cat with cool sunglasses.
+   */
+  glasses: 'Black' | 'Cool' | 'None';
 }
 
 export interface ParsedCat21 extends DigitalArtifact {

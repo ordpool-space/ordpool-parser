@@ -237,9 +237,9 @@ it('should render a wide range of feeRate values', async () => {
   it('should generate examples with laser eyes in all poses', () => {
 
     const laserEyesByte = 121;
-    const backgroundByte = 0;
+    const backgroundByte = 100;
     const crownByte = 120;
-    const sunglassesByte = 26;
+    const sunglassesByte = 0;
 
 
     const feeRate = 1; // change this value to test other colors!

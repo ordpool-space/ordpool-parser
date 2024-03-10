@@ -48,16 +48,16 @@ export const crownPattern = [
 
 // completely opaque glasses
 export const sunglassesPattern = [
-  [10,10,10,10,10,10,10,10,10,10,10],
-  [ 0,10,10,10,10, 0,10,10,10,10, 0],
-  [ 0, 0,10,10, 0, 0, 0,10,10, 0, 0],
+  [10, 10,10,10,10,10,10,10,10,10,10,10],
+  [ 0, 0,10,10,10,10, 0,10,10,10,10, 0],
+  [ 0, 0, 0,10,10, 0, 0, 0,10,10, 0, 0],
 ];
 
 // glasses where you can see 1px of the eyes
 export const laserEyesSunglassesPattern = [
-  [10,10,10,10,10,10,10,10,10,10,10],
-  [ 0,10,10, 0,10, 0,10, 0,10,10, 0],
-  [ 0, 0,10,10, 0, 0, 0,10,10, 0, 0],
+  [10, 10,10,10,10,10,10,10,10,10,10,10],
+  [ 0, 0,10,10, 0,10, 0,10, 0,10,10, 0],
+  [ 0, 0, 0,10,10, 0, 0, 0,10,10, 0, 0],
 ];
 
 // completely opaque glasses
@@ -205,7 +205,7 @@ export function applyCrown(design: number[][], designIndex: number): number[][] 
  * @returns The altered design with sunglasses applied.
  */
 export function applySunglasses(design: number[][], designIndex: number): number[][] {
-  const position = getEyesPosition(designIndex, 0, -2);
+  const position = getEyesPosition(designIndex, 0, -3);
   return alterDesign(design, position, sunglassesPattern);
 }
 
@@ -216,7 +216,7 @@ export function applySunglasses(design: number[][], designIndex: number): number
  * @returns The altered design with sunglasses applied.
  */
 export function applyLaserEyesSunglasses(design: number[][], designIndex: number): number[][] {
-  const position = getEyesPosition(designIndex, 0, -2);
+  const position = getEyesPosition(designIndex, 0, -3);
   return alterDesign(design, position, laserEyesSunglassesPattern);
 }
 
