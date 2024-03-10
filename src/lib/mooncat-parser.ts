@@ -236,7 +236,7 @@ export class MooncatParser {
 
     const traits = {
       genesis,
-      colors: [
+      catColors: [
         colors[1],
         colors[2],
         colors[3],
