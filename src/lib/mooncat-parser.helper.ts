@@ -120,9 +120,10 @@ export function RGBToHex(arr: [number, number, number]): string {
  * @param r - Red component.
  * @param g - Green component.
  * @param b - Blue component.
+ * @param s - Saturation from 0 to 1 (default 1)
  * @returns An array of hex color strings.
  */
-export function derivePalette(r: number, g: number, b: number): (string | null)[] {
+export function derivePalette(r: number, g: number, b: number, s: number = 1): (string | null)[] {
   var hsl = RGBToHSL(r, g, b);
 
   var h = hsl[0];
@@ -131,11 +132,11 @@ export function derivePalette(r: number, g: number, b: number): (string | null)[
   var hx = h % 360;
   var hy = (h + 320) % 360;
 
-  var c1 = HSLToRGB(hx, 1, 0.1);
-  var c2 = HSLToRGB(hx, 1, 0.2);
-  var c3 = HSLToRGB(hx, 1, 0.45);
-  var c4 = HSLToRGB(hx, 1, 0.7);
-  var c5 = HSLToRGB(hy, 1, 0.8);
+  var c1 = HSLToRGB(hx, s, 0.1);
+  var c2 = HSLToRGB(hx, s, 0.2);
+  var c3 = HSLToRGB(hx, s, 0.45);
+  var c4 = HSLToRGB(hx, s, 0.7);
+  var c5 = HSLToRGB(hy, s, 0.8);
 
   return [
     null,
