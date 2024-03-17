@@ -180,7 +180,9 @@ it('should render a wide range of feeRate values', async () => {
 
       const catHash = createCatHash(cat21GenesisBlockTxIds[i], blockId);
       const svgAndTraits = MooncatParser.parseAndGenerateSvg(catHash, feeRate);
-      svgContent += svgAndTraits.svg;
+
+      const traitsJSON = JSON.stringify(svgAndTraits.traits).replaceAll('"', "'");
+      svgContent += `<span title="${traitsJSON}">` + svgAndTraits.svg + '</span>';
       if (i >= 2000) { break; }
     }
 
@@ -214,7 +216,7 @@ it('should render a wide range of feeRate values', async () => {
               steps[r].toString(16).padStart(2, '0') +        // r - used for bg
               steps[g].toString(16).padStart(2, '0') +        // g - used for bg
               steps[b].toString(16).padStart(2, '0') +        // b - used for bg
-              (laserEyesByte).toString(16).padStart(2, '0') + 
+              (laserEyesByte).toString(16).padStart(2, '0') +
               (backgroundByte).toString(16).padStart(2, '0') +
               (crownByte).toString(16).padStart(2, '0');
 
@@ -236,11 +238,10 @@ it('should render a wide range of feeRate values', async () => {
 
   it('should generate examples with laser eyes in all poses', () => {
 
-    const laserEyesByte = 121;
+    const laserEyesByte = 204;
     const backgroundByte = 100;
     const crownByte = 120;
-    const sunglassesByte = 60;
-
+    const glassesByte = 132;
 
     const feeRate = 1; // change this value to test other colors!
 
@@ -254,12 +255,15 @@ it('should render a wide range of feeRate values', async () => {
         (50).toString(16).padStart(2, '0') +            // r - used for bg
         (200).toString(16).padStart(2, '0') +           // g - used for bg
         (0).toString(16).padStart(2, '0') +             // b - used for bg
-        (laserEyesByte).toString(16).padStart(2, '0') + 
+        (laserEyesByte).toString(16).padStart(2, '0') +
         (backgroundByte).toString(16).padStart(2, '0') +
         (crownByte).toString(16).padStart(2, '0') +
-        (sunglassesByte).toString(16).padStart(2, '0');
+        (glassesByte).toString(16).padStart(2, '0');
 
-      svgContent += `<span title="${k}">` + MooncatParser.parseAndGenerateSvg(catHash, feeRate).svg + '</span>';
+      const svgAndTraits = MooncatParser.parseAndGenerateSvg(catHash, feeRate);
+
+      const traitsJSON = JSON.stringify(svgAndTraits.traits).replaceAll('"', "'");
+      svgContent += `<span title="${traitsJSON}">` +  svgAndTraits.svg + '</span>';
     }
 
     fs.writeFileSync('testdist/cat-lasereye-poses-testdrive.html', testdriveHtml.replace('CATS!', svgContent));

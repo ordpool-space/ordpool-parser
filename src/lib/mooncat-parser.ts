@@ -9,7 +9,7 @@ import {
 import { generativeColorPalette } from './mooncat-parser.colors';
 import { designs } from './mooncat-parser.designs';
 import { map, deriveDarkPalette, derivePalette } from './mooncat-parser.helper';
-import { applyBlackSunglasses, applyCoolSunglasses, applyCrown, applyLaserEyes, applyLaserEyesBlackSunglasses, applyLaserEyesCoolSunglasses, applyThreeDimensionsGlasses, decodeTraits, enlargeAndAlignDesign } from './mooncat-parser.traits';
+import { applyBlackSunglasses, applyCoolSunglasses, applyCrown, applyLaserEyes, applyLaserEyesBlackSunglasses, applyLaserEyesCoolSunglasses, applyNounsGlasses, applyThreeDimensionsGlasses, decodeTraits, enlargeAndAlignDesign } from './mooncat-parser.traits';
 
 /* *********************************************
 
@@ -43,17 +43,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
  *
  * This parser takes data from a Bitcoin transaction and returns a pixelated cat image.
  *
- * Some of the various modifications to the original algorithm,
- * that make the artwork clearly differentiated from the original project, are:
- *
- * - It generates an SVG file, instead of a pixel image.
- * - Laser eyes trait for all cats.
- * - Orange or gray background trait.
- * - Gold or Diamond crown trait.
- * - Male or Female cats.
- * - Cat color is derived from the paid miner fees (not from the hash), which
- *   is a new artistic value that is also very related to the canvas (Bitcoin).
- *
  * Learn more:
  * --> https://github.com/cryptocopycats/mooncats/
  * --> https://github.com/cryptocopycats/awesome-mooncatrescue-bubble
@@ -81,26 +70,30 @@ export class MooncatParser {
     const b = bytes[4];
 
     // Genesis cat has value 121 here (redLaserEyes)
-    const orangeLaserEyes = bytes[5] >= 0 && bytes[5] <= 50;   // 20%
-    const greenLaserEyes = bytes[5] >= 51 && bytes[5] <= 101;  // 20%
-    const redLaserEyes = bytes[5] >= 102 && bytes[5] <= 152;   // 20%
-    const blueLaserEyes = bytes[5] >= 153 && bytes[5] <= 203;  // 20%
-    const noLaserEyes = bytes[5] >= 204 && bytes[5] <= 255;    // ~20% (+ one more)
+    const laserEyesByte = bytes[5];
+    const orangeLaserEyes = laserEyesByte >= 0   && laserEyesByte <= 50;  // 20%
+    const greenLaserEyes  = laserEyesByte >= 51  && laserEyesByte <= 101; // 20%
+    const redLaserEyes    = laserEyesByte >= 102 && laserEyesByte <= 152; // 20%
+    const blueLaserEyes   = laserEyesByte >= 153 && laserEyesByte <= 203; // 20%
+    const noLaserEyes     = laserEyesByte >= 204 && laserEyesByte <= 255; // ~20% (+ one more)
 
     // Genesis cat has value 120 here (orangeBackground)
-    const block9Background = bytes[6] >= 0 && bytes[6] <= 63;        // 25%
-    const orangeBackground = bytes[6] >= 64 && bytes[6] <= 127;      // 25%
-    const whitepaperBackground = bytes[6] >= 128 && bytes[6] <= 191; // 25%
-    const cyberpunkBackground = bytes[6] >= 192 && bytes[6] <= 255;  // 25%
+    const backgroundByte = bytes[6];
+    const block9Background     = backgroundByte >= 0   && backgroundByte <= 63;  // 25%
+    const orangeBackground     = backgroundByte >= 64  && backgroundByte <= 127; // 25%
+    const whitepaperBackground = backgroundByte >= 128 && backgroundByte <= 191; // 25%
+    const cyberpunkBackground  = backgroundByte >= 192 && backgroundByte <= 255; // 25%
 
     // 10% chance of crown
     const crown = bytes[7] >= 120 && bytes[7] <= 145;
 
-    const blackSunglasses = bytes[8] >= 0 && bytes[8] <= 25;         // 10%
-    const coolSunglasses = bytes[8] >= 26 && bytes[8] <= 51;         // 10%
-    const threeDimensionsGlasses = bytes[8] >= 52 && bytes[8] <= 77; // 10%
-    const nounsGlasses = bytes[8] >= 78 && bytes[8] <= 153;          // 10%
-    // const range5 = bytes[8] >= 154 && bytes[8] <= 255;            // 10%
+    const glassesByte            = bytes[8];
+    const blackSunglasses        = glassesByte >= 0 && glassesByte  <= 25; // 10%
+    const coolSunglasses         = glassesByte >= 26 && glassesByte <= 51; // 10%
+
+    // VERY rare glasses - only if there are no laser eyes!
+    const threeDimensionsGlasses = noLaserEyes && glassesByte >= 52 && glassesByte <= 77; // 10%
+    const nounsGlasses           = noLaserEyes && glassesByte >= 78 && glassesByte <= 153; // 10%
 
     // 50% chance of inverted colors
     const inverted = k >= 128;
@@ -113,43 +106,82 @@ export class MooncatParser {
 
     // very dark colors
     const [dark1, dark2, dark3, dark4] = deriveDarkPalette(r, g, b);
+    let glassesColors: string[] = [];
 
-    // black for the black sunglasses
-    // black for the frame of the cool sunglasses + three colored shades
-    let sunglassesColors = ['#000000', dark3, dark2, dark1];
-
-    let glassesName: 'Black' | 'Cool' | '3D' | 'None' = 'None';
+    let glassesName: 'Black' | 'Cool' | '3D' | 'Nouns' | 'None' = 'None';
     if (!noLaserEyes) {
       design = applyLaserEyes(design, designIndex);
     }
 
     if (noLaserEyes && blackSunglasses) {
       glassesName = 'Black'
+      // just black for the black sunglasses
+      glassesColors = ['#000000'];
       design = applyBlackSunglasses(design, designIndex);
     }
 
     if (!noLaserEyes && blackSunglasses) {
       glassesName = 'Black'
+      // just black for the black sunglasses
+      glassesColors = ['#000000'];
       design = applyLaserEyesBlackSunglasses(design, designIndex);
     }
 
     if (noLaserEyes && coolSunglasses) {
       glassesName = 'Cool';
+      // black for the frame three colored shades
+      glassesColors = ['#000000', dark3, dark2, dark1];
       design = applyCoolSunglasses(design, designIndex);
     }
 
     if (!noLaserEyes && coolSunglasses) {
       glassesName = 'Cool';
+      // black for the frame three colored shades
+      glassesColors = ['#000000', dark3, dark2, dark1];
       design = applyLaserEyesCoolSunglasses(design, designIndex);
     }
 
-    // hint: 3d glasses will hide the laser eyes, but I think that's fine
     if (threeDimensionsGlasses) {
       glassesName = '3D';
-      sunglassesColors = ['#ffffff', '#328dfd', '#fd3232'];
+      glassesColors = ['#ffffff', '#328dfd', '#fd3232'];
       design = applyThreeDimensionsGlasses(design, designIndex);
     }
-    
+
+    if (nounsGlasses) {
+      glassesName = 'Nouns';
+
+      // glassesByte goes until 153
+      let firstColor = '#f3322c'; // the famous red
+
+      // these are original colors from
+      // https://github.com/nounsDAO/nouns-monorepo/tree/master/packages/nouns-assets/images/v0/4-glasses
+      const colorMappings = [
+        { range: [78, 81], color: '#ff638d' }, // hip rose
+        { range: [82, 85], color: '#2b83f6' }, // blue med saturated
+        { range: [86, 89], color: '#5648ed' }, // blue
+        { range: [90, 93], color: '#8dd122' }, // frog green
+        { range: [94, 97], color: '#9cb4b8' }, // grey light
+        { range: [98, 101], color: '#e8705b' }, // guava
+        { range: [102, 105], color: '#d19a54' }, // honey
+        { range: [106, 109], color: '#b9185c' }, // magenta
+        { range: [110, 113], color: '#fe500c' }, // orange
+        { range: [114, 117], color: '#d7d3cd' }, // smoke
+        { range: [118, 121], color: '#4bea69' }, // teal
+        { range: [122, 126], color: '#ec5b43', }, // watermelon
+        { range: [127, 130], color: '#ffef16' }  // yellow saturated
+      ];
+
+      for (const { range, color } of colorMappings) {
+        if (glassesByte >= range[0] && glassesByte <= range[1]) {
+          firstColor = color;
+          break; // Stop the loop once a matching color is found
+        }
+      }
+
+      glassesColors = [firstColor, '#ffffff', '#000000'];
+      design = applyNounsGlasses(design, designIndex);
+    }
+
     if (crown) {
       design = applyCrown(design, designIndex);
     }
@@ -214,7 +246,7 @@ export class MooncatParser {
       laserEyesColors[1], // 7
       crownColors[0],     // 8
       crownColors[1],     // 9
-      ...sunglassesColors // 10 to 13
+      ...glassesColors // 10 to 13
     ];
 
     const catData = design.map(row => {
@@ -263,7 +295,8 @@ export class MooncatParser {
       laserEyes: laserEyesName,
       background: backgroundName,
       crown: crownName,
-      glasses: glassesName
+      glasses: glassesName,
+      glassesColors
     }
 
     return {

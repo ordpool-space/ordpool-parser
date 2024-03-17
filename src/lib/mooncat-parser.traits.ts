@@ -87,10 +87,18 @@ export const laserEyesCoolSunglassesPattern = [
 
 // 3D glasses
 export const threeDimensionsGlassesPattern = [
-  [10, 10,10,10,10,10,10,10,10,10,10,10],
-  [ 0,  0,10,11,11,11,10,12,12,12,10, 0],
-  [ 0,  0,10,11,11,11,10,12,12,12,10, 0],
-  [ 0,  0,10,10,10,10, 0,10,10,10,10, 0],
+  [10,10,10,10,10,10,10,10,10,10,10,10],
+  [ 0, 0,10,11,11,11,10,12,12,12,10, 0],
+  [ 0, 0,10,11,11,11,10,12,12,12,10, 0],
+  [ 0, 0,10,10,10,10, 0,10,10,10,10, 0],
+];
+
+// nouns glasses
+export const nounsGlassesPattern = [
+  [ 0, 0,10,10,10,10, 0,10,10,10,10],
+  [10,10,10,11,12,10,10,10,11,12,10],
+  [10, 0,10,11,12,10, 0,10,11,12,10],
+  [ 0, 0,10,10,10,10, 0,10,10,10,10],
 ];
 
 /**
@@ -147,7 +155,7 @@ export function enlargeAndAlignDesign(originalDesign: number[][]): number[][] {
  * - Facing Direction: Decided based on the design index being less than 64, indicating 'Left', otherwise 'Right'.
  *   This binary determination is rooted in the most significant bit of the lower half versus the upper half of
  *   the 0-127 range, aligning with how the Ruby implementation encoded the facing direction.
- * 
+ *
  * see https://github.com/cryptocopycats/mooncats/blob/fc9ba95aeff28cc84714a1c66d40ba9b024dcdc8/mooncats/lib/mooncats/structs.rb#L54
  */
 export function decodeTraits(designIndex: number): {
@@ -181,7 +189,7 @@ export function decodeTraits(designIndex: number): {
  * @returns The altered design with the new pattern applied.
  */
 export function alterDesign(design: number[][], position: number[], newPattern: number[][]): number[][] {
-  
+
   // Clone the original design to avoid mutating the input directly
   const alteredDesign = design.map(row => [...row]);
 
@@ -196,7 +204,7 @@ export function alterDesign(design: number[][], position: number[], newPattern: 
       const designColumn = startColumn + column;
 
       // Ensure the position is within the bounds of the design
-      if (alteredDesign[designRow] !== undefined && 
+      if (alteredDesign[designRow] !== undefined &&
           alteredDesign[designRow][designColumn] !== undefined) {
         // Only apply non-zero values from the new pattern
         if (newPattern[row][column] > 0) {
@@ -302,3 +310,15 @@ export function applyThreeDimensionsGlasses(design: number[][], designIndex: num
   const position = getEyesPosition(designIndex, 0, -3);
   return alterDesign(design, position, threeDimensionsGlassesPattern);
 }
+
+/**
+ * Applies nouns-inspired glasses to the design (completely opaque glasses).
+ * @param design - The design to alter.
+ * @param designIndex - The design index to retrieve eyes position.
+ * @returns The altered design with nouns glasses applied.
+ */
+export function applyNounsGlasses(design: number[][], designIndex: number): number[][] {
+  const position = getEyesPosition(designIndex, 0, -3);
+  return alterDesign(design, position, nounsGlassesPattern);
+}
+
