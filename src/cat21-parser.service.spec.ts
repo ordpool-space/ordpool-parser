@@ -158,11 +158,15 @@ it('should render a wide range of feeRate values', async () => {
     let svgContent = '';
     for (let i = 0; i < txIdsAndBlockIdsAndFeeRate.length; i++) {
 
-      const catHash = createCatHash(txIdsAndBlockIdsAndFeeRate[i][0], txIdsAndBlockIdsAndFeeRate[i][1]);
-      const svgAndTraits = MooncatParser.parseAndGenerateSvg(catHash, txIdsAndBlockIdsAndFeeRate[i][2]);
+      const txId = txIdsAndBlockIdsAndFeeRate[i][0];
+      const blockdId = txIdsAndBlockIdsAndFeeRate[i][1];
+      const feeRate = txIdsAndBlockIdsAndFeeRate[i][2];
+
+      const catHash = createCatHash(txId, blockdId);
+      const svgAndTraits = MooncatParser.parseAndGenerateSvg(catHash, feeRate);
 
       const traitsJSON = JSON.stringify(svgAndTraits.traits).replaceAll('"', "'");
-      svgContent += `<span title="${traitsJSON}">` + svgAndTraits.svg + '</span>';
+      svgContent += `${feeRate}<span title="${traitsJSON}">` + svgAndTraits.svg + '</span><br style="clear: both;">';
 
       if (i >= 1000) { break; }
     }

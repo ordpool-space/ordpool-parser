@@ -6,10 +6,21 @@ import {
   getIsomometricCubePattern,
   getWhitepaperText,
 } from './mooncat-parser.backgrounds';
-import { generativeColorPalette } from './mooncat-parser.colors';
+import { feeRateToColor } from './mooncat-parser.colors';
 import { designs } from './mooncat-parser.designs';
-import { map, deriveDarkPalette, derivePalette } from './mooncat-parser.helper';
-import { applyBlackSunglasses, applyCoolSunglasses, applyCrown, applyLaserEyes, applyLaserEyesBlackSunglasses, applyLaserEyesCoolSunglasses, applyNounsGlasses, applyThreeDimensionsGlasses, decodeTraits, enlargeAndAlignDesign } from './mooncat-parser.traits';
+import { deriveDarkPalette, derivePalette } from './mooncat-parser.helper';
+import {
+  applyBlackSunglasses,
+  applyCoolSunglasses,
+  applyCrown,
+  applyLaserEyes,
+  applyLaserEyesBlackSunglasses,
+  applyLaserEyesCoolSunglasses,
+  applyNounsGlasses,
+  applyThreeDimensionsGlasses,
+  decodeTraits,
+  enlargeAndAlignDesign,
+} from './mooncat-parser.traits';
 
 /* *********************************************
 
@@ -95,7 +106,7 @@ export class MooncatParser {
     const threeDimensionsGlasses = noLaserEyes && glassesByte >= 52 && glassesByte <= 77; // 10%
     const nounsGlasses           = noLaserEyes && glassesByte >= 78 && glassesByte <= 153; // 10%
 
-    // 50% chance of inverted colors
+    // 50% chance of inverted colors (only used for genesis cats and for some backgrounds)
     const inverted = k >= 128;
 
     // results in a uniform distribution of values in a range of 0 to 127,
@@ -210,24 +221,8 @@ export class MooncatParser {
       laserEyesName = 'Orange';
     }
 
-    // Use a phase shifting palette
-    const rgb = generativeColorPalette(
-      feeRate / 300,
-      [0.5, 0.5, 0.5],
-      [-0.9, 0.6, 0.4],
-      [2.5, 2.5, 2.5],
-      [0.0, 0.0, 0.0]
-    );
-
-    const saturation = map(feeRate % 40, 0, 39, 0.6, 1.0);
-    if (feeRate < 75) {
-      rgb[0] += 0.4;
-      rgb[2] = 0;
-    } else {
-      rgb[1] = 0;
-    }
+    const { rgb, saturation } = feeRateToColor(feeRate);
     colors = derivePalette(rgb[0], rgb[1], rgb[2], saturation);
-
 
     if (genesis) {
 
