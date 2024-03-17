@@ -177,7 +177,10 @@ it('should render a wide range of feeRate values', async () => {
   it('should render all potential cats of a block!', async () => {
 
     const blockId = '000000000000000000018e3ea447b11385e3330348010e1b2418d0d8ae4e0ac7';
-    const feeRate = 150; // change this value to test other colors!
+    //const feeRate = 150; // change this value to test other colors!
+
+    // random number between 1 and 500
+    const feeRate = Math.floor(Math.random() * 500) + 1;
 
     let svgContent = '';
     for (let i = 0; i < cat21GenesisBlockTxIds.length; i++) {
