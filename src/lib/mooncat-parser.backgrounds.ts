@@ -1,7 +1,10 @@
 type Point = { x: number; y: number };
 
-export function getBgRect(fill: string) {
-  return `<rect x="0" y="0" width="22" height="22" fill="${fill}" />\n`;
+export function getBgRect(fill: string, opacity = 1) {
+  if (opacity === 1) {
+    return `<rect x="0" y="0" width="22" height="22" fill="${fill}" />\n`;
+  }
+  return `<rect x="0" y="0" width="22" height="22" fill="${fill}" opacity="${opacity}" />\n`;
 }
 
 
@@ -65,7 +68,7 @@ function getCubeFromPolygons(x: number, y: number, size: number, gridWidth: numb
 
 export function getIsomometricCubePattern(rows: number, columns: number, cubeSize: number, gridWidth: number, gridHeight: number, [n1, n2, n3, o1, o2, o3]: string[]): string {
 
-  let svg = getBgRect('#ffffff');
+  let svg = getBgRect('#ffffff', 0.5);
 
   const normalCubesColors = [n1, n2, n3];
   const orangeColors = [o1, o2, o3];
@@ -135,7 +138,7 @@ export function splitAndWrapTextWithTspan(text: string, maxCharsPerLine: number,
 
 // from "A Cypherpunk's Manifesto by Eric Hughes", 9 March 1993
 export function getCypherpunksManifestoText(backgroundColors: string[]) {
-  let svg = getBgRect(backgroundColors[0]);
+  let svg = getBgRect(backgroundColors[0], 0.5);
   svg += `<text y="-0.38" font-family="Courier New, Courier" font-weight="bold" font-size="1.8px" fill="${ backgroundColors[1] }">${ splitAndWrapTextWithTspan(textToBinary('Cypherpunks write code. 1993'), 20, 0.2)}</text>\n`;
   return svg;
 }
@@ -146,7 +149,7 @@ export function getWhitepaperText(backgroundColors: string[]) {
 
   const fill = backgroundColors[0];
   const bg = backgroundColors[1];
-  let svg = getBgRect(bg);
+  let svg = getBgRect(bg, 0.5);
 
   svg += '<svg viewBox="-4 -5 50 78" xmlns="http://www.w3.org/2000/svg">';
 

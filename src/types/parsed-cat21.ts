@@ -56,7 +56,7 @@ export interface CatTraits {
   laserEyes: 'Orange' | 'Red' | 'Green' | 'Blue' | 'None';
 
   /**
-   * The background trait. All images have a background color.
+   * The background trait. All images have a background.
    * There is a 25% chance to receive a cat with a Block 9 background.
    * There is a 25% chance to receive a cat with a cyberpunk background.
    * There is a 25% chance to receive a cat with a background of the Bitcoin Whitepaper.
