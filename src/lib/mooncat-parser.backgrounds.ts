@@ -1,4 +1,5 @@
 type Point = { x: number; y: number };
+const bgOpacity = 0.5;
 
 export function getBgRect(fill: string, opacity = 1) {
   if (opacity === 1) {
@@ -60,15 +61,15 @@ function getCubeFromPolygons(x: number, y: number, size: number, gridWidth: numb
   }
 
   return `
-    <polygon points="${points.top.map(p => `${p.x},${p.y}`).join(' ')}" fill="${colorTop}" />
-    <polygon points="${points.left.map(p => `${p.x},${p.y}`).join(' ')}" fill="${colorLeft}" />
-    <polygon points="${points.right.map(p => `${p.x},${p.y}`).join(' ')}" fill="${colorRight}" />
+    <polygon points="${points.top.map(p => `${p.x},${p.y}`).join(' ')}" fill="${colorTop}" opacity="${bgOpacity}" />
+    <polygon points="${points.left.map(p => `${p.x},${p.y}`).join(' ')}" fill="${colorLeft}" opacity="${bgOpacity}" />
+    <polygon points="${points.right.map(p => `${p.x},${p.y}`).join(' ')}" fill="${colorRight}" opacity="${bgOpacity}" />
   `;
 }
 
 export function getIsomometricCubePattern(rows: number, columns: number, cubeSize: number, gridWidth: number, gridHeight: number, [n1, n2, n3, o1, o2, o3]: string[]): string {
 
-  let svg = getBgRect('#ffffff', 0.3);
+  let svg = getBgRect('#ffffff', bgOpacity);
 
   const normalCubesColors = [n1, n2, n3];
   const orangeColors = [o1, o2, o3];
@@ -138,8 +139,8 @@ export function splitAndWrapTextWithTspan(text: string, maxCharsPerLine: number,
 
 // from "A Cypherpunk's Manifesto by Eric Hughes", 9 March 1993
 export function getCypherpunksManifestoText(backgroundColors: string[]) {
-  let svg = getBgRect(backgroundColors[0], 0.3);
-  svg += `<text y="-0.38" font-family="Courier New, Courier" font-weight="bold" font-size="1.8px" fill="${ backgroundColors[1] }">${ splitAndWrapTextWithTspan(textToBinary('Cypherpunks write code. 1993'), 20, 0.2)}</text>\n`;
+  let svg = getBgRect(backgroundColors[0], bgOpacity);
+  svg += `<text y="-0.38" font-family="Courier New, Courier" font-weight="bold" font-size="1.8px" fill="${ backgroundColors[1] }" opacity="${bgOpacity}">${ splitAndWrapTextWithTspan(textToBinary('Cypherpunks write code. 1993'), 20, 0.2)}</text>\n`;
   return svg;
 }
 
@@ -149,9 +150,9 @@ export function getWhitepaperText(backgroundColors: string[]) {
 
   const fill = backgroundColors[0];
   const bg = backgroundColors[1];
-  let svg = getBgRect(bg, 0.3);
+  let svg = getBgRect(bg, bgOpacity);
 
-  svg += '<svg viewBox="-4 -5 50 78" xmlns="http://www.w3.org/2000/svg">';
+  svg += `<svg viewBox="-4 -5 50 78" xmlns="http://www.w3.org/2000/svg" opacity="${bgOpacity}">`;
 
   svg += `<text y="2" font-family="Times New Roman, Times" font-weight="bold" font-size="2px" fill="${ fill }">\n`;
   svg += wrapTextWithTspan('Bitcoin: A Peer-to-Peer Electronic Cash System');
