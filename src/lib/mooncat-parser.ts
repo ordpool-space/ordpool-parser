@@ -364,7 +364,8 @@ export class MooncatParser {
         break;
       }
       default: {
-        svg += getBgRect(traits?.backgroundColors[0] as string);
+        const bgColor = traits?.backgroundColors[0] as string || '#000000';
+        svg += getBgRect(bgColor);
         break;
       }
     }
