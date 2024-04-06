@@ -202,11 +202,11 @@ export class MooncatParser {
     let laserEyesColors: (string | null)[] = [null, null]
     let laserEyesName: 'Orange' | 'Red' | 'Green' | 'Blue' | 'None' = 'None';
 
-    // gold crown by default
+    // gold crown is default crown color
     // orange background gets diamond crown for better contrast
     let crownColors = orangeBackground ? ["#b8d8e7", "#cbe3f0"] : ["#ffaf51", "#ffcf39"];
 
-    // as a homage to the good old days, only "web save colors" are used here
+    // as a homage to the good old days, only "web safe colors" are used here
     if (redLaserEyes) {
       laserEyesColors = ['#ff0000', '#ff9900'];
       laserEyesName = 'Red';

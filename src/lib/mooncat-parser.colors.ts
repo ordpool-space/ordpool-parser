@@ -49,8 +49,7 @@ export function feeRateToColor(feeRate: number): { rgb: number[], saturation: nu
 
   const baseColor = [0.5, 0.5, 0.5];
   const amplitude = [-0.9, 0.6, 0.4];
-  // const frequency =  [2.0, 1.0, 1.0];
-  const frequency =  [1.0, 0.5, 0.5]; // Lower the frequency for a slower color transition
+  const frequency =  [1.0, 0.5, 0.5]; // Slow color transition
   const phase = [0.0, 0.0, 0.0];
 
   // Use a phase shifting palette
