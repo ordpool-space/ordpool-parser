@@ -222,7 +222,7 @@ export class MooncatParser {
       laserEyesName = 'Orange';
     }
 
-    // derive the cat colors from feeRate
+    // derive the cat colors from feeRate, by @Ethspresso & @HausHoppe
     const { rgb, saturation } = feeRateToColor(feeRate, saturationSeed);
     colors = derivePalette(rgb[0], rgb[1], rgb[2], saturation);
 
