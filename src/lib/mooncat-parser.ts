@@ -76,9 +76,9 @@ export class MooncatParser {
     const genesis = bytes[0] === 79;
 
     const k = bytes[1];
-    const r = bytes[2];
-    const g = bytes[3];
-    const b = bytes[4];
+    const dark_r = bytes[2];
+    const dark_g = bytes[3];
+    const dark_b = bytes[4];
 
     // Genesis cat has value 121 here (redLaserEyes)
     const laserEyesByte = bytes[5];
@@ -116,7 +116,7 @@ export class MooncatParser {
     let design = enlargeAndAlignDesign(designs[designIndex]);
 
     // very dark colors
-    const [dark1, dark2, dark3, dark4] = deriveDarkPalette(r, g, b);
+    const [dark1, dark2, dark3, dark4] = deriveDarkPalette(dark_r, dark_g, dark_b);
     let glassesColors: string[] = [];
 
     let glassesName: 'Black' | 'Cool' | '3D' | 'Nouns' | 'None' = 'None';
@@ -260,11 +260,11 @@ export class MooncatParser {
       backgroundColors = inverted ? [dark2, dark4, dark3, '#ff9900', '#cc7a00', '#ffad33'] :
                                     [dark2, dark3, dark4, '#ff9900', '#ffad33', '#cc7a00'];
     } else if (cyberpunkBackground) {
-      const [,,, c4] = derivePalette(r, g, b);
+      const [,,, c4] = derivePalette(dark_r, dark_g, dark_b);
       backgroundColors = (inverted ? [dark1, c4] : [c4, dark1]) as string[];
       backgroundName = 'Cyberpunk';
     } else if (whitepaperBackground) {
-      const [,,, c4] = derivePalette(r, g, b);
+      const [,,, c4] = derivePalette(dark_r, dark_g, dark_b);
       backgroundColors = (inverted ? ['#ffffff', dark2] : [c4, '#ffffff']) as string[];
       backgroundName = 'Whitepaper';
     }
