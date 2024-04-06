@@ -226,6 +226,13 @@ export class MooncatParser {
     const { rgb, saturation } = feeRateToColor(feeRate, saturationSeed);
     colors = derivePalette(rgb[0], rgb[1], rgb[2], saturation);
 
+    // for the culture
+    if (feeRate >= 69 && feeRate < 70) {
+      colors[1] = '#ff0000';
+      colors[2] = '#ffa500';
+      colors[3] = '#ffff00';
+    }
+
     if (genesis) {
       // 50% chance
       if (inverted) {
@@ -233,12 +240,6 @@ export class MooncatParser {
       } else {
         colors = [null, '#555555', '#222222', '#111111', '#bbbbbb', '#ff9999'];
       }
-    }
-
-    if (feeRate >= 69 && feeRate < 70) {
-      colors[1] = '#ff0000';
-      colors[2] = '#ffa500';
-      colors[3] = '#ffff00';
     }
 
     // add laser eye and crown colors
