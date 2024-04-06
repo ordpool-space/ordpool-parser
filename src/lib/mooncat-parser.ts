@@ -76,6 +76,7 @@ export class MooncatParser {
     const genesis = bytes[0] === 79;
 
     const k = bytes[1];
+    const saturationSeed = bytes[1];
     const dark_r = bytes[2];
     const dark_g = bytes[3];
     const dark_b = bytes[4];
@@ -221,7 +222,8 @@ export class MooncatParser {
       laserEyesName = 'Orange';
     }
 
-    const { rgb, saturation } = feeRateToColor(feeRate);
+    // derive the cat colors from feeRate
+    const { rgb, saturation } = feeRateToColor(feeRate, saturationSeed);
     colors = derivePalette(rgb[0], rgb[1], rgb[2], saturation);
 
     if (genesis) {

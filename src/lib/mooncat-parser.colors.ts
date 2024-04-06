@@ -36,7 +36,8 @@ export function map(n: number, from1: number, to1: number, from2: number, to2: n
  * transitions through yellow and orange for mid-range fee rates, and finally moves towards red. After reaching
  * a specific threshold (fee rate 300), it starts to oscillate within the blue-red spectrum.
  *
- * @param {number} feeRate - The fee rate value used to determine the color. The function expects a range from 0 to 1000.
+ * @param {number} feeRate - The fee rate value used to determine the color.
+ * @param {number} saturationSeed - Byte from catHash to inject some randomness in color saturation.
  * @returns {{ rgb: number[], saturation: number }} An object containing the RGB color array and the saturation value.
  * The RGB color array ([R, G, B]) consists of three elements, each representing the intensity of red, green,
  * and blue components, respectively. The saturation value ranges from 0.6 to 1.0, dictating the color's intensity.
@@ -45,24 +46,22 @@ export function map(n: number, from1: number, to1: number, from2: number, to2: n
  * a smoothing transition is applied to gradually shift from the yellow-orange spectrum to oscillating within the
  * blue-red spectrum.
  */
-export function feeRateToColor(feeRate: number): { rgb: number[], saturation: number } {
-
+export function feeRateToColor(feeRate: number, saturationSeed: number): { rgb: number[], saturation: number } {
   const baseColor = [0.5, 0.5, 0.5];
   const amplitude = [-0.9, 0.6, 0.4];
   const frequency =  [1.0, 0.5, 0.5]; // Slow color transition
   const phase = [0.0, 0.0, 0.0];
 
   // Use a phase shifting palette
-  const x = feeRate / 300;
   const rgb = generativeColorPalette(
-    x,
+    feeRate / 300,
     baseColor,
     amplitude,
     frequency,
     phase
   );
 
-  const saturation = map(feeRate % 40, 0, 39, 0.6, 1.0);
+  const saturation = map(saturationSeed, 0, 255, 0.75, 1.0);
 
   // smoothing transition around feeRate 300
   if (feeRate < 300) {

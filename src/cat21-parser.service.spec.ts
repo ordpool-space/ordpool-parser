@@ -7,6 +7,11 @@ import { MooncatParser } from './lib/mooncat-parser';
 import { readTransaction } from './test.helper';
 
 
+function generateRandomHash(): string {
+  const base = Math.floor(Math.random() * 90000000) + 10000000;
+  return base.toString().repeat(8);
+}
+
 const testdriveHtml = `<!DOCTYPE html>
 <html lang="en">
   <head>
@@ -136,7 +141,7 @@ describe('Cat21ParserService', () => {
 
 it('should render a wide range of feeRate values', async () => {
 
-    const feeLevels = [
+    const feeRates = [
       1, 5, 8, 10, 12, 15, 20, 24, 27, 30, 33, 36, 40, 43,
       47, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115,
       120, 125, 130, 135, 140, 145, 150, 155, 160, 165, 170, 175, 180, 185, 190,
@@ -144,31 +149,23 @@ it('should render a wide range of feeRate values', async () => {
       300, 350, 400, 500, 600, 700, 800, 900, 1000, 1200, 1400, 1600, 1800, 2000
     ];
 
-    let txIdsAndBlockIdsAndFeeRate: [string, string, number][] = [
-      ['98316dcb21daaa221865208fe0323616ee6dd84e6020b78bc6908e914ac03892', '000000000000000000018e3ea447b11385e3330348010e1b2418d0d8ae4e0ac7', 231.6822695035461],
-    ];
+    // Render genesis cat first to make sure it looks as expected
+    const catHash = createCatHash('98316dcb21daaa221865208fe0323616ee6dd84e6020b78bc6908e914ac03892', '000000000000000000018e3ea447b11385e3330348010e1b2418d0d8ae4e0ac7');
+    const svgAndTraits = MooncatParser.parseAndGenerateSvg(catHash, 231.6822695035461);
+    const traitsJSON = JSON.stringify(svgAndTraits.traits).replaceAll('"', "'");
+    let svgContent = `<h3>Genesis cat</h3>` + `<span title="${traitsJSON}">` + svgAndTraits.svg + `</span>` + `<br style="clear: both;">`;
 
-    for (let i = 0; i < feeLevels.length; i++) {
-      const prefix = Math.floor(Math.random() * 90000000) + 10000000;
-      const randomTxId =  prefix.toString() + prefix.toString() + prefix.toString() + prefix.toString() + prefix.toString() + prefix.toString() + prefix.toString() + prefix.toString();
-      const randomBlockId = prefix.toString() + prefix.toString() + prefix.toString() + prefix.toString() + prefix.toString() + prefix.toString() + prefix.toString() + prefix.toString();
-      txIdsAndBlockIdsAndFeeRate.push([randomTxId, randomBlockId, feeLevels[i]]);
-    }
-
-    let svgContent = '';
-    for (let i = 0; i < txIdsAndBlockIdsAndFeeRate.length; i++) {
-
-      const txId = txIdsAndBlockIdsAndFeeRate[i][0];
-      const blockdId = txIdsAndBlockIdsAndFeeRate[i][1];
-      const feeRate = txIdsAndBlockIdsAndFeeRate[i][2];
-
-      const catHash = createCatHash(txId, blockdId);
-      const svgAndTraits = MooncatParser.parseAndGenerateSvg(catHash, feeRate);
-
-      const traitsJSON = JSON.stringify(svgAndTraits.traits).replaceAll('"', "'");
-      svgContent += `${feeRate}<span title="${traitsJSON}">` + svgAndTraits.svg + '</span><br style="clear: both;">';
-
-      if (i >= 1000) { break; }
+    for (const feeRate of feeRates) {
+      svgContent += `<h3>${feeRate} sat/vB</h3>`;
+      for (let i = 0; i < 12; i++) {
+        const randomTxId = generateRandomHash();
+        const randomBlockId = generateRandomHash();
+        const catHash = createCatHash(randomTxId, randomBlockId);
+        const svgAndTraits = MooncatParser.parseAndGenerateSvg(catHash, feeRate);
+        const traitsJSON = JSON.stringify(svgAndTraits.traits).replaceAll('"', "'");
+        svgContent += `<span title="${traitsJSON}">` + svgAndTraits.svg + `</span>`;
+      }
+      svgContent += `<br style="clear: both;">`;
     }
 
     fs.writeFileSync('testdist/cat-fees-testdrive.html', testdriveHtml.replace('CATS!', svgContent));
@@ -177,7 +174,6 @@ it('should render a wide range of feeRate values', async () => {
   it('should render all potential cats of a block!', async () => {
 
     const blockId = '000000000000000000018e3ea447b11385e3330348010e1b2418d0d8ae4e0ac7';
-    //const feeRate = 150; // change this value to test other colors!
 
     // random number between 1 and 500
     const feeRate = Math.floor(Math.random() * 500) + 1;
