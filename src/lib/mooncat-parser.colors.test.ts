@@ -13,7 +13,7 @@ describe('colors', () => {
     let html = '';
     for (let feeRate = 0; feeRate < 1000; feeRate++) {
 
-      const { rgb, saturation } = feeRateToColor(feeRate);
+      const { rgb, saturation } = feeRateToColor(feeRate, 255);
       colors = derivePalette(rgb[0], rgb[1], rgb[2], saturation);
 
       let primaryColor = colors[3] as string;
