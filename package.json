@@ -1,6 +1,6 @@
 {
   "name": "ordpool-parser",
-  "version": "0.0.8-beta.4",
+  "version": "0.0.9",
   "description": "The parsing engine that detects inscriptions in Bitcoin transactions.",
   "repository": {
     "type": "git",
