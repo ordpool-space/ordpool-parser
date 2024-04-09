@@ -226,7 +226,7 @@ export class MooncatParser {
     const { rgb, saturation } = feeRateToColor(feeRate, saturationSeed);
     colors = derivePalette(rgb[0], rgb[1], rgb[2], saturation);
 
-    // for the culture
+    // for the culture - fire cat 🔥
     if (feeRate >= 69 && feeRate < 70) {
       colors[1] = '#ff0000';
       colors[2] = '#ffa500';

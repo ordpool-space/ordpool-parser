@@ -61,6 +61,7 @@ export function feeRateToColor(feeRate: number, saturationSeed: number): { rgb: 
     phase
   );
 
+  // for the culture - saturated cat 😸
   let saturation = map(saturationSeed, 0, 255, 0.75, 1.0);
   if (feeRate >= 420 && feeRate < 421) {
     saturation = 42.0;
