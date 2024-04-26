@@ -1,10 +1,10 @@
 import fs from 'fs';
 
-import { cat21GenesisBlockTxIds } from '../testdata/txids_000000000000000000018e3ea447b11385e3330348010e1b2418d0d8ae4e0ac7';
+import { cat21GenesisBlockTxIds } from '../../testdata/txids_000000000000000000018e3ea447b11385e3330348010e1b2418d0d8ae4e0ac7';
 import { Cat21ParserService } from './cat21-parser.service';
 import { createCatHash } from './cat21-parser.service.helper';
-import { MooncatParser } from './lib/mooncat-parser';
-import { readTransaction } from './test.helper';
+import { MooncatParser } from './mooncat-parser';
+import { readTransaction } from '../../testdata/test.helper';
 
 
 function generateRandomHash(): string {

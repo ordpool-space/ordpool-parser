@@ -4,10 +4,10 @@
   "description": "The parsing engine that detects inscriptions in Bitcoin transactions.",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/haushoppe/ordpool-parser.git"
+    "url": "git+https://github.com/ordpool-space/ordpool-parser.git"
   },
   "bugs": {
-    "url": "https://github.com/haushoppe/ordpool-parser/issues"
+    "url": "https://github.com/ordpool-space/ordpool-parser/issues"
   },
   "main": "dist-commonjs/index.js",
   "module": "dist/index.js",
@@ -22,8 +22,7 @@
     "test:browser:watch": "npm run clean && jest --config jest.config.js --watch ",
     "fetch-tx-testdata": "node fetch-tx-testdata.js",
     "fetch-inscription-testdata": "node fetch-inscription-testdata.js",
-    "prepublishOnly": "npm run test && npm run build",
-    "cat21-design-convert": "node cat21-convert-designs.js"
+    "prepublishOnly": "npm run test && npm run build"
   },
   "keywords": [
     "bitcoin",

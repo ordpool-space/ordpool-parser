@@ -15,7 +15,7 @@ describe('block9 background', () => {
     const inverted = !true;
     const [, dark2, dark3, dark4] = deriveDarkPalette(44, 33, 22);
 
-    const backgroundColors = inverted ? 
+    const backgroundColors = inverted ?
       [dark2, dark4, dark3, '#ff9900', '#cc7a00', '#ffad33'] :
       [dark2, dark3, dark4, '#ff9900', '#ffad33', '#cc7a00'];
 

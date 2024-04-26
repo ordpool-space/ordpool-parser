@@ -1,5 +1,5 @@
-import { bytesToHex, hexToBytes } from "./lib/conversions";
-import { createHash } from './lib/sha256-uint8array';
+import { bytesToHex, hexToBytes } from "../lib/conversions";
+import { createHash } from '../lib/sha256-uint8array';
 
 /**
  * Hashes data using the SHA-256 algorithm.

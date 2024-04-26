@@ -1,5 +1,5 @@
 import { InscriptionParserService } from './inscription-parser.service';
-import { readTransaction } from './test.helper';
+import { readTransaction } from '../../testdata/test.helper';
 
 describe('Inscription parser', () => {
 

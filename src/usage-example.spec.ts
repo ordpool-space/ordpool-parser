@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { InscriptionParserService } from './inscription-parser.service';
+import { InscriptionParserService } from './inscription/inscription-parser.service';
 
 
 describe.skip('Real data usage example (see README)', () => {

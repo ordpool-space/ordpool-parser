@@ -1,9 +1,9 @@
-import { Arc4 } from "./lib/arc4";
-import { bigEndianBytesToNumber, hexToBytes, unicodeStringToBytes } from "./lib/conversions";
-import { bytesToUnicodeString } from './lib/conversions';
+import { Arc4 } from "../lib/arc4";
+import { bigEndianBytesToNumber, hexToBytes, unicodeStringToBytes } from "../lib/conversions";
+import { bytesToUnicodeString } from '../lib/conversions';
 import { extractPubkeys } from './src20-parser.service.helper';
-import { DigitalArtifactType } from "./types/digital-artifact";
-import { ParsedSrc20 } from "./types/parsed-src20";
+import { DigitalArtifactType } from "../types/digital-artifact";
+import { ParsedSrc20 } from "../types/parsed-src20";
 
 /**
  * Service to parse SRC-20 Bitcoin Transactions.

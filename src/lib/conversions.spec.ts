@@ -1,4 +1,4 @@
-import { OP_FALSE, OP_IF, OP_PUSHBYTES_3 } from '../inscription-parser.service.helper';
+import { OP_FALSE, OP_IF, OP_PUSHBYTES_3 } from '../inscription/inscription-parser.service.helper';
 import {
   binaryStringToBase64,
   bytesToHex,

@@ -1,5 +1,5 @@
 import { createCatHash, sha256Hash } from "./cat21-parser.service.helper";
-import { bytesToHex } from "./lib/conversions";
+import { bytesToHex } from "../lib/conversions";
 
 // verified against https://emn178.github.io/online-tools/sha256.html
 // UTF-8 In: Hello, world!

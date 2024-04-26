@@ -1,7 +1,7 @@
 import { InscriptionParserService } from './inscription-parser.service';
 import { getNextInscriptionMark } from './inscription-parser.service.helper';
-import { hexToBytes } from './lib/conversions';
-import { readInscriptionAsBase64, readTransaction } from './test.helper';
+import { hexToBytes } from '../lib/conversions';
+import { readInscriptionAsBase64, readTransaction } from '../../testdata/test.helper';
 
 describe('Inscription parser', () => {
 

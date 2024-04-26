@@ -1,6 +1,6 @@
-import { Cat21ParserService } from './cat21-parser.service';
-import { InscriptionParserService } from './inscription-parser.service';
-import { Src20ParserService } from './src20-parser.service';
+import { Cat21ParserService } from './cat21/cat21-parser.service';
+import { InscriptionParserService } from './inscription/inscription-parser.service';
+import { Src20ParserService } from './src20/src20-parser.service';
 import { DigitalArtifact } from './types/digital-artifact';
 
 /**

@@ -1,6 +1,6 @@
-import { MAX_DECOMPRESSED_SIZE_MESSAGE, brotliDecode } from "./lib/brotli-decode";
-import { littleEndianBytesToNumber } from "./lib/conversions";
-import { bytesToHex } from "./lib/conversions";
+import { MAX_DECOMPRESSED_SIZE_MESSAGE, brotliDecode } from "../lib/brotli-decode";
+import { littleEndianBytesToNumber } from "../lib/conversions";
+import { bytesToHex } from "../lib/conversions";
 
 /**
  * Bitcoin Script Opcodes

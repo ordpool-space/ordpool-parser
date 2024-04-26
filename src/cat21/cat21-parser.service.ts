@@ -1,7 +1,7 @@
 import { createCatHash } from './cat21-parser.service.helper';
-import { MooncatParser } from './lib/mooncat-parser';
-import { DigitalArtifactType } from './types/digital-artifact';
-import { CatTraits, ParsedCat21 } from './types/parsed-cat21';
+import { MooncatParser } from './mooncat-parser';
+import { DigitalArtifactType } from '../types/digital-artifact';
+import { CatTraits, ParsedCat21 } from '../types/parsed-cat21';
 
 /**
  * Service to parse CAT-21 transactions.

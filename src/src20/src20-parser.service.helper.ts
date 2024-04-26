@@ -1,6 +1,6 @@
-import { OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4 } from './inscription-parser.service.helper';
-import { bytesToHex, hexToBytes } from './lib/conversions';
-import { readPushdata } from './lib/reader';
+import { OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4 } from '../inscription/inscription-parser.service.helper';
+import { bytesToHex, hexToBytes } from '../lib/conversions';
+import { readPushdata } from '../lib/reader';
 
 /**
  * Determines if an opcode represents a data push operation.

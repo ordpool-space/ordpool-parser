@@ -1,5 +1,5 @@
 import { Src20ParserService } from './src20-parser.service';
-import { readTransaction } from './test.helper';
+import { readTransaction } from '../../testdata/test.helper';
 
 describe('SRC20 parser', () => {
 

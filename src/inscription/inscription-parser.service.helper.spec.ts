@@ -1,5 +1,5 @@
 import { extractInscriptionId, extractPointer, getKnownFieldValue, getKnownFieldValues, getNextInscriptionMark } from './inscription-parser.service.helper';
-import { hexToBytes } from './lib/conversions';
+import { hexToBytes } from '../lib/conversions';
 
 describe('getKnownFieldValue', () => {
 
