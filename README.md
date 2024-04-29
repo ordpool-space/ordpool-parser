@@ -1,6 +1,6 @@
 # ordpool-parser
 
-The parsing engine that detects inscriptions in Bitcoin transactions.
+The parsing engine that detects Inscriptions, SRC-20 Stamps, CAT-21 Ordinals, and Runes in Bitcoin transactions.
 The compiled code has zero dependencies and works in the Browser and in Node.js out of the box.
 
 The latest version of this script is used by https://ordpool.space
@@ -14,8 +14,9 @@ This package has zero dependencies and should "just work". First, install it:
 npm install ordpool-parser
 ```
 
-Then, you can use the parser in your project. 
+Then, you can use the parser in your project.
 It expects a transaction in JSON format from an Esplora API.
+(This format is different from the JSON returned by a Bitcoin Node RPC.)
 
 To avoid confusion, here are the different kinds of "Electrum" servers explained:
 - Electrum and ElectrumX are basic indexers for Bitcoin

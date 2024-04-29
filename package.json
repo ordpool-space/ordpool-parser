@@ -1,7 +1,7 @@
 {
   "name": "ordpool-parser",
-  "version": "0.0.9",
-  "description": "The parsing engine that detects inscriptions in Bitcoin transactions.",
+  "version": "0.0.10",
+  "description": "The parsing engine that detects Inscriptions, SRC-20 Stamps, CAT-21 Ordinals, and Runes in Bitcoin transactions.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ordpool-space/ordpool-parser.git"
@@ -29,6 +29,14 @@
     "ordinals",
     "inscription",
     "inscriptions",
+    "rune",
+    "runes",
+    "runestone",
+    "stamps",
+    "src-20",
+    "src20",
+    "cat-21",
+    "cat21",
     "mempool",
     "ordpool",
     "blockchain"
