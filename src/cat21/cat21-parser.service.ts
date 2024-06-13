@@ -27,7 +27,7 @@ export class Cat21ParserService {
 
     try {
 
-      if (!this.isValidCat21Transaction(transaction)) {
+      if (!Cat21ParserService.hasCat21(transaction)) {
         return null;
       }
 
@@ -70,20 +70,21 @@ export class Cat21ParserService {
   }
 
   /**
-   * Validates if a transaction meets CAT-21 protocol rules.
+   * Validates if a transaction meets all the CAT-21 protocol rules.
    *
    * @param transaction - The transaction to validate.
    * @returns True if the transaction is a valid CAT-21 transaction, false otherwise.
    */
-  private static isValidCat21Transaction(transaction: {
+  static hasCat21(transaction: {
     locktime: number
   }): boolean {
 
     // nLockTime must be 21
-    if (transaction.locktime !== 21) {
-      return false;
+    // ...that's it! 😹
+    if (transaction.locktime == 21) {
+      return true;
     }
 
-    return true;
+    return false;
   }
 }

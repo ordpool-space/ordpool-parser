@@ -5,10 +5,9 @@ import { hasAtomical } from "./atomical-parser.service.helper";
  */
 export class AtomicalParserService {
 
-
   /**
    * Super quick check, that returns true if an atomicalMark is found.
-   * @param transaction - any bitcoin transaction
+   * @param transaction any bitcoin transaction
    * @returns True if an atomicalMark is found.
    */
   static hasAtomical(transaction: {
@@ -29,5 +28,4 @@ export class AtomicalParserService {
       return false;
     }
   }
-
 }

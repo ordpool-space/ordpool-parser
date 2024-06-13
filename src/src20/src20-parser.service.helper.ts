@@ -2,6 +2,47 @@ import { OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4 } from '../inscription/inscrip
 import { bytesToHex, hexToBytes } from '../lib/conversions';
 import { readPushdata } from '../lib/reader';
 
+// big question: are these really all used burners??
+export const knownKeyBurnAddresses = [
+  '022222222222222222222222222222222222222222222222222222222222222222',
+  '033333333333333333333333333333333333333333333333333333333333333333',
+  '020202020202020202020202020202020202020202020202020202020202020202',
+  '030303030303030303030303030303030303030303030303030303030303030303',
+];
+
+/**
+ * Checks if a given transaction contains any known stamps key burn addresses
+ * see https://github.com/mikeinspace/stamps/blob/main/Key-Burn.md
+ *
+ * This method doesn't extract public keys, but searches the scriptpubkey strings for known burn addresses.
+ * There could be potential false positives if the scriptpubkey includes the same strings in an unrelated context.
+ *
+ * @param transaction - The Bitcoin transaction to check.
+ * @returns Returns true if any multisig output contains a known key burn address, otherwise false.
+ */
+export function hasKeyBurn(transaction: {
+  vout: {
+    scriptpubkey: string,
+    scriptpubkey_type: string
+  }[];
+}) {
+
+  for (const vout of transaction.vout) {
+    if (vout.scriptpubkey_type === 'multisig') {
+      for (const keyBurn of knownKeyBurnAddresses) {
+        if (vout.scriptpubkey.includes(keyBurn)) {
+          return true;
+        }
+      }
+
+      return false;
+    }
+  }
+
+  return false;
+}
+
+
 /**
  * Determines if an opcode represents a data push operation.
  *

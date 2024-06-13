@@ -12,6 +12,8 @@ export * from './types/parsed-cat21';
 export * from './types/parsed-inscription';
 export * from './types/parsed-src20';
 
+export * from './atomical/atomical-parser.service.helper';
+export * from './atomical/atomical-parser.service';
 export * from './cat21/cat21-parser.service.helper';
 export * from './cat21/cat21-parser.service';
 export * from './inscription/decode-data-uri';

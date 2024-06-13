@@ -1,7 +1,7 @@
 import { Arc4 } from "../lib/arc4";
 import { bigEndianBytesToNumber, hexToBytes, unicodeStringToBytes } from "../lib/conversions";
 import { bytesToUnicodeString } from '../lib/conversions';
-import { extractPubkeys } from './src20-parser.service.helper';
+import { extractPubkeys, hasKeyBurn, knownKeyBurnAddresses } from './src20-parser.service.helper';
 import { DigitalArtifactType } from "../types/digital-artifact";
 import { ParsedSrc20 } from "../types/parsed-src20";
 
@@ -44,11 +44,31 @@ export class Src20ParserService {
     }[];
   }): ParsedSrc20 | null {
 
-    // TODO: early exit by checking against Key Burn addresses
-    // https://github.com/mikeinspace/stamps/blob/main/Key-Burn.md
-    // big question: are these really all used burners?
+    // early exit by checking against known key burn addresses
+    if (!hasKeyBurn(transaction)) {
+      return null;
+    }
 
     return Src20ParserService.decodeSrc20Transaction(transaction)
+  }
+
+  /**
+   * Returns true, if a SRC-20 stamp was found.
+   * @param transaction any bitcoin transaction
+   * @returns True if this is a SRC-20 transaction
+   */
+  static hasSrc20(transaction: {
+    txid: string;
+    vin: { txid: string }[];
+    vout: {
+      scriptpubkey: string,
+      scriptpubkey_type: string
+    }[];
+  }): boolean {
+
+    // Right now, I don't know of a better way to determine if
+    // there is an SRC-20 token - without fully parsing it...
+    return !!Src20ParserService.parse(transaction);
   }
 
   private static decodeSrc20Transaction(transaction: {
@@ -105,7 +125,7 @@ export class Src20ParserService {
         getContent: () => content
       }
 
-    } catch(error) {
+    } catch (error) {
       console.log(error);
       return null;
     }

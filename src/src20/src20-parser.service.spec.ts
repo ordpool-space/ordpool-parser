@@ -1,5 +1,6 @@
 import { Src20ParserService } from './src20-parser.service';
 import { readTransaction } from '../../testdata/test.helper';
+import { hasKeyBurn } from './src20-parser.service.helper';
 
 describe('SRC20 parser', () => {
 
@@ -31,3 +32,67 @@ describe('SRC20 parser', () => {
     expect(content).toEqual('{"p":"src-20","op":"deploy","tick":"DODO","lim":"69696969696969696969696969696969", "max":"420420420420420420420420420"}')
   });
 });
+
+describe('hasKeyBurn', () => {
+  it('returns true if a multisig output contains a known key burn address', () => {
+    const transaction = {
+      vout: [
+        {
+          scriptpubkey: 'some multisig data 033333333333333333333333333333333333333333333333333333333333333333 some other data',
+          scriptpubkey_type: 'multisig'
+        }
+      ]
+    };
+    expect(hasKeyBurn(transaction)).toBe(true);
+  });
+
+  it('returns false if no multisig outputs contain a known key burn address', () => {
+    const transaction = {
+      vout: [
+        {
+          scriptpubkey: 'some script data without known key burn addresses',
+          scriptpubkey_type: 'multisig'
+        }
+      ]
+    };
+    expect(hasKeyBurn(transaction)).toBe(false);
+  });
+
+  it('returns false for non-multisig outputs even if they contain a known key burn address', () => {
+    const transaction = {
+      vout: [
+        {
+          scriptpubkey: '033333333333333333333333333333333333333333333333333333333333333333 some other data',
+          scriptpubkey_type: 'non-multisig'
+        }
+      ]
+    };
+    expect(hasKeyBurn(transaction)).toBe(false);
+  });
+
+  it('returns false for transactions with no multisig outputs', () => {
+    const transaction = {
+      vout: [
+        { scriptpubkey: 'some non-multisig data', scriptpubkey_type: 'non-multisig' }
+      ]
+    };
+    expect(hasKeyBurn(transaction)).toBe(false);
+  });
+
+  it('handles an empty transaction output array', () => {
+    const transaction = { vout: [] };
+    expect(hasKeyBurn(transaction)).toBe(false);
+  });
+
+  it('handles complex transactions with multiple outputs correctly', () => {
+    const transaction = {
+      vout: [
+        { scriptpubkey: 'normal output', scriptpubkey_type: 'non-multisig' },
+        { scriptpubkey: '022222222222222222222222222222222222222222222222222222222222222222', scriptpubkey_type: 'multisig' },
+        { scriptpubkey: 'another normal output', scriptpubkey_type: 'non-multisig' }
+      ]
+    };
+    expect(hasKeyBurn(transaction)).toBe(true);
+  });
+});
+

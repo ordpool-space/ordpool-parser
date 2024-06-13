@@ -69,7 +69,7 @@ export class InscriptionParserService {
 
   /**
    * Super quick check, that returns true if an inscriptionMark is found.
-   * @param transaction - any bitcoin transaction
+   * @param transaction any bitcoin transaction
    * @returns True if an inscriptionMark is found.
    */
   static hasInscription(transaction: {
