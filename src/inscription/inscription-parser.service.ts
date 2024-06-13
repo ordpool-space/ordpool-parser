@@ -6,15 +6,14 @@ import {
   getKnownFieldValues,
   getNextInscriptionMark,
   hasInscription,
-  knownFields,
-  OP_0,
-  OP_ENDIF,
+  knownFields
 } from './inscription-parser.service.helper';
 import { CBOR } from '../lib/cbor';
 import { binaryStringToBase64, bytesToBinaryString, bytesToUnicodeString, hexToBytes, littleEndianBytesToNumber } from '../lib/conversions';
 import { readPushdata } from '../lib/reader';
 import { DigitalArtifactType } from '../types/digital-artifact';
 import { ParsedInscription } from '../types/parsed-inscription';
+import { OP_0, OP_ENDIF } from '../lib/op-codes';
 
 /**
  * Extracts all Ordinal inscriptions from a Bitcoin transaction.

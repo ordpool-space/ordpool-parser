@@ -1,4 +1,4 @@
-import { OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4 } from '../inscription/inscription-parser.service.helper';
+import { OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4 } from '../lib/op-codes';
 import { bytesToHex, hexToBytes } from '../lib/conversions';
 import { readPushdata } from '../lib/reader';
 
@@ -34,8 +34,6 @@ export function hasKeyBurn(transaction: {
           return true;
         }
       }
-
-      return false;
     }
   }
 

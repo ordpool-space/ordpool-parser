@@ -1,15 +1,15 @@
-import { OP_FALSE, OP_IF, OP_PUSHBYTES_3 } from '../inscription/inscription-parser.service.helper';
 import {
-  binaryStringToBase64,
-  bytesToHex,
-  hexToBytes,
-  bytesToBinaryString,
-  unicodeStringToBytes,
-  bytesToUnicodeString,
-  littleEndianBytesToNumber,
   bigEndianBytesToNumber,
-  isStringInArrayOfStrings
+  binaryStringToBase64,
+  bytesToBinaryString,
+  bytesToHex,
+  bytesToUnicodeString,
+  hexToBytes,
+  isStringInArrayOfStrings,
+  littleEndianBytesToNumber,
+  unicodeStringToBytes,
 } from './conversions';
+import { OP_FALSE, OP_IF, OP_PUSHBYTES_3 } from './op-codes';
 
 describe('Base64 encoding and decoding', () => {
 

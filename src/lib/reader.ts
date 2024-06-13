@@ -1,6 +1,6 @@
-import { OP_1NEGATE, OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4, OP_PUSHNUM_1, OP_PUSHNUM_16, OP_RESERVED } from "../inscription/inscription-parser.service.helper";
+import { OP_1NEGATE, OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4, OP_PUSHNUM_1, OP_PUSHNUM_16, OP_RESERVED } from '../lib/op-codes';
 
-import { littleEndianBytesToNumber } from "./conversions";
+import { littleEndianBytesToNumber } from './conversions';
 
 /**
  * Reads a specified number of bytes from a Uint8Array starting from a given pointer.
