@@ -120,13 +120,12 @@ export function getNextInscriptionMark(raw: Uint8Array, startPosition: number): 
 
 /**
  * Super quick check, that returns true if an inscriptionMark is found.
- * @param witness - witness data from vin[0].
+ * @param witness - witness data
  * @returns True if an inscriptionMark is found.
  */
 export function hasInscription(witness: string[]): boolean {
-  const inscriptionMarkHex = '0063036f7264';
-  const witnessJoined = witness.join('');
-  return witnessJoined.includes(inscriptionMarkHex);
+  const inscriptionMarkHex = '0063036f7264'; // OF_FALSE, OP_IF, OP_PUSHBYTES_3, o, r, d --> nothing more!!
+  return witness.some((entry) => entry.includes(inscriptionMarkHex));
 }
 
 /**

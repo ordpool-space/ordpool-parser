@@ -5,6 +5,7 @@ import {
   getKnownFieldValue,
   getKnownFieldValues,
   getNextInscriptionMark,
+  hasInscription,
   knownFields,
   OP_0,
   OP_ENDIF,
@@ -58,6 +59,30 @@ export class InscriptionParserService {
     } catch (ex) {
       // console.error(ex);
       return [];
+    }
+  }
+
+  /**
+   * Super quick check, that returns true if an inscriptionMark is found.
+   * @param transaction - any bitcoin transaction
+   * @returns True if an inscriptionMark is found.
+   */
+  static hasInscription(transaction: {
+    vin: { witness?: string[] }[]
+  }): boolean {
+
+    try {
+
+      for (let i = 0; i < transaction.vin.length; i++) {
+        const vin = transaction.vin[i];
+        if (vin.witness && hasInscription(vin.witness)) {
+          return true;
+        }
+      }
+      return false;
+
+    } catch (ex) {
+      return false;
     }
   }
 
