@@ -32,6 +32,11 @@ export class InscriptionParserService {
 
     try {
 
+      // early exit
+      if (!InscriptionParserService.hasInscription(transaction)) {
+        return [];
+      }
+
       const inscriptions: ParsedInscription[] = [];
       let counter = 0;
 
