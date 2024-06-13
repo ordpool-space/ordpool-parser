@@ -129,3 +129,37 @@ export function bigEndianBytesToNumber(byteArray: Uint8Array): number {
   }
   return number;
 }
+
+/**
+ * Checks if a specified string is contained within an array of strings, considering potential splits between array elements.
+ *
+ * @param stringToFind - The string to search for within the array.
+ * @param arrayOfStrings - The array of strings to be searched.
+ * @returns Returns true if the string is found within any individual element or across the boundary of consecutive elements.
+ */
+export function isStringInArrayOfStrings(stringToFind: string, arrayOfStrings: string[]) {
+
+  const stringToFindLength = stringToFind.length;
+
+  for (let i = 0; i < arrayOfStrings.length; i++) {
+
+    // the happy path: check array element for a simple match
+    if (arrayOfStrings[i].includes(stringToFind)) {
+      return true;
+    }
+
+    // If there's a next element, check for splits across the current and next element
+    if (i < arrayOfStrings.length - 1) {
+      const checkLength = stringToFindLength - 1; // Length to check overlap, -1 because at least 1 char must be in the next element
+      for (let j = 1; j <= checkLength; j++) {
+        const endCurrent = arrayOfStrings[i].slice(-j); // Last j characters of the current element
+        const startNext = arrayOfStrings[i + 1].slice(0, stringToFindLength - j); // First (stringToFindLength - j) characters of the next element
+        if ((endCurrent + startNext).includes(stringToFind)) {
+          return true;
+        }
+      }
+    }
+  }
+
+  return false;
+}

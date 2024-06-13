@@ -8,6 +8,7 @@ import {
   bytesToUnicodeString,
   littleEndianBytesToNumber,
   bigEndianBytesToNumber,
+  isStringInArrayOfStrings
 } from './conversions';
 
 describe('Base64 encoding and decoding', () => {
@@ -187,3 +188,33 @@ describe('bigEndianBytesToNumber', () => {
     expect(bigEndianBytesToNumber(dataSizeArray)).toEqual(0);
   });
 });
+
+describe('isStringInArrayOfStrings', () => {
+  it('finds the string within a single element', () => {
+    expect(isStringInArrayOfStrings('hello', ['say hello', 'goodbye'])).toBe(true);
+  });
+
+  it('returns false when the string is not found', () => {
+    expect(isStringInArrayOfStrings('hello', ['hi', 'goodbye'])).toBe(false);
+  });
+
+  it('finds the string across a boundary of two elements', () => {
+    expect(isStringInArrayOfStrings('op', ['hell', 'op world'])).toBe(true);
+  });
+
+  it('should return true if the string is split at an unfortunate place', () => {
+    expect(isStringInArrayOfStrings('0063036f7264', ['012345006303', '6f7264'])).toBe(true);
+  });
+
+  it('handles empty string and empty array', () => {
+    expect(isStringInArrayOfStrings('', [])).toBe(false);
+    expect(isStringInArrayOfStrings('test', [])).toBe(false);
+  });
+
+  it('handles cases with adjacent elements each containing partial matches', () => {
+    expect(isStringInArrayOfStrings('goph', ['algo', 'goph', 'bust'])).toBe(true);
+    expect(isStringInArrayOfStrings('algobust', ['algo', 'bust'])).toBe(true);
+  });
+});
+
+

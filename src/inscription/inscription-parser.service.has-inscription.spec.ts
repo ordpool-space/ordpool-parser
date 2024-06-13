@@ -1,3 +1,4 @@
+import { readTransaction } from '../../testdata/test.helper';
 import { InscriptionParserService } from './inscription-parser.service';
 
 
@@ -28,6 +29,19 @@ describe('Inscription parser', () => {
     expect(InscriptionParserService.hasInscription(transaction)).toBe(true);
   });
 
+  // note from Johannes: I'm not sure if this is a realistic case.
+  // witness: string[] could be potentially splitted at a super unlucky position?! --> that's why I always concatenate the data (which is inneficient, but save)
+  // if someone is smarter than me, please tell me that I can change this! :-)
+  it('should return true if the witness data is split at an unfortunate place', () => {
+    const transaction = {
+      vin: [
+        // so the split here is directly at OP_PUSHBYTES_3 --- SPLIT --- ord
+        { witness: ['01230063', '036f7264abcdef'] },
+      ]
+    };
+    expect(InscriptionParserService.hasInscription(transaction)).toBe(true);
+  });
+
   it('should return true when multiple inputs are present and only one contains the inscription mark', () => {
     const transaction = {
       vin: [
@@ -48,6 +62,11 @@ describe('Inscription parser', () => {
       ]
     };
     expect(InscriptionParserService.hasInscription(transaction)).toBe(false);
+  });
+
+  it('should also detect an inscription with real test data', () => {
+    const transaction = readTransaction('c1e013bdd1434450c6e1155417c81eb888e20cbde2e0cde37ec238d91cf37045');
+    expect(InscriptionParserService.hasInscription(transaction)).toBe(true);
   });
 
 });

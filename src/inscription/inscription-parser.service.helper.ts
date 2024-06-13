@@ -1,5 +1,5 @@
 import { MAX_DECOMPRESSED_SIZE_MESSAGE, brotliDecode } from "../lib/brotli-decode";
-import { littleEndianBytesToNumber } from "../lib/conversions";
+import { isStringInArrayOfStrings, littleEndianBytesToNumber } from "../lib/conversions";
 import { bytesToHex } from "../lib/conversions";
 
 /**
@@ -119,13 +119,32 @@ export function getNextInscriptionMark(raw: Uint8Array, startPosition: number): 
 }
 
 /**
- * Super quick check, that returns true if an inscriptionMark is found.
- * @param witness - witness data
- * @returns True if an inscriptionMark is found.
+ * Checks if an inscription mark is found within a witness array.
+ * The Inscription mark hex corresponds to OP_FALSE, OP_IF, OP_PUSHBYTES_3, 'o', 'r', 'd'.
+
+ * This code can potentially return false positive matches!
+ *
+ * @param witness - Array of strings, each representing a hexadecimal encoded witness element.
+ * @returns True if an inscription mark is found, false otherwise.
  */
 export function hasInscription(witness: string[]): boolean {
-  const inscriptionMarkHex = '0063036f7264'; // OF_FALSE, OP_IF, OP_PUSHBYTES_3, o, r, d --> nothing more!!
-  return witness.some((entry) => entry.includes(inscriptionMarkHex));
+
+  // OP_FALSE (0x00), OP_IF (0x63), OP_PUSHBYTES_3 (0x03), 'o', 'r', 'd' (0x6f, 0x72, 0x64)
+  // --> nothing more!! no check for OP_ENDIF
+  const inscriptionMarkHex = '0063036f7264';
+
+  // note from Johannes: I'm not sure if this is a realistic case.
+  // witness: string[] could be potentially splitted at a super unlucky position?!
+  // if someone is smarter than me, please tell me that I can change this! :-)
+  // --> so is it save to do this?
+  // return witness.some((entry) => entry.includes(inscriptionMarkHex));
+
+  // this would also work, but would join the string, which could result in a lot of memory consumption!
+  // imagine a 4MB inscription! 💀
+  // const witnessJoined = witness.join('');
+  // return witnessJoined.includes(inscriptionMarkHex);
+
+  return isStringInArrayOfStrings(inscriptionMarkHex, witness);
 }
 
 /**
