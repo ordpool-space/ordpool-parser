@@ -26,10 +26,7 @@ export class RuneParserService {
         return null;
       }
 
-      const partialRpcTransaction = {
-        vout: transaction.vout.map(x => ({ scriptPubKey: { hex: x.scriptpubkey }}))
-      }
-      const artifact = tryDecodeRunestone(partialRpcTransaction);
+      const artifact = tryDecodeRunestone(transaction);
 
       if (!artifact) {
         return null;

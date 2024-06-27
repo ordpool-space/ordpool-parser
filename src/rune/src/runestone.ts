@@ -1,3 +1,4 @@
+import { hexToBytes } from '../../lib/conversions';
 import { Artifact } from './artifact';
 import { Cenotaph } from './cenotaph';
 import { MAGIC_NUMBER, MAX_DIVISIBILITY, OP_RETURN } from './constants';
@@ -17,7 +18,11 @@ import { Instruction } from './utils';
 
 export const MAX_SPACERS = 0b00000111_11111111_11111111_11111111;
 
-export type RunestoneTx = { vout: { scriptPubKey: { hex: string } }[] };
+export type RunestoneTx = {
+  vout: {
+    scriptpubkey: string
+  }[];
+};
 
 type Payload = Buffer | Flaw;
 
@@ -176,7 +181,7 @@ export class Runestone {
   static payload(transaction: RunestoneTx): Option<Payload> {
     // search transaction outputs for payload
     for (const output of transaction.vout) {
-      const instructions = script.decompile(Buffer.from(output.scriptPubKey.hex, 'hex'));
+      const instructions = script.decompile(hexToBytes(output.scriptpubkey));
       if (instructions === null) {
         throw new Error('unable to decompile');
       }

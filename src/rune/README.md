@@ -1,7 +1,9 @@
-# runestone-lib
+# copy of runestone-lib
 
 Everything in this folder is a shameless copy of [runestone-lib](https://github.com/magicoss/runestone-lib), adapted to work with the ordpool-parser.
-It is designed so that it also works in the browser. Therefore, all occurrences of Buffer have been replaced.
+Everything that is not related to the parsing of a transaction is removed.
+It is designed so that it also works in the browser.
+Therefore, all occurrences of Buffer have been replaced.
 
 See the original [MIT LICENSE](LICENSE) from Magic Open Source.
 

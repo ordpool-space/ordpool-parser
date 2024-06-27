@@ -9,20 +9,21 @@ namespace pushdata {
   }
 
   /**
-   * Decodes a buffer and returns information about the opcode, number, and size.
-   * @param buffer - The buffer to decode.
-   * @param offset - The offset within the buffer to start decoding.
+   * Decodes a byte array and returns information about the opcode, number, and size.
+   * @param array - The byte array to decode.
+   * @param offset - The offset within the array to start decoding.
    * @returns An object containing the opcode, number, and size, or null if decoding fails.
    */
   export function decode(
-    buffer: Buffer,
+    array: Uint8Array,
     offset: number
   ): {
     opcode: number;
     number: number;
     size: number;
   } | null {
-    const opcode = buffer.readUInt8(offset);
+    const dataView = new DataView(array.buffer, array.byteOffset, array.byteLength);
+    const opcode = dataView.getUint8(offset);
     let num: number;
     let size: number;
 
@@ -33,22 +34,22 @@ namespace pushdata {
 
       // 8 bit
     } else if (opcode === OPS.OP_PUSHDATA1) {
-      if (offset + 2 > buffer.length) return null;
-      num = buffer.readUInt8(offset + 1);
+      if (offset + 2 > array.length) return null;
+      num = dataView.getUint8(offset + 1);
       size = 2;
 
       // 16 bit
     } else if (opcode === OPS.OP_PUSHDATA2) {
-      if (offset + 3 > buffer.length) return null;
-      num = buffer.readUInt16LE(offset + 1);
+      if (offset + 3 > array.length) return null;
+      num = dataView.getUint16(offset + 1, true); // true for little-endian
       size = 3;
 
       // 32 bit
     } else {
-      if (offset + 5 > buffer.length) return null;
+      if (offset + 5 > array.length) return null;
       if (opcode !== OPS.OP_PUSHDATA4) throw new Error('Unexpected opcode');
 
-      num = buffer.readUInt32LE(offset + 1);
+      num = dataView.getUint32(offset + 1, true); // true for little-endian
       size = 5;
     }
 
@@ -199,26 +200,26 @@ const OPS = {
 export const opcodes = OPS;
 
 export namespace script {
-  export type Instruction = number | Buffer;
+  export type Instruction = number | Uint8Array;
 
-  export function* decompile(buffer: Buffer): Generator<Instruction, boolean> {
+  export function* decompile(array: Uint8Array): Generator<Instruction, boolean> {
     let i = 0;
 
-    while (i < buffer.length) {
-      const opcode = buffer[i];
+    while (i < array.length) {
+      const opcode = array[i];
 
       // data chunk
       if (opcode >= OPS.OP_0 && opcode <= OPS.OP_PUSHDATA4) {
-        const d = pushdata.decode(buffer, i);
+        const d = pushdata.decode(array, i);
 
         // did reading a pushDataInt fail?
         if (d === null) return false;
         i += d.size;
 
         // attempt to read too much data?
-        if (i + d.number > buffer.length) return false;
+        if (i + d.number > array.length) return false;
 
-        const data = buffer.slice(i, i + d.number);
+        const data = array.subarray(i, i + d.number);
         i += d.number;
 
         yield data;
