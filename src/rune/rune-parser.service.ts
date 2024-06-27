@@ -59,7 +59,7 @@ export class RuneParserService {
 
     } catch (ex) {
       // console.error(ex);
-      return null
+      return null;
     }
   }
 

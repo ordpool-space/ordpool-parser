@@ -57,14 +57,4 @@ export namespace Tag {
 
     return Some(optionValue.unwrap());
   }
-
-  export function encode(tag: Tag, values: u128[]): Buffer {
-    return Buffer.concat(
-      values.map((value) => [u128.encodeVarInt(u128(tag)), u128.encodeVarInt(value)]).flat()
-    );
-  }
-
-  export function encodeOptionInt(tag: Tag, value: Option<number | bigint>) {
-    return value.map((value) => Tag.encode(tag, [u128(value)])).unwrapOr(Buffer.alloc(0));
-  }
 }

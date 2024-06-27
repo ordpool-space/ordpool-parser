@@ -9,42 +9,6 @@ namespace pushdata {
   }
 
   /**
-   * Encodes a number into a buffer using a variable-length encoding scheme.
-   * The encoded buffer is written starting at the specified offset.
-   * Returns the size of the encoded buffer.
-   *
-   * @param buffer - The buffer to write the encoded data into.
-   * @param num - The number to encode.
-   * @param offset - The offset at which to start writing the encoded buffer.
-   * @returns The size of the encoded buffer.
-   */
-  export function encode(buffer: Buffer, num: number, offset: number): number {
-    const size = encodingLength(num);
-
-    // ~6 bit
-    if (size === 1) {
-      buffer.writeUInt8(num, offset);
-
-      // 8 bit
-    } else if (size === 2) {
-      buffer.writeUInt8(OPS.OP_PUSHDATA1, offset);
-      buffer.writeUInt8(num, offset + 1);
-
-      // 16 bit
-    } else if (size === 3) {
-      buffer.writeUInt8(OPS.OP_PUSHDATA2, offset);
-      buffer.writeUInt16LE(num, offset + 1);
-
-      // 32 bit
-    } else {
-      buffer.writeUInt8(OPS.OP_PUSHDATA4, offset);
-      buffer.writeUInt32LE(num, offset + 1);
-    }
-
-    return size;
-  }
-
-  /**
    * Decodes a buffer and returns information about the opcode, number, and size.
    * @param buffer - The buffer to decode.
    * @param offset - The offset within the buffer to start decoding.
@@ -234,45 +198,8 @@ const OPS = {
 
 export const opcodes = OPS;
 
-const OP_INT_BASE = OPS.OP_RESERVED; // OP_1 - 1
-
-function singleChunkIsBuffer(buf: number | Buffer): buf is Buffer {
-  return Buffer.isBuffer(buf);
-}
 export namespace script {
   export type Instruction = number | Buffer;
-
-  export function compile(chunks: Array<number | Buffer>): Buffer {
-    const bufferSize = chunks.reduce((accum: number, chunk) => {
-      // data chunk
-      if (singleChunkIsBuffer(chunk)) {
-        return accum + pushdata.encodingLength(chunk.length) + chunk.length;
-      }
-
-      // opcode
-      return accum + 1;
-    }, 0.0);
-
-    const buffer = Buffer.allocUnsafe(bufferSize);
-    let offset = 0;
-
-    chunks.forEach((chunk) => {
-      // data chunk
-      if (singleChunkIsBuffer(chunk)) {
-        offset += pushdata.encode(buffer, chunk.length, offset);
-        chunk.copy(buffer, offset);
-        offset += chunk.length;
-
-        // opcode
-      } else {
-        buffer.writeUInt8(chunk, offset);
-        offset += 1;
-      }
-    });
-
-    if (offset !== buffer.length) throw new Error('Could not decode chunks');
-    return buffer;
-  }
 
   export function* decompile(buffer: Buffer): Generator<Instruction, boolean> {
     let i = 0;

@@ -3,6 +3,27 @@ import { Terms } from './terms';
 import { Rune } from './rune';
 import { u128, u32, u8 } from './integer';
 
+type RuneEtchingBase = {
+  divisibility?: number;
+  premine?: bigint;
+  symbol?: string;
+  terms?: {
+    cap?: bigint;
+    amount?: bigint;
+    offset?: {
+      start?: bigint;
+      end?: bigint;
+    };
+    height?: {
+      start?: bigint;
+      end?: bigint;
+    };
+  };
+  turbo?: boolean;
+};
+
+export type RuneEtchingSpec = RuneEtchingBase & { runeName?: string };
+
 export class Etching {
   readonly symbol: Option<string>;
 

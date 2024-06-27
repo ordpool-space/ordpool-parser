@@ -1,10 +1,7 @@
+import { RuneEtchingSpec } from './src/etching';
 import { Flaw as FlawEnum } from './src/flaw';
-import { RuneEtchingSpec } from './src/indexer';
 import { Runestone, RunestoneTx } from './src/runestone';
 import { SpacedRune } from './src/spacedrune';
-
-export { Network } from './src/network';
-
 
 export type RunestoneSpec = {
   mint?: {

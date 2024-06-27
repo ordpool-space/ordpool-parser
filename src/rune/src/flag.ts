@@ -17,8 +17,4 @@ export namespace Flag {
     const set = (flags & mask) !== 0n;
     return { set, flags: set ? u128(flags - mask) : flags };
   }
-
-  export function set(flags: u128, flag: Flag): u128 {
-    return u128(flags | Flag.mask(flag));
-  }
 }

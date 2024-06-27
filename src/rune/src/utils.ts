@@ -1,9 +1,6 @@
 import { script } from './script';
 
 export namespace Instruction {
-  export function isNumber(instruction: script.Instruction): instruction is number {
-    return typeof instruction === 'number';
-  }
 
   export function isBuffer(instruction: script.Instruction): instruction is Buffer {
     return typeof instruction !== 'number';

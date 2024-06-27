@@ -1,19 +1,19 @@
-import { MAGIC_NUMBER, MAX_DIVISIBILITY, MAX_SCRIPT_ELEMENT_SIZE, OP_RETURN } from './constants';
+import { Artifact } from './artifact';
+import { Cenotaph } from './cenotaph';
+import { MAGIC_NUMBER, MAX_DIVISIBILITY, OP_RETURN } from './constants';
 import { Edict } from './edict';
 import { Etching } from './etching';
-import { SeekBuffer } from './seekbuffer';
-import { Tag } from './tag';
-import { u128, u32, u64, u8 } from './integer';
-import { Option, Some, None } from './monads';
-import { Rune } from './rune';
 import { Flag } from './flag';
-import { Instruction } from './utils';
+import { Flaw } from './flaw';
+import { u128, u32, u8 } from './integer';
+import { Message } from './message';
+import { None, Option, Some } from './monads';
+import { Rune } from './rune';
 import { RuneId } from './runeid';
 import { script } from './script';
-import { Message } from './message';
-import { Artifact } from './artifact';
-import { Flaw } from './flaw';
-import { Cenotaph } from './cenotaph';
+import { SeekBuffer } from './seekbuffer';
+import { Tag } from './tag';
+import { Instruction } from './utils';
 
 export const MAX_SPACERS = 0b00000111_11111111_11111111_11111111;
 
@@ -171,91 +171,6 @@ export class Runestone {
     }
 
     return Some(new Runestone(mint, pointer, edicts, etching));
-  }
-
-  encipher(): Buffer {
-    const payloads: Buffer[] = [];
-
-    if (this.etching.isSome()) {
-      const etching = this.etching.unwrap();
-      let flags = u128(0);
-      flags = Flag.set(flags, Flag.ETCHING);
-
-      if (etching.terms.isSome()) {
-        flags = Flag.set(flags, Flag.TERMS);
-      }
-
-      if (etching.turbo) {
-        flags = Flag.set(flags, Flag.TURBO);
-      }
-
-      payloads.push(Tag.encode(Tag.FLAGS, [flags]));
-
-      payloads.push(
-        Tag.encodeOptionInt(
-          Tag.RUNE,
-          etching.rune.map((rune) => rune.value)
-        )
-      );
-      payloads.push(Tag.encodeOptionInt(Tag.DIVISIBILITY, etching.divisibility.map(u128)));
-      payloads.push(Tag.encodeOptionInt(Tag.SPACERS, etching.spacers.map(u128)));
-      payloads.push(
-        Tag.encodeOptionInt(
-          Tag.SYMBOL,
-          etching.symbol.map((symbol) => u128(symbol.codePointAt(0)!))
-        )
-      );
-      payloads.push(Tag.encodeOptionInt(Tag.PREMINE, etching.premine));
-
-      if (etching.terms.isSome()) {
-        const terms = etching.terms.unwrap();
-
-        payloads.push(Tag.encodeOptionInt(Tag.AMOUNT, terms.amount));
-        payloads.push(Tag.encodeOptionInt(Tag.CAP, terms.cap));
-        payloads.push(Tag.encodeOptionInt(Tag.HEIGHT_START, terms.height[0]));
-        payloads.push(Tag.encodeOptionInt(Tag.HEIGHT_END, terms.height[1]));
-        payloads.push(Tag.encodeOptionInt(Tag.OFFSET_START, terms.offset[0]));
-        payloads.push(Tag.encodeOptionInt(Tag.OFFSET_END, terms.offset[1]));
-      }
-    }
-
-    if (this.mint.isSome()) {
-      const claim = this.mint.unwrap();
-      payloads.push(Tag.encode(Tag.MINT, [claim.block, claim.tx].map(u128)));
-    }
-
-    payloads.push(Tag.encodeOptionInt(Tag.POINTER, this.pointer.map(u128)));
-
-    if (this.edicts.length) {
-      payloads.push(u128.encodeVarInt(u128(Tag.BODY)));
-
-      const edicts = [...this.edicts].sort((x, y) =>
-        Number(x.id.block - y.id.block || x.id.tx - y.id.tx)
-      );
-
-      let previous = new RuneId(u64(0), u32(0));
-      for (const edict of edicts) {
-        const [block, tx] = previous.delta(edict.id).unwrap();
-
-        payloads.push(u128.encodeVarInt(block));
-        payloads.push(u128.encodeVarInt(tx));
-        payloads.push(u128.encodeVarInt(edict.amount));
-        payloads.push(u128.encodeVarInt(u128(edict.output)));
-        previous = edict.id;
-      }
-    }
-
-    const stack: (Buffer | number)[] = [];
-    stack.push(OP_RETURN);
-    stack.push(MAGIC_NUMBER);
-
-    const payload = Buffer.concat(payloads);
-    let i = 0;
-    for (let i = 0; i < payload.length; i += MAX_SCRIPT_ELEMENT_SIZE) {
-      stack.push(payload.subarray(i, i + MAX_SCRIPT_ELEMENT_SIZE));
-    }
-
-    return script.compile(stack);
   }
 
   static payload(transaction: RunestoneTx): Option<Payload> {
