@@ -34,31 +34,32 @@ export class DigitalArtifactsParserService {
   }): DigitalArtifact[] {
 
     const artifacts: DigitalArtifact[] = [];
-    const parsedSrc20 = Src20ParserService.parse(transaction);
-    const parsedRune = RuneParserService.parse(transaction);
-    const parsedAtomical = AtomicalParserService.parse(transaction);
-    const parsedInscriptions = InscriptionParserService.parse(transaction);
     const parsedCat = Cat21ParserService.parse(transaction);
+    const parsedRune = RuneParserService.parse(transaction);
+    const parsedInscriptions = InscriptionParserService.parse(transaction);
+    const parsedAtomical = AtomicalParserService.parse(transaction);
+    const parsedSrc20 = Src20ParserService.parse(transaction);
 
-    if (parsedSrc20) {
-      artifacts.push(parsedSrc20);
+
+    // cats are always first! 😺
+    if (parsedCat) {
+      artifacts.unshift(parsedCat);
     }
 
     if (parsedRune) {
       artifacts.push(parsedRune);
     }
 
-    if (parsedAtomical) {
-      artifacts.push(parsedAtomical);
-    }
-
     if (parsedInscriptions.length) {
       artifacts.push(...parsedInscriptions);
     }
 
-    // cats are always first! 😺
-    if (parsedCat) {
-      artifacts.unshift(parsedCat);
+    if (parsedAtomical) {
+      artifacts.push(parsedAtomical);
+    }
+
+    if (parsedSrc20) {
+      artifacts.push(parsedSrc20);
     }
 
     return artifacts;
