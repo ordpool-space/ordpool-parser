@@ -1,5 +1,6 @@
 import { Cat21ParserService } from './cat21/cat21-parser.service';
 import { InscriptionParserService } from './inscription/inscription-parser.service';
+import { RuneParserService } from './rune/rune-parser.service';
 import { Src20ParserService } from './src20/src20-parser.service';
 import { DigitalArtifact } from './types/digital-artifact';
 
@@ -31,15 +32,25 @@ export class DigitalArtifactsParserService {
     }
   }): DigitalArtifact[] {
 
-    const artifacts: DigitalArtifact[] = InscriptionParserService.parse(transaction);
+    const artifacts: DigitalArtifact[] = [];
     const parsedSrc20 = Src20ParserService.parse(transaction);
+    const parsedInscriptions = InscriptionParserService.parse(transaction);
+    const parsedRune = RuneParserService.parse(transaction);
     const parsedCat = Cat21ParserService.parse(transaction);
 
     if (parsedSrc20) {
       artifacts.push(parsedSrc20);
     }
 
-    // cat's are first!
+    if (parsedInscriptions.length) {
+      artifacts.push(...parsedInscriptions);
+    }
+
+    if (parsedRune) {
+      artifacts.push(parsedRune);
+    }
+
+    // cats are first! 😺
     if (parsedCat) {
       artifacts.unshift(parsedCat);
     }

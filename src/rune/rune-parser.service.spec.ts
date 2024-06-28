@@ -206,6 +206,18 @@ describe('Rune parser', () => {
     expect(pointer).toBe(3);
   });
 
+  // https://twitter.com/veryordinally/status/1781987437197050234
+  it('should detect the 1st ever cenotaph',() => {
+
+    const txn = readTransaction('25d919c2f02c00ef26a4d674ac1ecffd92684bce35fc449b7834841fd017a9f9');
+    const runestone = RuneParserService.parse(txn);
+
+    // it has even two issues, but `"flaw": "truncated-field"` indicates that only the first one is reported by ord
+    const cenotaph = runestone?.cenotaph;
+    expect(cenotaph?.flaws?.[0]).toBe('truncated_field');
+    expect(cenotaph?.flaws?.[1]).toBe('unrecognized_even_tag');
+  });
+
   it('should detect a runestone via hasRunestone', () => {
 
     // the legendary Z•Z•Z•Z•Z•FEHU•Z•Z•Z•Z•Z etching
