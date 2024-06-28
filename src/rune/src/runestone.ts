@@ -1,4 +1,4 @@
-import { hexToBytes } from '../../lib/conversions';
+import { concatUint8Arrays, hexToBytes } from '../../lib/conversions';
 import { Artifact } from './artifact';
 import { Cenotaph } from './cenotaph';
 import { MAGIC_NUMBER, MAX_DIVISIBILITY, OP_RETURN } from './constants';
@@ -12,23 +12,19 @@ import { None, Option, Some } from './monads';
 import { Rune } from './rune';
 import { RuneId } from './runeid';
 import { script } from './script';
-import { SeekBuffer } from './seekbuffer';
+import { SeekArray } from './seekarray';
 import { Tag } from './tag';
-import { Instruction } from './utils';
 
 export const MAX_SPACERS = 0b00000111_11111111_11111111_11111111;
 
+// New: Esplora format instead of Bitcoin RPC format
 export type RunestoneTx = {
   vout: {
     scriptpubkey: string
   }[];
 };
 
-type Payload = Buffer | Flaw;
-
-export function isValidPayload(payload: Payload): payload is Buffer {
-  return Buffer.isBuffer(payload);
-}
+type Payload = Uint8Array | Flaw;
 
 export class Runestone {
   readonly type = 'runestone';
@@ -46,7 +42,7 @@ export class Runestone {
       return None;
     }
     const payload = optionPayload.unwrap();
-    if (!isValidPayload(payload)) {
+    if (!(payload instanceof Uint8Array)) {
       return Some(new Cenotaph([payload]));
     }
 
@@ -196,14 +192,14 @@ export class Runestone {
       nextInstructionResult = instructions.next();
       if (
         nextInstructionResult.done ||
-        Instruction.isBuffer(nextInstructionResult.value) ||
+        nextInstructionResult.value instanceof Uint8Array ||
         nextInstructionResult.value !== MAGIC_NUMBER
       ) {
         continue;
       }
 
       // construct the payload by concatinating remaining data pushes
-      let payloads: Buffer[] = [];
+      let payloads: Uint8Array[] = [];
 
       do {
         nextInstructionResult = instructions.next();
@@ -217,23 +213,23 @@ export class Runestone {
         }
 
         const instruction = nextInstructionResult.value;
-        if (Instruction.isBuffer(instruction)) {
+        if (instruction instanceof Uint8Array) {
           payloads.push(instruction);
         } else {
           return Some(Flaw.OPCODE);
         }
       } while (true);
 
-      return Some(Buffer.concat(payloads));
+      return Some(concatUint8Arrays(payloads));
     }
 
     return None;
   }
 
-  static integers(payload: Buffer): Option<u128[]> {
+  static integers(payload: Uint8Array): Option<u128[]> {
     const integers: u128[] = [];
 
-    const seekBuffer = new SeekBuffer(payload);
+    const seekBuffer = new SeekArray(payload);
     while (!seekBuffer.isFinished()) {
       const optionInt = u128.decodeVarInt(seekBuffer);
       if (optionInt.isNone()) {

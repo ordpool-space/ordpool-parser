@@ -1,5 +1,5 @@
 import { None, Option, Some } from '../monads';
-import { SeekBuffer } from '../seekbuffer';
+import { SeekArray } from '../seekarray';
 import { u64 } from './u64';
 import { u32 } from './u32';
 import { u8 } from './u8';
@@ -112,7 +112,7 @@ export namespace u128 {
     return u128(x < y ? 0 : x - y);
   }
 
-  export function decodeVarInt(seekBuffer: SeekBuffer): Option<u128> {
+  export function decodeVarInt(seekBuffer: SeekArray): Option<u128> {
     try {
       return Some(tryDecodeVarInt(seekBuffer));
     } catch (e) {
@@ -120,7 +120,7 @@ export namespace u128 {
     }
   }
 
-  export function tryDecodeVarInt(seekBuffer: SeekBuffer): u128 {
+  export function tryDecodeVarInt(seekBuffer: SeekArray): u128 {
     let result = u128(0);
     for (let i = 0; i <= 18; i++) {
       const byte = seekBuffer.readUInt8();
@@ -169,7 +169,7 @@ export namespace u128 {
 }
 
 export function* getAllU128(buffer: Buffer): Generator<u128> {
-  const seekBuffer = new SeekBuffer(buffer);
+  const seekBuffer = new SeekArray(buffer);
   while (!seekBuffer.isFinished()) {
     const nextValue = u128.tryDecodeVarInt(seekBuffer);
     if (nextValue === undefined) {
