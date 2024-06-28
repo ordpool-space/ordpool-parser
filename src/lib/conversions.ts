@@ -163,3 +163,27 @@ export function isStringInArrayOfStrings(stringToFind: string, arrayOfStrings: s
 
   return false;
 }
+
+/**
+ * Concatenates multiple Uint8Array objects into a single Uint8Array.
+ *
+ * @param arrays - An array of Uint8Array objects to concatenate.
+ * @returns A new Uint8Array containing the concatenated results of the input arrays.
+ */
+export function concatUint8Arrays(arrays: Uint8Array[]): Uint8Array {
+  if (arrays.length === 0) {
+      return new Uint8Array();
+  }
+
+  const totalLength = arrays.reduce((sum, arr) => sum + arr.length, 0);
+  const result = new Uint8Array(totalLength);
+  let offset = 0;
+
+  for (const array of arrays) {
+      result.set(array, offset);
+      offset += array.length;
+  }
+
+  return result;
+}
+

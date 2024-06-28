@@ -1,7 +1,9 @@
 export enum DigitalArtifactType {
   Inscription = 'Inscription',
   Src20 = 'Src20',
-  Cat21 = 'Cat21'
+  Cat21 = 'Cat21',
+  Runestone = 'Runestone',
+  Atomical = 'Atomical'
 }
 
 /**
@@ -14,7 +16,8 @@ export interface DigitalArtifact {
    * - Inscription
    * - SRC-20 (Stamps)
    * - CAT-21
-   * - more to come?!
+   * - Runestone
+   * - Atomical
    */
   type: DigitalArtifactType;
 

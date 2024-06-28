@@ -4,6 +4,7 @@ import {
   bytesToBinaryString,
   bytesToHex,
   bytesToUnicodeString,
+  concatUint8Arrays,
   hexToBytes,
   isStringInArrayOfStrings,
   littleEndianBytesToNumber,
@@ -217,4 +218,21 @@ describe('isStringInArrayOfStrings', () => {
   });
 });
 
+describe('concatUint8Arrays', () => {
+  it('should return an empty Uint8Array when no arrays are provided', () => {
+      expect(concatUint8Arrays([]).length).toBe(0);
+  });
 
+  it('should return the same Uint8Array when only one array is provided', () => {
+      const singleArray = new Uint8Array([1, 2, 3]);
+      expect(concatUint8Arrays([singleArray])).toEqual(singleArray);
+  });
+
+  it('should correctly concatenate multiple Uint8Arrays', () => {
+      const array1 = new Uint8Array([1, 2, 3]);
+      const array2 = new Uint8Array([4, 5, 6]);
+      const array3 = new Uint8Array([7, 8, 9]);
+      const expectedResult = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+      expect(concatUint8Arrays([array1, array2, array3])).toEqual(expectedResult);
+  });
+});

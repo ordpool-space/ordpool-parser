@@ -1,3 +1,5 @@
+import { Cenotaph, RunestoneSpec, isRunestone, tryDecodeRunestone } from '.';
+import { DigitalArtifactType } from '../types/digital-artifact';
 import { ParsedRunestone } from '../types/parsed-runestone';
 
 /**
@@ -9,12 +11,48 @@ export class RuneParserService {
    * Main function that parses a runestone in a transaction.
    * @returns The parsed runestone or null
    */
-  static parse(transaction: any): ParsedRunestone | null {
+  static parse(transaction: {
+    txid: string,
+    vout: {
+      scriptpubkey: string,
+      scriptpubkey_type: string
+    }[];
+  }): ParsedRunestone | null {
 
     try {
 
-      // TODOs
-      return null;
+      // early exit
+      if (!RuneParserService.hasRunestone(transaction)) {
+        return null;
+      }
+
+      const artifact = tryDecodeRunestone(transaction);
+
+      if (!artifact) {
+        return null;
+      }
+
+      if (isRunestone(artifact)) {
+        const runestone: RunestoneSpec = artifact;
+
+        return {
+          type: DigitalArtifactType.Runestone,
+          uniqueId: `${DigitalArtifactType.Runestone}-${transaction.txid}`,
+          transactionId: transaction.txid,
+          runestone,
+          cenotaph: null
+        };
+
+      } else {
+        const cenotaph: Cenotaph = artifact;
+        return {
+          type: DigitalArtifactType.Runestone,
+          uniqueId: `${DigitalArtifactType.Runestone}-${transaction.txid}`,
+          transactionId: transaction.txid,
+          runestone: null,
+          cenotaph
+        };
+      }
 
     } catch (ex) {
       // console.error(ex);
