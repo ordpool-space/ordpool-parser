@@ -112,47 +112,43 @@ export namespace u128 {
     return u128(x < y ? 0 : x - y);
   }
 
-  export function decodeVarInt(seekBuffer: SeekArray): Option<u128> {
+  export function decodeVarInt(seekArray: SeekArray): Option<u128> {
     try {
-      return Some(tryDecodeVarInt(seekBuffer));
+      return Some(tryDecodeVarInt(seekArray));
     } catch (e) {
       return None;
     }
   }
 
-  export function tryDecodeVarInt(seekBuffer: SeekArray): u128 {
-    let result = u128(0);
+  export function tryDecodeVarInt(seekArray: SeekArray): u128 {
+    let result: u128 = u128(0);
     for (let i = 0; i <= 18; i++) {
-      const byte = seekBuffer.readUInt8();
-      if (byte === undefined) {
-        throw new Error('Unterminated');
-      }
+      const byte = seekArray.readUInt8();
+      if (byte === undefined) throw new Error('Unterminated or invalid data');
 
-      const value = u128(byte) & 0b0111_1111n;
+      // Ensure all operations are done in bigint domain.
+      const byteBigint = BigInt(byte);
+      const value = u128(byteBigint & 0x7Fn);  // Ensure the 'value' is treated as u128.
 
-      if (i === 18 && (value & 0b0111_1100n) !== 0n) {
-        throw new Error('Overflow');
-      }
+      if (i === 18 && (value & 0x7Cn) !== 0n) throw new Error('Overflow');
 
-      result = u128(result | (value << u128(7 * i)));
+      // Use bigint addition instead of bitwise OR to combine the results,
+      // and ensure shifting is handled correctly within the bigint domain.
+      result = u128(result + (value << (7n * BigInt(i))));
 
-      if ((byte & 0b1000_0000) === 0) {
-        return result;
-      }
+      if ((byte & 0x80) === 0) return result;
     }
-
-    throw new Error('Overlong');
+    throw new Error('Overlong encoding');
   }
 
-  export function encodeVarInt(value: u128): Buffer {
-    const v: number[] = [];
+  export function encodeVarInt(value: u128): Uint8Array {
+    const bytes = [];
     while (value >> 7n > 0n) {
-      v.push(Number(value & 0xffn) | 0b1000_0000);
-      value = u128(value >> 7n);
+      bytes.push(Number(value & 0x7Fn) | 0x80);
+      value = u128(value >> 7n);  // Explicitly cast the shifted value back to u128
     }
-    v.push(Number(value & 0xffn));
-
-    return Buffer.from(v);
+    bytes.push(Number(value & 0x7Fn));
+    return new Uint8Array(bytes);
   }
 
   export function tryIntoU64(n: u128): Option<u64> {
@@ -168,13 +164,13 @@ export namespace u128 {
   }
 }
 
-export function* getAllU128(buffer: Buffer): Generator<u128> {
-  const seekBuffer = new SeekArray(buffer);
-  while (!seekBuffer.isFinished()) {
-    const nextValue = u128.tryDecodeVarInt(seekBuffer);
-    if (nextValue === undefined) {
+export function* getAllU128(data: Uint8Array): Generator<u128> {
+  const seekArray = new SeekArray(data);
+  while (!seekArray.isFinished()) {
+    const nextValue = u128.decodeVarInt(seekArray);
+    if (nextValue.isNone()) {
       return;
     }
-    yield nextValue;
+    yield nextValue.unwrap();
   }
 }

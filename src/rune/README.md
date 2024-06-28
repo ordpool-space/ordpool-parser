@@ -3,7 +3,7 @@
 Everything in this folder is a shameless copy of [runestone-lib](https://github.com/magicoss/runestone-lib), adapted to work with the ordpool-parser.
 Everything that is not related to the parsing of a transaction is removed.
 It is designed so that it also works in the browser.
-Therefore, all occurrences of Buffer have been replaced.
+Therefore, all occurrences of `Buffer` have been replaced with `Uint8Array`.
 
 See the original [MIT LICENSE](LICENSE) from Magic Open Source.
 

@@ -229,9 +229,9 @@ export class Runestone {
   static integers(payload: Uint8Array): Option<u128[]> {
     const integers: u128[] = [];
 
-    const seekBuffer = new SeekArray(payload);
-    while (!seekBuffer.isFinished()) {
-      const optionInt = u128.decodeVarInt(seekBuffer);
+    const seekArray = new SeekArray(payload);
+    while (!seekArray.isFinished()) {
+      const optionInt = u128.decodeVarInt(seekArray);
       if (optionInt.isNone()) {
         return None;
       }
