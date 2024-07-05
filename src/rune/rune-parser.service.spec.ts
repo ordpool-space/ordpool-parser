@@ -18,6 +18,8 @@ describe('Rune parser', () => {
     const txn = readTransaction('2bb85f4b004be6da54f766c17c1e855187327112c231ef2ff35ebad0ea67c69e');
     const runestone = RuneParserService.parse(txn);
 
+    runestone?.runestone?.etching.
+
     expect(runestone?.type).toBe(DigitalArtifactType.Runestone);
     expect(runestone?.uniqueId).toBe('Runestone-2bb85f4b004be6da54f766c17c1e855187327112c231ef2ff35ebad0ea67c69e');
     expect(runestone?.transactionId).toBe('2bb85f4b004be6da54f766c17c1e855187327112c231ef2ff35ebad0ea67c69e');
