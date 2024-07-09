@@ -30,5 +30,18 @@ describe('SRC20 parser', () => {
     const content = Src20ParserService.parse(txn)?.getContent();
     expect(content).toEqual('{"p":"src-20","op":"deploy","tick":"DODO","lim":"69696969696969696969696969696969", "max":"420420420420420420420420420"}')
   });
+
+  fit('should be able to detect an SRC-20 transaction even if blockstream sends `unknown` as scriptpubkey_type', () => {
+
+    const txn = readTransaction('8403958bb654e732acf49abd11ec0bcfe589c54eef3a8a02dbfffaf50633bbfe-mempool');
+    const content = Src20ParserService.parse(txn)?.getContent();
+    expect(content).toEqual('{"p":"src-20","op":"transfer","tick":"MOBTC","amt":"100"}');
+
+    // they really have sent "scriptpubkey_type": "unknown" (instead of "multisig") here!
+    // solution: treat "unknown" as "multisig" for now...
+    const txn2 = readTransaction('8403958bb654e732acf49abd11ec0bcfe589c54eef3a8a02dbfffaf50633bbfe-blockstream');
+    const content2 = Src20ParserService.parse(txn2)?.getContent();
+    expect(content2).toEqual('{"p":"src-20","op":"transfer","tick":"MOBTC","amt":"100"}');
+  });
 });
 

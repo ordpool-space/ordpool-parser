@@ -10,6 +10,7 @@ const rl = readline.createInterface({
 
 rl.question('Please enter the transaction ID: ', (txId) => {
   const url = `https://mempool.space/api/tx/${txId}`;
+  //const url = `https://blockstream.info/api/tx/${txId}`;
   https.get(url, (res) => {
     const dataChunks = [];
 

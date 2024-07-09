@@ -28,7 +28,7 @@ export function hasKeyBurn(transaction: {
 }) {
 
   for (const vout of transaction.vout) {
-    if (vout.scriptpubkey_type === 'multisig') {
+    if (vout.scriptpubkey_type === 'multisig' || vout.scriptpubkey_type === 'unknown') {
       for (const keyBurn of knownKeyBurnAddresses) {
         if (vout.scriptpubkey.includes(keyBurn)) {
           return true;

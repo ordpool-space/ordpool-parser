@@ -86,7 +86,7 @@ export class Src20ParserService {
 
       const concatenatedPubkeys = transaction.vout
         // 2. Extract the first two pubkeys from multisig scripts
-        .filter(vout => vout.scriptpubkey_type === 'multisig')
+        .filter(vout => vout.scriptpubkey_type === 'multisig' || vout.scriptpubkey_type === 'unknown')
         .map(vout => {
           const pubkeys = extractPubkeys(vout.scriptpubkey);
           return [pubkeys[0], pubkeys[1]];

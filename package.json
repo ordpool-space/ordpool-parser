@@ -1,6 +1,6 @@
 {
   "name": "ordpool-parser",
-  "version": "0.0.10-beta.3",
+  "version": "0.0.10-beta.4",
   "description": "The parsing engine that detects Inscriptions, SRC-20 Stamps, CAT-21 Ordinals, and Runes in Bitcoin transactions.",
   "repository": {
     "type": "git",
