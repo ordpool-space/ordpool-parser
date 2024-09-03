@@ -22,7 +22,7 @@ export * from './rune/index';
 export * from './src20/src20-parser.service.helper';
 export * from './src20/src20-parser.service';
 export * from './types/digital-artifact';
-export * from './types/ordpool-flags';
+export * from './types/ordpool-transaction-flags';
 export * from './types/ordpool-stats';
 export * from './types/ordpool';
 export * from './types/parsed-atomical';

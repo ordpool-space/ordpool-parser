@@ -2,9 +2,9 @@
  * binary flags for transaction classification (only our own ordpool flags)
  *
  * used in ordpool -> frontend/src/app/shared/filters.utils.ts
- * used in sync with ordpool -> backend/src/mempool.interfaces.ts
+ * used in ordpool -> backend/src/mempool.interfaces.ts
  */
-export const OrdpoolFlags = {
+export const OrdpoolTransactionFlags = {
 
   ordpool_atomical:             0b00000001_00000000_00000000_00000000_00000000_00000000_00000000n,
   ordpool_cat21:                0b00000010_00000000_00000000_00000000_00000000_00000000_00000000n,
@@ -42,3 +42,5 @@ export const OrdpoolFlags = {
   ordpool_src20_mint:           0b00000010_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000n,
   ordpool_src20_transfer:       0b00000100_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000n,
 };
+
+export type OrdpoolTransactionFlag = typeof OrdpoolTransactionFlags[keyof typeof OrdpoolTransactionFlags];
