@@ -19,6 +19,7 @@ export * from './lib/sha256-uint8array';
 export * from './rune/index';
 export * from './rune/rune-parser.service';
 export * from './rune/index';
+export * from './ordpool/ordpool-flags';
 export * from './src20/src20-parser.service.helper';
 export * from './src20/src20-parser.service';
 export * from './types/digital-artifact';
