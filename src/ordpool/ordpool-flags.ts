@@ -36,6 +36,9 @@ export function isFlagSetOnTransaction(tx: { flags?: number | null }, flag: Ordp
 
 /**
  * Checks for all ordpool flags on a transaction (which may or may not have the flags property).
+ *
+ * @param tx - The transaction to check.
+ * @returns True if one or more of our ordpool flags are set, false otherwise.
  */
 export function hasDigitalArtifactFlagSetOnTransaction(tx: { flags?: number | null }): boolean {
 
@@ -70,8 +73,6 @@ export function getOrdpoolTransactionFlags(tx: TransactionSimple, flags: bigint)
 
   const debug = false;
 
-  // HACK -- add Ordpool flags
-  // keep this in sync with frontend/src/app/shared/transaction.utils.ts
   if (AtomicalParserService.hasAtomical(tx)) {
     flags |= OrdpoolTransactionFlags.ordpool_atomical;
     if (debug) { console.log(tx.txid, 'flagged as atomical'); }
