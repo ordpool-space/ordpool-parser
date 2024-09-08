@@ -62,11 +62,11 @@ export function hasDigitalArtifactFlagSetOnTransaction(tx: { flags?: number | nu
  * - ordpool: backend/src/api/common.ts
  * - ordpool: frontend/src/app/shared/transaction.utils.ts
  *
- * @param flags - The existing flags to which new flags will be added.
  * @param tx - The transaction to be evaluated for digital artifacts.
+ * @param flags - The existing flags to which new flags will be added.
  * @return The updated flags with the appropriate ordpool transaction flags set.
  */
-export function getOrdpoolTransactionFlags(flags: bigint, tx: TransactionSimple): bigint {
+export function getOrdpoolTransactionFlags(tx: TransactionSimple, flags: bigint): bigint {
 
   const debug = false;
 
