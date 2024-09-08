@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
+
 import { OrdpoolTransactionFlags } from '../types/ordpool-transaction-flags';
-import { isFlagSet } from './ordpool-flags';
+import { isFlagSetOnTransaction } from './ordpool-flags';
 
 
 describe('OrdpoolTransactionFlags conversion tests', () => {
@@ -18,33 +19,32 @@ describe('OrdpoolTransactionFlags conversion tests', () => {
   });
 });
 
-
-
 export const TransactionFlags = {
   rbf: 0b00000001n
 }
 
-describe('isFlagSet', () => {
+describe('isFlagSetOnTransaction', () => {
 
   it('should return true if ordpool_inscription flag is set', () => {
     const exampleTransaction = { flags: Number(0b00000100_00000000_00000000_00000000_00000000_00000000_00000000n) };
-    expect(isFlagSet(exampleTransaction, OrdpoolTransactionFlags.ordpool_inscription)).toBe(true);
+    expect(isFlagSetOnTransaction(exampleTransaction, OrdpoolTransactionFlags.ordpool_inscription)).toBe(true);
   });
 
   it('should return false if ordpool_inscription flag is not set', () => {
     const exampleTransaction = { flags: Number(0b00000000_00000000_00000000_00000000_00000000_00000000_00000000n) };
-    expect(isFlagSet(exampleTransaction, OrdpoolTransactionFlags.ordpool_inscription)).toBe(false);
+    expect(isFlagSetOnTransaction(exampleTransaction, OrdpoolTransactionFlags.ordpool_inscription)).toBe(false);
   });
 
   it('should return true if multiple flags including ordpool_inscription are set', () => {
     const exampleTransaction = { flags:  Number(0b00000100_00000000_00000000_00000000_00000000_00000000_00000001n) };
-    expect(isFlagSet(exampleTransaction, OrdpoolTransactionFlags.ordpool_inscription)).toBe(true);
-    expect(isFlagSet(exampleTransaction, TransactionFlags.rbf)).toBe(true);
+    expect(isFlagSetOnTransaction(exampleTransaction, OrdpoolTransactionFlags.ordpool_inscription)).toBe(true);
+    expect(isFlagSetOnTransaction(exampleTransaction, TransactionFlags.rbf)).toBe(true);
   });
 
   it('should return false if other flags are set but not ordpool_inscription', () => {
     const exampleTransaction = { flags:  Number(0b00000000_00000000_00000000_00000000_00000000_00000000_00000001n) };
-    expect(isFlagSet(exampleTransaction, OrdpoolTransactionFlags.ordpool_inscription)).toBe(false);
-    expect(isFlagSet(exampleTransaction, TransactionFlags.rbf)).toBe(true);
+    expect(isFlagSetOnTransaction(exampleTransaction, OrdpoolTransactionFlags.ordpool_inscription)).toBe(false);
+    expect(isFlagSetOnTransaction(exampleTransaction, TransactionFlags.rbf)).toBe(true);
   });
 });
+

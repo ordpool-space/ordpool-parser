@@ -1,4 +1,4 @@
-import { IEsploraApi } from './types/ordpool'
+import { IEsploraApi } from './types/mempool'
 
 describe('DigitalArtifacts Parser', () => {
 

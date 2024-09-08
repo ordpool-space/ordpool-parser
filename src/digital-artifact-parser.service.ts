@@ -4,6 +4,7 @@ import { InscriptionParserService } from './inscription/inscription-parser.servi
 import { RuneParserService } from './rune/rune-parser.service';
 import { Src20ParserService } from './src20/src20-parser.service';
 import { DigitalArtifact } from './types/digital-artifact';
+import { TransactionSimple } from './types/transaction-simple';
 
 /**
  * Unified service to parse all supported digital artifacts.
@@ -16,22 +17,7 @@ export class DigitalArtifactsParserService {
    * @param transaction - The transaction to parse.
    * @returns The parsed digital artifacts or an empty array
    */
-  static parse(transaction: {
-    txid: string,
-    locktime: number,
-    weight: number, // NEW: to calculate the fee rate
-    fee: number,    // NEW: to calculate the fee rate
-    vin: {
-      txid: string,
-      witness?: string[] }[],
-    vout: {
-      scriptpubkey: string,
-      scriptpubkey_type: string
-    }[],
-    status: {
-      block_hash?: string, // undefined, if unconfirmed txn!
-    }
-  }): DigitalArtifact[] {
+  static parse(transaction: TransactionSimple): DigitalArtifact[] {
 
     const artifacts: DigitalArtifact[] = [];
     const parsedCat = Cat21ParserService.parse(transaction);
