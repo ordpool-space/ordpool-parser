@@ -56,6 +56,8 @@ export function hasDigitalArtifactFlagSetOnTransaction(tx: { flags?: number | nu
 
 /**
  * Computes and returns the transaction flags for the given transaction.
+ * This function only does a quick check for the general protocol and tries to early exit.
+ * It does not analyse the artifacts in detail. (good enough for the mempool overview page)
  *
  * This function checks if specific digital artifacts (e.g., Atomical, CAT-21, Inscriptions, Rune, SRC-20)
  * are present in the transaction and sets the corresponding flag(s) in the `flags` variable.
@@ -71,31 +73,24 @@ export function hasDigitalArtifactFlagSetOnTransaction(tx: { flags?: number | nu
  */
 export function getOrdpoolTransactionFlags(tx: TransactionSimple, flags: bigint): bigint {
 
-  const debug = false;
-
   if (AtomicalParserService.hasAtomical(tx)) {
     flags |= OrdpoolTransactionFlags.ordpool_atomical;
-    if (debug) { console.log(tx.txid, 'flagged as atomical'); }
   }
 
   if (Cat21ParserService.hasCat21(tx)) {
     flags |= OrdpoolTransactionFlags.ordpool_cat21;
-    if (debug) { console.log(tx.txid, 'flagged as CAT-21'); }
   }
 
   if (InscriptionParserService.hasInscription(tx)) {
     flags |= OrdpoolTransactionFlags.ordpool_inscription;
-    if (debug) { console.log(tx.txid, 'flagged as inscription'); }
   }
 
   if (RuneParserService.hasRunestone(tx)) {
     flags |= OrdpoolTransactionFlags.ordpool_rune;
-    if (debug) { console.log(tx.txid, 'flagged as runestone'); }
   }
 
   if (Src20ParserService.hasSrc20(tx)) {
     flags |= OrdpoolTransactionFlags.ordpool_src20;
-    if (debug) { console.log(tx.txid, 'flagged as SRC-20'); }
   }
 
   // Test to make sure that large numbers don't cause issues when sent to frontend

@@ -5,7 +5,7 @@ export * from './cat21/cat21-parser.service';
 export * from './cat21/mooncat-parser.colors';
 export * from './cat21/mooncat-parser.helper';
 export * from './cat21/mooncat-parser';
-export * from './digital-artifact-parser.service';
+export * from './digital-artifacts-parser.service';
 export * from './inscription/decode-data-uri';
 export * from './inscription/inscription-parser.service.helper';
 export * from './inscription/inscription-parser.service';
