@@ -257,13 +257,27 @@ export class InscriptionParserService {
         },
 
         getMetadata: (): string | undefined => {
-          const metadataRaw = getKnownFieldValue(fields, knownFields.metadata);
+          const metadataChunks = getKnownFieldValues(fields, knownFields.metadata);
 
-          if (!metadataRaw) {
+          if (metadataChunks.length === 0) {
             return undefined;
           }
 
-          return CBOR.decode(metadataRaw);
+          if (metadataChunks.length === 1) {
+            return CBOR.decode(metadataChunks[0]);
+          }
+
+          // Concatenate all metadata chunks into one Uint8Array
+          const totalLength = metadataChunks.reduce((sum, chunk) => sum + chunk.length, 0);
+          const concatenatedMetadata = new Uint8Array(totalLength);
+
+          let offset = 0;
+          for (const chunk of metadataChunks) {
+            concatenatedMetadata.set(chunk, offset);
+            offset += chunk.length;
+          }
+
+          return CBOR.decode(concatenatedMetadata);
         },
 
         getMetaprotocol: (): string | undefined => {
