@@ -1,6 +1,6 @@
 import { AtomicalParserService } from './atomical/atomical-parser.service';
 import { Cat21ParserService } from './cat21/cat21-parser.service';
-import { isFlagSetOnTransaction, parseJsonContent } from './digital-artifact-analyser.service.helper';
+import { isFlagSetOnTransaction, parseJsonObject } from './digital-artifact-analyser.service.helper';
 import { DigitalArtifactsParserService } from './digital-artifacts-parser.service';
 import { InscriptionParserService } from './inscription/inscription-parser.service';
 import { RuneParserService } from './rune/rune-parser.service';
@@ -142,7 +142,7 @@ export class DigitalArtifactAnalyserService {
           inscription.contentType.startsWith('application/json')
         ) {
 
-          const parsedContent = parseJsonContent(inscription.getContent());
+          const parsedContent = parseJsonObject(inscription.getContent());
           if (parsedContent && parsedContent.p === 'brc-20') {
 
             flags |= OrdpoolTransactionFlags.ordpool_brc20;
@@ -190,7 +190,7 @@ export class DigitalArtifactAnalyserService {
         flags |= OrdpoolTransactionFlags.ordpool_src20;
 
         // Check for valid JSON content
-        const parsedSrcContent = parseJsonContent(src20.getContent());
+        const parsedSrcContent = parseJsonObject(src20.getContent());
         if (parsedSrcContent && parsedSrcContent.p === 'src-20') {
           // Check for SRC-20 operations
           if (parsedSrcContent.op === 'deploy') {

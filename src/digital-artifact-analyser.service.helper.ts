@@ -28,16 +28,30 @@ export function isFlagSetOnTransaction(tx: { flags?: number | null }, flag: Ordp
 }
 
 /**
- * Parses the content and checks if it's valid JSON.
- * Returns the parsed object or null if invalid.
+ * Parses the content and returns the parsed object or null if invalid.
  *
- * @param content - The content to parse.
- * @returns Parsed JSON object or null.
+ * Efficiently checks if a string is valid JSON object first, to avoid exceptions.
+ *
+ * @param content - The content to validate and parse.
+ * @returns The parsed JSON object if valid, or null if invalid.
  */
-export function parseJsonContent(content: string): any | null {
-  try {
-    return JSON.parse(content);
-  } catch {
+export function parseJsonObject(content: string): any | null {
+
+  if (typeof content !== 'string' || !content) {
     return null;
   }
+
+  content = content.trim();
+
+  // Quick check to ensure the content is likely a JSON object (starts with '{' and ends with '}')
+  if (content.startsWith('{') && content.endsWith('}')) {
+
+    try {
+      return JSON.parse(content);
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
 }
