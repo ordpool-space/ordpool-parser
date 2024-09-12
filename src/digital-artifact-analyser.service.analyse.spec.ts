@@ -122,7 +122,7 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
     const flags = DigitalArtifactAnalyserService.analyse(cenotaphArtifact);
     expect(flags).toBe(
       OrdpoolTransactionFlags.ordpool_rune |
-      OrdpoolTransactionFlags.ordpool_rune_mint
+      OrdpoolTransactionFlags.ordpool_rune_cenotaph
     );
   });
 
@@ -136,7 +136,7 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
     const flags = DigitalArtifactAnalyserService.analyse(cenotaphArtifact);
     expect(flags).toBe(
       OrdpoolTransactionFlags.ordpool_rune |
-      OrdpoolTransactionFlags.ordpool_rune_etch
+      OrdpoolTransactionFlags.ordpool_rune_cenotaph
     );
   });
 

@@ -227,4 +227,18 @@ describe('Rune parser', () => {
     const txn2 = readTransaction('5ba7f995341b9eb70c0cec4f893912f1d853d25d43ade4d3d7739d43bda85a87');
     expect(RuneParserService.hasRunestone(txn2)).toBe(false);
   });
+
+  /*
+   * I found this transaction in block 840000, this rune was never successfully etched
+   * Possible explanation: If a valid commitment is not present, the etching is ignored.
+   *
+   * https://ordinals.com/tx/d60988aec4c37d3a142e263c1f9020adcfd08890f5a0cdd2d694580a4d568af8
+   */
+  it('should decode a runestone etching without valid commitment',() => {
+
+    const txn = readTransaction('d60988aec4c37d3a142e263c1f9020adcfd08890f5a0cdd2d694580a4d568af8');
+    const runestone = RuneParserService.parse(txn);
+
+    // TODO make sense of this
+  });
 });

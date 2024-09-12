@@ -45,9 +45,7 @@ import { TransactionSimple } from './types/transaction-simple';
  * -> if the asset is a Runestone and if the `runestone`(type RunestoneSpec) property is set, it's a valid Runestone
  *    -> if it's a valid Runestone AND the `etching` is set, it should return ordpool_rune_etch
  *    -> if it's a valid Runestone AND the `mint` is set, it should return ordpool_rune_etch
- * -> if the asset is a Runestone and if the `cenotaph`(type Cenotaph) property is set, it's an invalid Runestone (also called Cenotaph)
- *   -> if it's a Cenotaph AND the `etching` is set, it should return ordpool_rune_mint
- *   -> if it's a Cenotaph AND the `mint` is set, it should return ordpool_rune_etch
+ * -> if the asset is a Runestone and if the `cenotaph`(type Cenotaph) property is set, it's an invalid Runestone (also called Cenotaph) and should return ordpool_rune_cenotaph, `etching` or `mint` are not counted
  *
  *
  * if the asset is a SRC-20
@@ -65,7 +63,6 @@ import { TransactionSimple } from './types/transaction-simple';
  * - ordpool_inscription_burn (requires tracking of inscriptions)
  * - ordpool_rune_transfer (requires tracking of runes)
  * - ordpool_rune_burn (requires tracking of runes) - we can only recognize burning via Cenotaphs, but this number would be misleading
- * - test_large_numbers (just for tests)
  */
 export class DigitalArtifactAnalyserService {
 
@@ -78,6 +75,12 @@ export class DigitalArtifactAnalyserService {
    *
    * Used by the backend in the Blocks class:
    * - ordpool: backend/src/api/blocks.ts
+   *
+   * Compatible with Blocks.$updateBlocks() --> Blocks.$getBlockExtended
+   * (this one calls the method with a list of transactions)
+   *
+   * NOT Compatible with Blocks.$indexBlock --> Blocks.$getBlockExtended
+   * (this one calls the method only with a list of one transaction, which is the coinbase txn)
    *
    * @param transactions - The array of transactions to analyze.
    * @returns The OrdpoolStats object with counted amounts for each artifact type.
@@ -175,13 +178,9 @@ export class DigitalArtifactAnalyserService {
         }
 
         // Invalid Runestone (Cenotaph)
+        // runestone.cenotaph.etching and runestone.cenotaph.mint are not counted!
         if (runestone.cenotaph) {
-          if (runestone.cenotaph.etching) {
-            flags |= OrdpoolTransactionFlags.ordpool_rune_mint;
-          }
-          if (runestone.cenotaph.mint) {
-            flags |= OrdpoolTransactionFlags.ordpool_rune_etch;
-          }
+          flags |= OrdpoolTransactionFlags.ordpool_rune_cenotaph;
         }
         break;
 
@@ -234,8 +233,7 @@ export class DigitalArtifactAnalyserService {
       isFlagSetOnTransaction(tx, OrdpoolTransactionFlags.ordpool_cat21) ||
       isFlagSetOnTransaction(tx, OrdpoolTransactionFlags.ordpool_inscription) ||
       isFlagSetOnTransaction(tx, OrdpoolTransactionFlags.ordpool_rune) ||
-      isFlagSetOnTransaction(tx, OrdpoolTransactionFlags.ordpool_src20)
-      // || isFlagSetOnTransaction(tx, OrdpoolFlags.test_large_numbers);
+      isFlagSetOnTransaction(tx, OrdpoolTransactionFlags.ordpool_src20);
   }
 
 
@@ -278,10 +276,6 @@ export class DigitalArtifactAnalyserService {
     if (Src20ParserService.hasSrc20(tx)) {
       flags |= OrdpoolTransactionFlags.ordpool_src20;
     }
-
-    // Test to make sure that large numbers don't cause issues when sent to frontend
-    // --> seems to work fine so far! :-)
-    // flags |= TransactionFlags.test_large_numbers;
 
     return flags;
   }

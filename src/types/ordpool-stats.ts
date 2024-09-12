@@ -19,6 +19,7 @@ export interface OrdpoolStats {
     rune: number | null;
     runeEtch: number | null;
     runeMint: number | null;
+    runeCenotaph: number | null;
     runeTransfer: number | null;
     runeBurn: number | null;
 
@@ -56,6 +57,7 @@ export function getEmptyStats(): OrdpoolStats {
       rune: null,
       runeEtch: null,
       runeMint: null,
+      runeCenotaph: null,
       runeTransfer: null,
       runeBurn: null,
 
@@ -95,6 +97,7 @@ export function getArtifactTypeMap() {
     [OrdpoolTransactionFlags.ordpool_rune,                  'rune'],
     [OrdpoolTransactionFlags.ordpool_rune_etch,             'runeEtch'],
     [OrdpoolTransactionFlags.ordpool_rune_mint,             'runeMint'],
+    [OrdpoolTransactionFlags.ordpool_rune_cenotaph,         'runeCenotaph'],
     [OrdpoolTransactionFlags.ordpool_rune_transfer,         'runeTransfer'],
     [OrdpoolTransactionFlags.ordpool_rune_burn,             'runeBurn'],
 
