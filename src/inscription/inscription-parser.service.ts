@@ -199,7 +199,7 @@ export class InscriptionParserService {
       // an inscriptions without a contentType, probably a delegate
       if (!contentTypeRaw) {
 
-        contentType = 'undefined';
+        contentType = 'undefined'; // hint: I might change this in the future!
 
       } else {
 
