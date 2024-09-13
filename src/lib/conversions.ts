@@ -133,6 +133,14 @@ export function bigEndianBytesToNumber(byteArray: Uint8Array): number {
 /**
  * Checks if a specified string is contained within an array of strings, considering potential splits between array elements.
  *
+ * This code is supposed to be effective, when i comes to large witness scripts to avoid a lot of memory consumption!
+ * imagine a 4MB inscription! 💀
+ *
+ *   const witnessJoined = witness.join(''); // 💀
+ *   return witnessJoined.includes(inscriptionMarkHex);
+ *
+ * Note: I never tested the performance, so I just HOPE that this code works more efficiently than join + include!
+ *
  * @param stringToFind - The string to search for within the array.
  * @param arrayOfStrings - The array of strings to be searched.
  * @returns Returns true if the string is found within any individual element or across the boundary of consecutive elements.
