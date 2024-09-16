@@ -3,6 +3,7 @@ import { DigitalArtifactType } from '../types/digital-artifact';
 import { IEsploraApi } from '../types/mempool';
 import { ParsedRunestone } from '../types/parsed-runestone';
 import {
+  commitmentHasAtLeast6Confirmations,
   isReservedRuneName,
   isRuneNameUnlocked,
   isValidRuneName,
@@ -96,7 +97,7 @@ export class RuneParserService {
    * 3. The rune name is already unlocked at the given block height
    * 4. The transaction has a commitment
    * 5. The input being spent was a Taproot output
-   * 6. The commitment is older than 6 blocks (COMMIT_CONFIRMATIONS)
+   * 6. The commitment has 6 confirmations (COMMIT_CONFIRMATIONS)
    *
    * @param transaction - The transaction to validate
    * @param vinTransactions - The transactions of the inputs
@@ -129,7 +130,7 @@ export class RuneParserService {
       return RuneFlaw.RESERVED_RUNE_NAME;
     }
 
-    const txnBlockHeight = transaction.status.block_height || 0;
+    const txnBlockHeight = transaction.status.block_height;
 
     // 3. Check if the rune name is unlocked at the current block height
     if (txnBlockHeight && !isRuneNameUnlocked(cleanedRuneName, txnBlockHeight, network)) {
@@ -150,12 +151,10 @@ export class RuneParserService {
       return RuneFlaw.INPUT_NOT_TAPROOT;
     }
 
-    // 6. Check if the commitment is older than 6 blocks
+    // 6. Check if the commitment has 6 confirmations
     const commitmentTransaction = vinTransactions.find(x => x.txid === commitmentVin.txid);
-    const commitmentBlockHeight = commitmentTransaction?.status?.block_height || 0;
-    const hasAtLeast6Confirmations = (txnBlockHeight - commitmentBlockHeight) >= 6;
-
-    if (txnBlockHeight && commitmentBlockHeight && !hasAtLeast6Confirmations) {
+    const commitmentBlockHeight = commitmentTransaction?.status?.block_height;
+    if (!commitmentHasAtLeast6Confirmations(txnBlockHeight, commitmentBlockHeight)) {
       return RuneFlaw.COMMITMENT_TOO_RECENT;
     }
 

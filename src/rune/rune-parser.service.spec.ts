@@ -297,6 +297,23 @@ describe('Rune parser', () => {
   });
 
   /*
+   * This rune was never etched because the name was already taken
+   *
+   * successful etch of RUNES•TO•THE•MOON here: https://ordinals.com/tx/854341c9fdec47dcada9b6abd7f447a81eb9e9c29f2d373d5203e6d04b3d53b4
+   * unsuccessful etch of RUNESTOTHEMOON here: https://ordinals.com/tx/1d4a587afd527a6e1bb4b1ef8015830ca6cee312313b5e415184a31626bec752
+   */
+  it('should validate the RUNESTOTHEMOON runestone etching that was never accepted by ord', () => {
+
+    const txn = readTransaction('1d4a587afd527a6e1bb4b1ef8015830ca6cee312313b5e415184a31626bec752');
+    const runestone = RuneParserService.parse(txn);
+
+    const runeName = runestone?.runestone?.etching?.runeName || '';
+    const result = RuneParserService.validateRune(txn, [], Network.MAINNET, runeName);
+
+    expect(result).toBe(null);
+  });
+
+  /*
    * This rune was never etched because the name is too long
    * This code tests various rules that could prevent a successfull etching
    * https://ordinals.com/tx/d60988aec4c37d3a142e263c1f9020adcfd08890f5a0cdd2d694580a4d568af8

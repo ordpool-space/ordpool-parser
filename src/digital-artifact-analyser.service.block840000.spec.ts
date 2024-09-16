@@ -1,7 +1,14 @@
+import axios from 'axios';
+import { log } from 'console';
+
 import { getTransactionsOfBlock840000 } from '../testdata/transactions-of-block-84000';
 import { DigitalArtifactAnalyserService } from './digital-artifact-analyser.service';
 import { DigitalArtifactsParserService } from './digital-artifacts-parser.service';
+import { RuneParserService } from './rune/rune-parser.service';
+import { removeSpacers } from './rune/rune-parser.service.helper';
+import { Network } from './rune/src/network';
 import { DigitalArtifact, DigitalArtifactType } from './types/digital-artifact';
+import { IEsploraApi } from './types/mempool';
 import { ParsedRunestone } from './types/parsed-runestone';
 
 describe('DigitalArtifacts Parser', () => {
@@ -12,7 +19,7 @@ describe('DigitalArtifacts Parser', () => {
    *
    * see https://ordinals.com/block/840000
    */
-  it('should count all artifacts in a bitcoin block, provided by the mempool backend (esplora API)', () => {
+  it('should count all artifacts in block 840000, provided by the mempool backend (esplora API)', () => {
 
     var transactions = getTransactionsOfBlock840000();
     var ordpoolStats = DigitalArtifactAnalyserService.analyseTransactions(transactions);
@@ -20,7 +27,7 @@ describe('DigitalArtifacts Parser', () => {
     // 878 inscriptions according ordinals.com
     expect(ordpoolStats.amount.inscription).toBe(878);
 
-    // 689 runes according ordinals.com -- these might be invalid commitments??
+    // 689 runes according ordinals.com -- all 66 invalid ronestones are identified in the next test
     expect(ordpoolStats.amount.runeEtch).toBe(755);
 
     // i havent verified all of these numbers, but at least we know that something has changed, if this object differs
@@ -53,7 +60,8 @@ describe('DigitalArtifacts Parser', () => {
     });
   });
 
-  it('should get the list of all runes', () => {
+  // this is an integration test that loads real data
+  xit('should identify all 66 invalid runestones of block 840000', async () => {
 
     var transactions = getTransactionsOfBlock840000();
 
@@ -66,7 +74,6 @@ describe('DigitalArtifacts Parser', () => {
       }
     }
 
-    //#region
     const expectedRunes = [
       'Z•Z•Z•Z•Z•FEHU•Z•Z•Z•Z•Z',
       'DECENTRALIZED',
@@ -758,22 +765,63 @@ describe('DigitalArtifacts Parser', () => {
       'FOUR•TWENTY•SIXTY•NINE',
       'THE•BEST•RUNEBEST',
     ];
-    //#endregion
 
     const runestones = allArtifacts.filter(x => x.type === DigitalArtifactType.Runestone) as ParsedRunestone[];
 
+    const validRunestones: ParsedRunestone[] = [];
+    const invalidRunestones: { reason: string, runestone: ParsedRunestone }[] = [];
 
+    let validRunestoneCounter = 0;
     for (const runestone of runestones) {
 
       if (!runestone?.runestone?.etching) {
         continue;
       }
 
-      if (!expectedRunes.includes(runestone?.runestone?.etching.runeName || '')) {
+      const runeName = runestone?.runestone?.etching.runeName!;
+      const myTxn = transactions.find(x => x.txid === runestone.transactionId)!;
+      const vinTxns: IEsploraApi.Transaction[] = [];
 
-        // TODO: verify invalid commitments before throwing here
-        // throw 'Unexpected Rune!'
+      for (let i = 0; i < myTxn.vin.length; i++) {
+        const vin = myTxn.vin[i];
+
+        // wait to not hit rate limits
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        // console.log('Fetching vin.txid')
+        const response = await axios.get(`https://mempool.space/api/tx/${vin.txid}`);
+        const transaction = response.data as IEsploraApi.Transaction;
+        vinTxns.push(transaction);
       }
+
+      const validationResult = RuneParserService.validateRune(myTxn, vinTxns, Network.MAINNET, runeName);
+
+      if (validationResult) {
+        invalidRunestones.push({ reason: validationResult, runestone });
+        log(`Invalid rune in ${myTxn.txid} – ${runeName} – ${validationResult}`);
+        continue;
+      }
+
+      const nameAlreadyTaken = validRunestones.find(x => removeSpacers(x.runestone?.etching?.runeName || '') === removeSpacers(runeName));
+      if (nameAlreadyTaken) {
+        invalidRunestones.push({ reason: 'NameAlreadyTaken', runestone });
+        log(`Invalid rune in ${myTxn.txid} – ${runeName} – NameAlreadyTaken`);
+        continue;
+      }
+
+      if (expectedRunes[validRunestoneCounter] !== runeName) {
+        log(`Unexpected Rune in ${myTxn.txid} – ${runeName}`);
+      }
+
+      validRunestones.push(runestone);
+      validRunestoneCounter++;
     }
-  })
+
+    log("Amount of invalid runestones: " + invalidRunestones.length);
+
+    // we finally made it! we have the same numbers as org
+    // 755 - 66 == 689 🎉🎉
+    expect(755 - invalidRunestones.length).toBe(689)
+
+  }, 30 * 60 * 1000);
 });

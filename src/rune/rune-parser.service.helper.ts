@@ -119,3 +119,25 @@ export function getUnlockedRuneNameRange(blockHeight: number, network: Network):
     to: minRuneAtBlock.toString()
   };
 }
+
+/**
+ * A commitment [...] present in an input witness tapscript where the output being spent
+ * has at least SIX CONFIRMATIONS.
+ *
+ * See etched MEME•ECONOMICS
+ * https://ordinals.com/tx/35a7bd239cf0809889a9a32aab20464cde07804f786c5d179bc0f336dd872915
+ * where 840,000 - 839,995 == 5
+ */
+export function commitmentHasAtLeast6Confirmations(transactionBlockHeight: number | undefined, commitmentBlockHeight: number | undefined) {
+
+  // transactions haven't confirmed, let's assume everything will be fine when confirmed
+  if (!transactionBlockHeight || !commitmentBlockHeight) {
+    return true;
+  }
+
+  // we also count the own confirmation, so it's a 5 (FIVE) here
+  // jep, that's confusing, but this is how ord handles this :D
+  const hasAtLeast6Confirmations = (transactionBlockHeight - commitmentBlockHeight) >= 5;
+
+  return hasAtLeast6Confirmations;
+}
