@@ -3,7 +3,9 @@ import { InscriptionParserService } from '../inscription/inscription-parser.serv
 import { bytesToHex, isStringInArrayOfStrings } from '../lib/conversions';
 import { DigitalArtifactType } from '../types/digital-artifact';
 import { RuneParserService } from './rune-parser.service';
-import { findCommitment, removeSpacers } from './rune-parser.service.helper';
+import { isReservedRuneName, removeSpacers, RuneFlaw } from './rune-parser.service.helper';
+import { findCommitment } from './rune-parser.service.helper.findCommitment';
+import { Network } from './src/network';
 import { Rune } from './src/rune';
 
 
@@ -235,7 +237,7 @@ describe('Rune parser', () => {
    * I changed the buffer functions (writeBigUInt64LE + subarray) to Uint8Array,
    * so we have to make sure that everything still works as before
    */
-  it('should retrieve a commitment from a rune name', () => {
+  it('should calculate a commitment from a rune name', () => {
 
     const cleanedRuneName = removeSpacers('Z•Z•Z•Z•Z•FEHU•Z•Z•Z•Z•Z');
     const expectedValue = 67090369340599840949n;
@@ -259,7 +261,7 @@ describe('Rune parser', () => {
     const runestone = RuneParserService.parse(txn);
 
     const runeName = runestone?.runestone?.etching?.runeName || ''; // Z•Z•Z•Z•Z•FEHU•Z•Z•Z•Z•Z
-    const witness = txn.vin[0].witness;
+    const witness = txn.vin[0].witness || [];
 
     const cleanedRuneName = removeSpacers(runeName); // ZZZZZFEHUZZZZZ
     const commitment = Rune.fromString(cleanedRuneName).commitment;
@@ -280,37 +282,69 @@ describe('Rune parser', () => {
   });
 
   /*
-   * I found this transaction in block 840000, but this rune was never successfully etched??
-   *
+   * This rune was never etched because the name is too long
    * https://ordinals.com/tx/d60988aec4c37d3a142e263c1f9020adcfd08890f5a0cdd2d694580a4d568af8
    */
-  it('should decode a runestone etching that was never accepted by ord',() => {
+  it('should validate the DOG•DOG•DOG•DOG•DOG•DOG•DOG•DOG•DOG runestone etching that was never accepted by ord', () => {
+
+    const txn = readTransaction('d60988aec4c37d3a142e263c1f9020adcfd08890f5a0cdd2d694580a4d568af8');
+    const runestone = RuneParserService.parse(txn);
+
+    const runeName = runestone?.runestone?.etching?.runeName || '';
+    const result = RuneParserService.validateRune(txn, [], Network.MAINNET, runeName);
+
+    expect(result).toBe(RuneFlaw.RESERVED_RUNE_NAME);
+  });
+
+  /*
+   * This rune was never etched because the name is too long
+   * This code tests various rules that could prevent a successfull etching
+   * https://ordinals.com/tx/d60988aec4c37d3a142e263c1f9020adcfd08890f5a0cdd2d694580a4d568af8
+   */
+  it('should validate the DOG•DOG•DOG•DOG•DOG•DOG•DOG•DOG•DOG runestone etching that was never accepted by ord',() => {
 
     const txn = readTransaction('d60988aec4c37d3a142e263c1f9020adcfd08890f5a0cdd2d694580a4d568af8');
     const runestone = RuneParserService.parse(txn);
 
     const runeName = runestone?.runestone?.etching?.runeName || ''; // DOG•DOG•DOG•DOG•DOG•DOG•DOG•DOG•DOG
-    const witness = txn.vin[0].witness;
+    const witness = txn.vin[0].witness || [];
 
     const cleanedRuneName = removeSpacers(runeName); // DOGDOGDOGDOGDOGDOGDOGDOGDOG
     const commitmentHex = bytesToHex(Rune.fromString(cleanedRuneName).commitment); // 64f2e9bd64143833aa0f2e11771a3f15
 
-    // 1st. possible explanation: "If a valid commitment is not present, the etching is ignored."
+    // 1. "If a valid commitment is not present, the etching is ignored."
     // --> Everything fine here: It has a commitment!
     const commitmentFound = isStringInArrayOfStrings(commitmentHex, witness);
     expect(commitmentFound).toBe(true);
 
-    // 2nd possible explanation: "... present in an input witness tapscript... "
+    // 2. "... present in an input witness tapscript... "
     // --> Everything fine here: The input being spent was a Taproot output.
     const commitTxn = readTransaction('865ed6cd8c02047060d836aefb12fb356b4eeaf403a85c2a0b7b6ba05035c4b4');
     expect(commitTxn.vout[0].scriptpubkey_type).toBe('v1_p2tr');
 
-    // 3rd possible explanation: "... where the output being spent has at least six confirmations."
+    // 3. "... where the output being spent has at least six confirmations."
     // -> Everything fine here: the commitment is older than 6 blocks
     expect(txn.vin[0].txid).toBe('865ed6cd8c02047060d836aefb12fb356b4eeaf403a85c2a0b7b6ba05035c4b4');
-    const txnHeight = txn.status.block_height; // 840000, of course
-    const commitmentHeight = commitTxn.status.block_height; // 839952
+    const txnHeight = txn.status.block_height || 0; // 840000, of course
+    const commitmentHeight = commitTxn.status.block_height || 0; // 839952
     var hasAtLeast6Confirmations = (txnHeight - commitmentHeight) >= 6;
     expect(hasAtLeast6Confirmations).toBe(true);
+
+    // 4. rune name is too large (aka reserved) -- this makes the etching invalid
+    const reservedRuneName = isReservedRuneName(cleanedRuneName);
+    expect(reservedRuneName).toBe(true);
+  });
+
+  it('should validate the Z•Z•Z•Z•Z•FEHU•Z•Z•Z•Z•Z runestone etching that was accepted by ord', () => {
+
+    const txn = readTransaction('2bb85f4b004be6da54f766c17c1e855187327112c231ef2ff35ebad0ea67c69e');
+    const txnVin = readTransaction('ec40eb2a00eb3ead495d8f12a95432ec292d4d56839733af3acaa01a94ccb97f');
+
+    const runestone = RuneParserService.parse(txn);
+
+    const runeName = runestone?.runestone?.etching?.runeName || '';
+    const result = RuneParserService.validateRune(txn, [txnVin], Network.MAINNET, runeName);
+
+    expect(result).toBe(null);
   });
 });

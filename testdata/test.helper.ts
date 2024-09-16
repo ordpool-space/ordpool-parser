@@ -1,6 +1,7 @@
 import fs from 'fs';
+import { IEsploraApi } from '../src';
 
-export function readTransaction(txId: string) {
+export function readTransaction(txId: string): IEsploraApi.Transaction {
 
   const jsonString = fs.readFileSync(`testdata/tx_${txId}.json`, 'utf8');
   const txn = JSON.parse(jsonString);

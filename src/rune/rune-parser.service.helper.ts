@@ -1,5 +1,6 @@
-import { bytesToHex, isStringInArrayOfStrings } from "../lib/conversions";
-import { Rune } from "./src/rune";
+import { u128 } from './src/integer';
+import { Network } from './src/network';
+import { Rune } from './src/rune';
 
 /**
  * For runes the spacers (•) are not part of the actual rune name or its numerical representation.
@@ -14,78 +15,107 @@ export function removeSpacers(runeName: string): string {
 }
 
 /**
- * Helper method to find the vin that contains the given commitment in its witness.
- *
- * Is it meant to be possible to etch without an inscription, or even a valid "ord" envelope?
- * https://github.com/ordinals/ord/issues/3494
- * --> Yup, that's definitely allowed.
- *
- * The rune updater looks through all input witness instructions for a valid commitment,
- * so it doesn't need to be in an envelope or inscription.
- *
- * Instead of the usual:
- *
- * FALSE
- * IF
- * "ord"
- * RUNE_TAG <rune_commitment>
- * ...
- * ENDIF
- *
- * envelope, it can also have the following:
- *
- * FALSE
- * IF
- * <rune_commitment>
- * ENDIF
- *
- * And the cheapest way include a commitment is PUSHDATA <rune_commitment> OP_DROP,
- * since it saves two instructions over FALSE IF <rune_commitment> ENDIF.
- *
- * https://github.com/ordinals/ord/issues/3494#issuecomment-2045712765
- *
- * The actual implementation in ord is here:
- * https://github.com/ordinals/ord/blob/1ae542fd703253499d0b2ea29af077cf7a24b748/src/index/updater/rune_updater.rs#L402
- *
- * The Tapscript instructions are parsed, and the updater checks each instruction to see if it contains a push operation.
- * If it finds a push operation, it compares the bytes of the pushed data with the rune commitment.
- * If they don’t match, the loop continues.
- *
- * --> Our approach will be a bit simpler, we will just search for the raw commitment value, regardless how it was pushed.
- *
- * @param txn - The transaction object that contains an array of vin.
- * @param runeName - The rune name as a string which will be encoded as a commitment.
- * @returns The vin object that satisfies the commitment condition or null if not found.
+ * Enum to represent possible flaws when validating a rune
  */
-export function findCommitment(txn: {
-  vin: {
-    txid: string,
-    witness?: string[]
-  }[],
-}, runeName: string): {
-  txid: string,
-  witness?: string[]
-} | null {
+export enum RuneFlaw {
+  INVALID_RUNE_NAME = 'InvalidRuneName',
+  RESERVED_RUNE_NAME = 'ReservedRuneName',
+  RUNE_NOT_UNLOCKED = 'RuneNotUnlocked',
+  COMMITMENT_NOT_FOUND = 'CommitmentNotFound',
+  INPUT_NOT_TAPROOT = 'InputNotTaproot',
+  COMMITMENT_TOO_RECENT = 'CommitmentTooRecent',
+}
 
+/**
+ * Validates if a rune name is valid (i.e. properly formatted).
+ * @param cleanedRuneName - The rune name to validate (without spacers).
+ * @returns boolean - True if the rune name is valid, false otherwise.
+ */
+export function isValidRuneName(cleanedRuneName: string): boolean {
 
-  // Clean rune name (e.g., Z•Z•Z•Z•Z•FEHU•Z•Z•Z•Z•Z to ZZZZZFEHUZZZZZ)
-  const cleanedRuneName = removeSpacers(runeName);
-  const commitment = Rune.fromString(cleanedRuneName).commitment;
-
-  for (const vin of txn.vin) {
-    const witness = vin.witness;
-
-    if (!witness) {
-      continue;
-    }
-
-    // Check if the commitment (as hex) is found in the witness (as hex)
-    const commitmentFound = isStringInArrayOfStrings(bytesToHex(commitment), witness);
-
-    if (commitmentFound) {
-      return vin;
-    }
+  // Try to convert to rune number
+  let rune;
+  try {
+    rune = Rune.fromString(cleanedRuneName);
+  } catch (error) {
+    return false; // Invalid characters or structure or Trying to unwrap None.
   }
 
-  return null;
+  return true; // Rune name is valid
+}
+
+/**
+ * Validates if a rune name is reserved
+ * (equal or larger than 6402364363415443603228541259936211926n / AAAAAAAAAAAAAAAAAAAAAAAAAAA).
+ *
+ * @param cleanedRuneName - The rune name to validate (without spacers).
+ * @returns boolean - True if the rune name is reserved, false otherwise.
+ */
+export function isReservedRuneName(cleanedRuneName: string): boolean {
+  const rune = Rune.fromString(cleanedRuneName);
+  return rune.reserved;
+}
+
+/**
+ * Checks if a rune name is unlocked at the given block height.
+ *
+ * @param cleanedRuneName - The rune name to validate (without spacers).
+ * @param blockHeight - The current block height.
+ * @param network - The network (Bitcoin, Testnet, etc.).
+ * @returns boolean - True if the rune name is unlocked, false otherwise.
+ */
+export function isRuneNameUnlocked(cleanedRuneName: string, blockHeight: number, network: Network): boolean {
+
+  const firstRuneHeight = Network.getFirstRuneHeight(network);
+  if (blockHeight < firstRuneHeight) {
+    return false;
+  }
+
+  const rune = Rune.fromString(cleanedRuneName);
+
+  // not required here
+  // if (rune.reserved) {
+  //   return false;
+  // }
+
+  // Get the minimum unlocked rune at the given block height
+  const minimumRune = Rune.getMinimumAtHeight(network, u128(BigInt(blockHeight)));
+
+  // Check if the rune is unlocked at the current block height
+  return rune.value >= minimumRune.value;
+}
+
+/**
+ * Returns the range of unlocked rune names for a given block height.
+ *
+ * @param blockHeight - The block height to calculate the range of unlocked rune names.
+ * @param network - The network (Bitcoin, Testnet, etc.).
+ * @returns An object containing the minimum and maximum rune names unlocked for the given block height.
+ */
+export function getUnlockedRuneNameRange(blockHeight: number, network: Network): { from: string | null, to: string | null } {
+
+  // Get the minimum rune name unlocked at the previous block height
+  const minRuneAtPreviousBlock = Rune.getMinimumAtHeight(network, u128(BigInt(blockHeight - 1)));
+
+  // all runes have been unlocked
+  if (minRuneAtPreviousBlock.value === 0n) {
+    return { from: null, to: null };
+  }
+
+  // Directly subtract 1 from the u128 value (not using an Option<u128>, since we're sure it won't underflow)
+  const fromRune = new Rune(u128(minRuneAtPreviousBlock.value - 1n));
+
+  // Get the minimum rune name unlocked at the current block height
+  const minRuneAtBlock = Rune.getMinimumAtHeight(network, u128(BigInt(blockHeight)));
+
+  // Check if the current and previous minimum runes are the same, indicating no unlock.
+  if (minRuneAtBlock.value === minRuneAtPreviousBlock.value) {
+    // No new rune is unlocked in this block
+    return { from: null, to: null };
+  }
+
+  return {
+    from: fromRune.toString(),
+    to: minRuneAtBlock.toString()
+  };
 }

@@ -112,7 +112,7 @@ describe('Inscription parser', () => {
   it('getNextInscriptionMark should ignore transactions with incompatible witness', () => {
 
     const txn = readTransaction('afbac5a72d789123b003a0c5b14d1a37301932937d124bab5794201827daf057');
-    const witness = txn.vin[0]?.witness;
+    const witness = txn.vin[0]?.witness || [];
     const txWitness = witness.join('');
 
     expect(txWitness).toEqual('0000000000000000000000000000000000000000000000000000000000000000');

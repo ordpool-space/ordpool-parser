@@ -13,7 +13,7 @@ describe('DigitalArtifactAnalyserService.analyseTransactions', () => {
 
   beforeEach(() => {
     tx = { txid: 'dummy_txid' } as TransactionSimple;
-    jest.clearAllMocks();
+    jest.resetAllMocks();
   });
 
   it('should count one artifact in one transaction', () => {

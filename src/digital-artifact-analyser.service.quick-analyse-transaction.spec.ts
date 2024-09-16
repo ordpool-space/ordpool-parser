@@ -20,9 +20,7 @@ describe('DigitalArtifactAnalyserService.quickAnalyseTransaction', () => {
 
   beforeEach(() => {
     tx = { txid: 'dummy_txid' } as TransactionSimple;
-
-    // Reset all mocks before each test
-    jest.clearAllMocks();
+    jest.resetAllMocks();
   });
 
   it('should set ordpool_atomical flag when Atomical is present', () => {

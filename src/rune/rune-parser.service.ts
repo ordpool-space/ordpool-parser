@@ -1,6 +1,16 @@
-import { Cenotaph, RunestoneSpec, isRunestone, tryDecodeRunestone } from '.';
+import { Cenotaph, isRunestone, RunestoneSpec, tryDecodeRunestone } from '.';
 import { DigitalArtifactType } from '../types/digital-artifact';
+import { IEsploraApi } from '../types/mempool';
 import { ParsedRunestone } from '../types/parsed-runestone';
+import {
+  isReservedRuneName,
+  isRuneNameUnlocked,
+  isValidRuneName,
+  removeSpacers,
+  RuneFlaw,
+} from './rune-parser.service.helper';
+import { findCommitment } from './rune-parser.service.helper.findCommitment';
+import { Network } from './src/network';
 
 /**
  * Decodes a runestone within a transaction.
@@ -76,5 +86,80 @@ export class RuneParserService {
     }
 
     return false;
+  }
+
+  /**
+   * Validates the rune according to the rules specified:
+   *
+   * 1. The rune name is valid
+   * 2. The name is not reserved (equal or larger than AAAAAAAAAAAAAAAAAAAAAAAAAAA))
+   * 3. The rune name is already unlocked at the given block height
+   * 4. The transaction has a commitment
+   * 5. The input being spent was a Taproot output
+   * 6. The commitment is older than 6 blocks (COMMIT_CONFIRMATIONS)
+   *
+   * @param transaction - The transaction to validate
+   * @param vinTransactions - The transactions of the inputs
+   * @param network - The network (Bitcoin, Testnet, etc.)
+   * @param runeName - The rune name to validate
+   * @returns The specific flaw if any, or null if valid
+   */
+  static validateRune(
+    transaction: {
+      vin: IEsploraApi.Vin[],
+      status: IEsploraApi.Status
+    },
+    vinTransactions: {
+      txid: string;
+      status: IEsploraApi.Status
+    }[],
+    network: Network,
+    runeName: string
+  ): RuneFlaw | null {
+
+    const cleanedRuneName = removeSpacers(runeName);
+
+    // 1. Check if the rune name is valid
+    if (!isValidRuneName(cleanedRuneName)) {
+      return RuneFlaw.INVALID_RUNE_NAME;
+    }
+
+    // 2. Check if rune name is reserved
+    if (isReservedRuneName(cleanedRuneName)) {
+      return RuneFlaw.RESERVED_RUNE_NAME;
+    }
+
+    const txnBlockHeight = transaction.status.block_height || 0;
+
+    // 3. Check if the rune name is unlocked at the current block height
+    if (txnBlockHeight && !isRuneNameUnlocked(cleanedRuneName, txnBlockHeight, network)) {
+      return RuneFlaw.RUNE_NOT_UNLOCKED;
+    }
+
+    // 4. Check for a commitment
+    const commitmentVin = findCommitment(transaction, runeName)
+    if (!commitmentVin) {
+      return RuneFlaw.COMMITMENT_NOT_FOUND;
+    }
+
+    // 5. Check if the input being spent was a Taproot output
+    const isTaprootOutput = commitmentVin.prevout?.scriptpubkey_type === 'v1_p2tr' ||
+      commitmentVin.prevout?.scriptpubkey_type === 'unknown';
+
+    if (!isTaprootOutput) {
+      return RuneFlaw.INPUT_NOT_TAPROOT;
+    }
+
+    // 6. Check if the commitment is older than 6 blocks
+    const commitmentTransaction = vinTransactions.find(x => x.txid === commitmentVin.txid);
+    const commitmentBlockHeight = commitmentTransaction?.status?.block_height || 0;
+    const hasAtLeast6Confirmations = (txnBlockHeight - commitmentBlockHeight) >= 6;
+
+    if (txnBlockHeight && commitmentBlockHeight && !hasAtLeast6Confirmations) {
+      return RuneFlaw.COMMITMENT_TOO_RECENT;
+    }
+
+    // If all checks pass, the rune is valid
+    return null;
   }
 }
