@@ -56,4 +56,14 @@ export interface ParsedInscription extends DigitalArtifact {
    * see delegate docs: https://docs.ordinals.com/inscriptions/delegate.html
    */
   getDelegates: () => string[];
+
+  /**
+   * The size of the envelope including the entire script
+   */
+  envelopeSize: number;
+
+  /**
+   * The size of the content (the body of the inscription)
+   */
+  contentSize: number;
 }

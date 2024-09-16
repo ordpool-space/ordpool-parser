@@ -1,7 +1,8 @@
 import { InscriptionParserService } from './inscription-parser.service';
-import { getNextInscriptionMark } from './inscription-parser.service.helper';
+import { getNextInscriptionMark, measureInscriptionSize } from './inscription-parser.service.helper';
 import { hexToBytes } from '../lib/conversions';
 import { readInscriptionAsBase64, readTransaction } from '../../testdata/test.helper';
+import { decodeDataURI } from './decode-data-uri';
 
 describe('Inscription parser', () => {
 
@@ -28,6 +29,10 @@ describe('Inscription parser', () => {
 
     expect(actualFileData).toEqual(expectedFileData);
     expect(inscription.inscriptionId).toEqual('c1e013bdd1434450c6e1155417c81eb888e20cbde2e0cde37ec238d91cf37045i0');
+
+    const expectedEnvelopeSize = measureInscriptionSize(txn.vin[0].witness!); // 49
+    expect(inscription.envelopeSize).toEqual(expectedEnvelopeSize);
+    expect(inscription.contentSize).toBe(13);
   });
 
   /*
@@ -54,6 +59,12 @@ describe('Inscription parser', () => {
 
     expect(actualFileData).toEqual(expectedFileData);
     expect(inscription.inscriptionId).toEqual('78fa9d6e9b2b49fbb9f4838e1792dba7c1ec836f22e3206561e2d52759708251i0');
+
+    const expectedEnvelopeSize = measureInscriptionSize(txn.vin[0].witness!); // 640
+    expect(inscription.envelopeSize).toEqual(expectedEnvelopeSize);
+
+    expect(atob(inscription.getData()).length).toBe(615);
+    expect(inscription.contentSize).toBe(615);
   });
 
   /*

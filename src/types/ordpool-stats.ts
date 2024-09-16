@@ -1,6 +1,7 @@
 import { OrdpoolTransactionFlag, OrdpoolTransactionFlags } from "./ordpool-transaction-flags";
 
 export interface OrdpoolStats {
+  version: number | null;
   amount: {
     atomical: number | null;
     atomicalMint: number | null;
@@ -37,8 +38,8 @@ export interface OrdpoolStats {
 
 // this empty object represents no parsed data
 export function getEmptyStats(): OrdpoolStats {
-
   return {
+    version: null,
     amount: {
       atomical: null,
       atomicalMint: null,

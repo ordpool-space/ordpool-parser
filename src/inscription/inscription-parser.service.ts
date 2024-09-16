@@ -154,7 +154,8 @@ export class InscriptionParserService {
   }
 
   /**
-   * Extracts inscription data starting from the current pointer.
+   * Extracts inscription data (starting from the current pointer) and calculates the envelope size.
+   *
    * @param raw - The raw data to read.
    * @param pointer - The current pointer where the reading starts.
    * @returns The parsed inscription or nullx
@@ -166,6 +167,9 @@ export class InscriptionParserService {
       let fields: { tag: number; value: Uint8Array }[];
       let newPointer: number;
       let slice: Uint8Array;
+
+      // Store the starting pointer (this is where the envelope starts)
+      const initialPointer = pointer;
 
       [fields, newPointer] = InscriptionParserService.extractFields(raw, pointer);
 
@@ -181,6 +185,10 @@ export class InscriptionParserService {
         [slice, newPointer] = readPushdata(raw, newPointer);
         data.push(slice);
       }
+
+      // +6 for OP_FALSE (1 byte) + OP_IF (1 byte) + OP_PUSH (1 byte) + "ord" (3 bytes)
+      // +1 for the OP_ENDIF
+      const envelopeSize = newPointer - initialPointer + 7;
 
       const combinedLengthOfAllArrays = data.reduce((acc, curr) => acc + curr.length, 0);
       let combinedData = new Uint8Array(combinedLengthOfAllArrays);
@@ -297,6 +305,9 @@ export class InscriptionParserService {
           const delegatesRaw = getKnownFieldValues(fields, knownFields.delegate);
           return delegatesRaw.map(parentRaw => extractInscriptionId(parentRaw));
         },
+
+        envelopeSize, // The size of the envelope including the entire script
+        contentSize: combinedLengthOfAllArrays // The size of the content (the body of the inscription)
       };
 
     } catch (ex) {

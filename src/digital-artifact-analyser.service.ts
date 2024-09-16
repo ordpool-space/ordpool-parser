@@ -92,6 +92,7 @@ export class DigitalArtifactAnalyserService {
     // Initialize OrdpoolStats with null for unknown fields,
     // to be dynamically updated for known fields
     const stats: OrdpoolStats = getEmptyStats();
+    stats.version = this.version;
 
     for (const tx of transactions) {
 

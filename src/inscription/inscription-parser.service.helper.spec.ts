@@ -1,4 +1,4 @@
-import { extractInscriptionId, extractPointer, getKnownFieldValue, getKnownFieldValues, getNextInscriptionMark } from './inscription-parser.service.helper';
+import { extractInscriptionId, extractPointer, getKnownFieldValue, getKnownFieldValues, getNextInscriptionMark, measureInscriptionSize } from './inscription-parser.service.helper';
 import { hexToBytes } from '../lib/conversions';
 
 describe('getKnownFieldValue', () => {
@@ -269,5 +269,66 @@ describe('extractPointer', () => {
 
   it('should return undefined for undefined pointer value', () => {
     expect(extractPointer(undefined)).toBeUndefined();
+  });
+});
+
+
+describe('measureInscriptionSize', () => {
+
+  it('should return the correct size for one byte', () => {
+    const witness = [
+      '00', // Placeholder
+      '0063036f7264' + '1122', // OP_FALSE, OP_IF, OP_PUSH "ord" (6 bytes) and 2 extra bytes
+      '68' // OP_ENDIF
+    ];
+
+    const expectedSize = 6 + 2 + 1;
+
+    expect(measureInscriptionSize(witness)).toBe(expectedSize);
+  });
+
+  it('should return null if the witness is empty', () => {
+    const witness: string[] = [];
+    expect(measureInscriptionSize(witness)).toBeNull();
+  });
+
+  it('should return null if the witness does not contain an inscription mark', () => {
+    const witness = [
+      '00',
+      'abcd1234' // No inscription mark
+    ];
+    expect(measureInscriptionSize(witness)).toBeNull();
+  });
+
+  it('should return null if OP_ENDIF is missing', () => {
+    const witness = [
+      '00', // Placeholder
+      '0063036f7264' // OP_FALSE, OP_IF, OP_PUSH "ord", but no OP_ENDIF
+    ];
+    expect(measureInscriptionSize(witness)).toBeNull();
+  });
+
+  it('should return the correct size for a complex inscription with more data', () => {
+    const witness = [
+      '00',
+      '0063036f7264', // OP_FALSE, OP_IF, OP_PUSH "ord" --> 6
+      'abcdef123456', // Additional push data --> 6
+      '68' // OP_ENDIF --> 1
+    ];
+
+    const expectedSize = 7 + 6; // 6 bytes of data + 7 bytes overhead
+    expect(measureInscriptionSize(witness)).toBe(expectedSize);
+  });
+
+  it('should return the correct size for multiple OP_ENDIFs', () => {
+    const witness = [
+      '00',
+      '0063036f7264', // OP_FALSE, OP_IF, OP_PUSH "ord"
+      'abcdef123456' +  '68', // Additional data --> 6 + evil OP_ENDIF +1
+      '68' // OP_ENDIF (0x68)
+    ];
+
+    const expectedSize = 7 + 7; // 7 bytes of data + 7 bytes overhead
+    expect(measureInscriptionSize(witness)).toBe(expectedSize);
   });
 });

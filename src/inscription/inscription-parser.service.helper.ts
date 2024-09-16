@@ -1,7 +1,7 @@
 import { MAX_DECOMPRESSED_SIZE_MESSAGE, brotliDecode } from "../lib/brotli-decode";
-import { isStringInArrayOfStrings, littleEndianBytesToNumber } from "../lib/conversions";
+import { hexToBytes, isStringInArrayOfStrings, littleEndianBytesToNumber } from "../lib/conversions";
 import { bytesToHex } from "../lib/conversions";
-import { OP_FALSE, OP_IF, OP_PUSHBYTES_3 } from "../lib/op-codes";
+import { OP_ENDIF, OP_FALSE, OP_IF, OP_PUSHBYTES_3 } from "../lib/op-codes";
 
 
 /**
@@ -207,3 +207,41 @@ export function extractInscriptionId(value: Uint8Array): string {
   return txIdHex + 'i' + index;
 }
 
+/**
+ * Measures the size of the inscription in witness data (used for testing only!).
+ * Starts at the inscription mark and stops at the last OP_ENDIF.
+ *
+ * This only works for simple scenarios, this won't work for multiple inscriptions in one witness.
+ * Or for some additional data with an OP_ENDIF after the envelope.
+ *
+ * @param witness - The witness data as an array of strings.
+ * @returns The size of the inscription (including the envelope) or null if OP_ENDIF is not found.
+ */
+export function measureInscriptionSize(witness: string[]): number | null {
+
+  if (!witness) {
+    return null;
+  }
+
+  const raw = hexToBytes(witness.join(''));
+
+  // Find the start of the inscription using the inscription mark
+  const startPosition = getNextInscriptionMark(raw, 0);
+
+  if (startPosition === -1) {
+    return null; // Inscription mark not found
+  }
+
+  // Find the position of last OP_ENDIF (0x68)
+  const opEndIfIndex = raw.lastIndexOf(OP_ENDIF, raw.length);
+
+  if (opEndIfIndex === -1) {
+    return null; // OP_ENDIF not found
+  }
+
+  // The size of the inscription is from the start position to the last OP_ENDIF
+  const inscriptionSize = opEndIfIndex - startPosition;
+
+  // Add the size of the inscription mark (6 bytes) + OP_ENDIF (1 byte)
+  return inscriptionSize + 7;
+}
