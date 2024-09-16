@@ -60,7 +60,83 @@ describe('DigitalArtifacts Parser', () => {
     });
   });
 
-  // this is an integration test that loads real data
+  /*
+   * We finally came to the same results as ord!
+   *
+   * -> Amount of raw etchings in block 840,000: 755
+   * -> Successful etchings in block 840,000: 689
+   * -> Invalid runestones: 66
+   *
+   * Here are all 66 invalid runestones, and the exact reason.
+   * Note: This is an integration test that loads data via HTTP. It's very slow!
+   *
+   * Invalid rune in 2918ee2072b4bbe67db35771993c5467f4b69e9b3d889941bb3c081412fea448 – BITCOIN•WIF•HAT – NameAlreadyTaken
+   * Invalid rune in d60988aec4c37d3a142e263c1f9020adcfd08890f5a0cdd2d694580a4d568af8 – DOG•DOG•DOG•DOG•DOG•DOG•DOG•DOG•DOG – ReservedRuneName
+   * Invalid rune in 34e9371a7c070e3af2b3eafa44e7d6b321776b3dcc81eb07952afe2bdad561a2 – LLAMAS•WIF•HATS – CommitmentNotFound
+   * Invalid rune in 7016cfd34168a7b4a0f4fd6dfc4e1711a2b9736a011b80362077d26677565d44 – RUNI•ANTI•MEMES – CommitmentNotFound
+   * Invalid rune in fe32008e29beb87cfc3503034457ef8b3ec9221356310a24552609a56bba4189 – SATOSHI•NAKAMOTO – NameAlreadyTaken
+   * Invalid rune in 661c75a903ed8dee71bf5057caa6dbac2a6ce9ff6dcbe37fea4b6af2b7620951 – MAGIC•INTERNET•MONEY – NameAlreadyTaken
+   * Invalid rune in bf8ae553a62d89b08fd4f881c18f6d55e9cc4ae44099f657285a3953b46537c0 – SATOSHI•NAKAMOTO – NameAlreadyTaken
+   * Invalid rune in 0198301e8d84f719847d2ada7d1d6747407ed5a4d1468fca1c900be65505b6f7 – GET•RICH•TOGETHER – NameAlreadyTaken
+   * Invalid rune in c1843d403351302cfda9aa8d1270b24ea57675e8a206bff942e19133a8ac4bd3 – CAI•YUAN•GUANG•JIN – NameAlreadyTaken
+   * Invalid rune in c171dbb922dc4e999e93e242c38783e465078e6477daa082df8f8b8b05f656e4 – SATOSHI•NAKAMOTO – NameAlreadyTaken
+   * Invalid rune in 27bbb1f7776d3ac5f41c17a5cde59b4feba5e9f5c5e76f19559c787a7c771055 – SHORTING•PEACE – CommitmentNotFound
+   * Invalid rune in a80edfcd247fc806702a8f4bb2a186416884a9aa15e2265b8d56299476b42a97 – MAGIC•INTERNET•MONEY – NameAlreadyTaken
+   * Invalid rune in 422fdaae14b1471c9b5bf2a9397be1c8a3f73c85997894571b997a8256ffcaa1 – WALL•STREET•BETS – NameAlreadyTaken
+   * Invalid rune in 4707b152fda64e0ad23b7101954147eb0147f6a21abe068c6ca0137f7a27bd7c – SATOSHI•NAKAMOTO – NameAlreadyTaken
+   * Invalid rune in 347b3954f5f44053303c32966779d5f133262e293555809fb5bb760aabde5e3c – VALHALLACOINS – NameAlreadyTaken
+   * Invalid rune in d9a2db44f537f7d8fc5d05150c738201aeca46092743cd7eeef67abc0aaafdaa – BITCOIN•DRAGON•RUNES – CommitmentNotFound
+   * Invalid rune in 705c3ef1d3e8cd05fb38e04b1dcc4decc4d4600827d7207ada8d3a9b2a9c6553 – MAGIC•INTERNET•MONEY – NameAlreadyTaken
+   * Invalid rune in 39eae3c2f33e810d33f1a9ae46a4ae3825cce57d2f9d12f4bba6b7b4dde73306 – CASEY•RODARMOR – NameAlreadyTaken
+   * Invalid rune in cb2d3a1e10f2f8e80f0e968a3932709f1e0b2b374f3ce662dceff594ea8ea707 – SATOSHI•NAKAMOTO – NameAlreadyTaken
+   * Invalid rune in d34fbab166e25e505e6abf36029b56f72aed4537db678d8de068d0873bd9b424 – LEGENDARY•GOODS – NameAlreadyTaken
+   * Invalid rune in 643a55c76731df3d219a6959f7bc89a0ee55546434bc9244bdd9a92f8817763f – SATOSHI•NAKAMOTO – NameAlreadyTaken
+   * Invalid rune in e2cc60f881e3f705b5353838708573d7f22acff5c807d8027854a9219c5b094d – RUNNING•BITCOIN – NameAlreadyTaken
+   * Invalid rune in 5ab06362abf41f05f5b29dd4452a35876a5204e52180378ccdb1429a865d8a4f – MAGIC•INTERNET•MONEY – NameAlreadyTaken
+   * Invalid rune in a8b1e8b8249da11bd036197211d80d32c0c3a3f86b8c48a552374ef562ee5d80 – HAVE•FUN•STAYING•POOR – NameAlreadyTaken
+   * Invalid rune in cf8d0b08b752c30d60a9b57285b6d734ee4bdfb54a80eeffd1bf6f0c531c34df – WALL•STREET•BETS – NameAlreadyTaken
+   * Invalid rune in efa0fac8c6b99e3011ff2af899c81274d66f0dbd4052f14d798cd8b33031e2ea – MAGIC•INTERNET•MONEY – NameAlreadyTaken
+   * Invalid rune in 2731acb5417139f1e4157a91ebf13077dd50704f13291507636416d0727f36f2 – PISS•FETISHIST•DOUBLOONS – NameAlreadyTaken
+   * Invalid rune in 009f4e52b5833ade631f8758329397b33475badaeaf2b3b180dc490ac26296c8 – CASEY•RODARMOR – NameAlreadyTaken
+   * Invalid rune in 46dce3f09302123bd55dcee599dc3bd15bf8042ce4f3acfca23da604068d910b – MAGIC•INTERNET•MONEY – NameAlreadyTaken
+   * Invalid rune in c49e0fb551c22aa8a9016a1f4fe1a354eb2136c67d2363f2f69b663a9760349e – HARRYPOTTEROBAMASONICINU – NameAlreadyTaken
+   * Invalid rune in 1ca78a10982585e00f9897aa65684eb5c9ea3dc7b22b2da89a96afdc8333a4ad – SATOSHI•NAKAMOTO – NameAlreadyTaken
+   * Invalid rune in 871bb415be82197f42e4d2247285a4c379c9e58ee782b762203909c33388677b – CASEY•RODARMOR – NameAlreadyTaken
+   * Invalid rune in 0d00ef8bf16ade4988b1a74e58423327615250b89894a6c22bf876b2d61f3917 – GALACTIC•CREDIT – NameAlreadyTaken
+   * Invalid rune in 5de90423d015fc76b368b50f4cb80e00ad9b64657b3ef5476882d9218291d62c – MICHAEL•SAYLOR – NameAlreadyTaken
+   * Invalid rune in 1c17e5a7a8ce807a40b941c295385ee88f618a6eeaccd5f849a5ae84b9a318a2 – SATOSHI•NAKAMOTO – NameAlreadyTaken
+   * Invalid rune in 4b7983ed864c6a60513d672d2ad433af3331f24866a2a8402733b9d7a7a49bec – BITCOIN•WIF•CAT – NameAlreadyTaken
+   * Invalid rune in 22ee582f260d256cdbbfd2bdab95f75bf45b75b9819d53e7392881f0c9cd17db – SATOSHI•NAKAMOTO – NameAlreadyTaken
+   * Invalid rune in 88deee231508e0a99da1f39ea74eb8e72dcbe056e8534dae632f4ee9199beb06 – THERE•IS•NO•SECOND•BEST – NameAlreadyTaken
+   * Invalid rune in 4f40296ba03cc797646d32e416f8eeb53fe107e907c013bec617dd6daf726a4f – PEPE•IS•THE•MEME – NameAlreadyTaken
+   * Invalid rune in 0df39d5ada0894f2bb338dd40e269c4dcc91eadef3064b86198667595cfe8712 – HARRY•POTTER•OBAMA•SONIC•INU – NameAlreadyTaken
+   * Invalid rune in 1d4a587afd527a6e1bb4b1ef8015830ca6cee312313b5e415184a31626bec752 – RUNESTOTHEMOON – NameAlreadyTaken
+   * Invalid rune in caa41578a1d4235283214bcdaf3b4517cc6186326c15f48e60162a2cf9674457 – LEGENDARY•GOODS – NameAlreadyTaken
+   * Invalid rune in de5483fa2e36fa4194b194f71c0f3e1ef882aeaea8fdafdc2dfcf821d4f6bdb2 – WALL•STREET•BETS – NameAlreadyTaken
+   * Invalid rune in b9fd944691b5dda51f43427ecefe2c0d2729bf6f9930e0b0166e17e52677730c – INTERGALACTIC – NameAlreadyTaken
+   * Invalid rune in d7f15bda17b289b59873857d03a00bd3ca90bfa3ac9bcf27cd2030cf3f1b6519 – HOPE•YOU•GET•RICH – NameAlreadyTaken
+   * Invalid rune in 208edfbfb3ff2044b8f5ad6dcf22f6a2ee3d8e187da90aafa3c73bcaa92ed1e0 – SATOSHI•NAKAMOTO – NameAlreadyTaken
+   * Invalid rune in 935435d40ec3db29529a824eb308ca65a30209740ec71437cb97b8d3961e7417 – I•FOMO•WITH•DOMO•NO•HOMO – NameAlreadyTaken
+   * Invalid rune in 73c8bb8a0aa4ba4d7e3b209fb4f29aa046f987f7cfaf61558f3e9617059ba721 – UNCOMMON•RUNES – NameAlreadyTaken
+   * Invalid rune in 973284c3d70abbd76034b62c970004fec56440e0ea1bf6ca57223271cc5e3fbd – RUNETOTHEMOON – NameAlreadyTaken
+   * Invalid rune in 46b41de5f341663ec1535286d96baa71c9255227b0f24dc096a071076025e5fc – THE•BIT•FOX•RUNE – NameAlreadyTaken
+   * Invalid rune in a708366e661f08141579141adbb9e05023c569d0cc947f01dd20ea8132391c19 – JADE•AR•UTILITY – NameAlreadyTaken
+   * Invalid rune in a5f4d9ce97684df03e4912e0f57df685e4164b0febb8e4d6d416c1137bee4212 – LETS•FUCKING•GO – NameAlreadyTaken
+   * Invalid rune in 08c9fa4872b86e3595f40a35ba68428cd833b00fd490dbf2f9bc6be28818f9db – MAGIC•INTERNET•MONEY – NameAlreadyTaken
+   * Invalid rune in db72fca94ff28e6c72919f6d266b4696cf240c901972ecb698ab7b5b59a28ecd – MAGIC•INTERNET•MONEY – NameAlreadyTaken
+   * Invalid rune in 43fe09c6269b4b7ca71d397f1a8c3ccabf0d65242d69679ce147d84676f27726 – THERE•IS•NO•SECOND•BEST – NameAlreadyTaken
+   * Invalid rune in 04dd595a920fc3f6a3f2c3f6d471b2b36a8ea6491073f75ad46b1ad01d6de053 – JADE•AR•PLATFORM – NameAlreadyTaken
+   * Invalid rune in 867633aa43b6f7f11af383bffa8b075a83f53021e7fccf67cc24f247d5d85e95 – HARRYPOTTEROBAMASONICINU – NameAlreadyTaken
+   * Invalid rune in 79bcaae96060ca205cd2789e414dee3b89201673f8ea0d4a454c89a067f6c3ec – RUNES•TO•THE•MOON – NameAlreadyTaken
+   * Invalid rune in 1bb935fc353d586267b8648d9d324826f304e2dd78b3575c35048cb4334043fe – S•A•T•O•S•H•I•N•A•K•A•M•O•T•O – NameAlreadyTaken
+   * Invalid rune in 143c8eb74afd43a1525e388dabcf5303e65256f44520063435163a4c818d1915 – WE•CALL•THEM•POOR – NameAlreadyTaken
+   * Invalid rune in 7d17e49085f06c1e3b1bae458ba9afcd77363d101c574b2d77fde7ab29bbd82b – SATOSHI•NAKAMOTO – NameAlreadyTaken
+   * Invalid rune in dd48e6b3b41f48e3d58f416f6ccd422888e9e6ebede67291d2e1b8f665ce93fd – NOT•FINANCIAL•ADVICE – NameAlreadyTaken
+   * Invalid rune in 79e255eae68f688c497c058bbdcb450e9389aa5d1cf673f80f7ba533cb790e1f – SATOSHI•NAKAMOTO – NameAlreadyTaken
+   * Invalid rune in e692d4d7311f58663eb2de6eb02e1b7deefd3d1cd4ed29b98748e9eabf21b8e8 – SATOSHI•NAKAMOTO – NameAlreadyTaken
+   * Invalid rune in 00c2896d35bec83eb5467fcbda422e70b1f683b9d893711973128ae8900ba6ce – PEPE•ON•BITCOIN – NameAlreadyTaken
+   * Invalid rune in 67491a9ad5f911aa038a3bfa8d9b9e9602806e1582c21a447891621ce0cb0482 – RUNNING•BITCOIN – NameAlreadyTaken
+   */
   xit('should identify all 66 invalid runestones of block 840000', async () => {
 
     var transactions = getTransactionsOfBlock840000();
