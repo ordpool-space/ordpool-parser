@@ -92,7 +92,13 @@ export class DigitalArtifactAnalyserService {
     // Initialize OrdpoolStats with null for unknown fields,
     // to be dynamically updated for known fields
     const stats: OrdpoolStats = getEmptyStats();
-    stats.version = this.version;
+
+    let totalEnvelopeSize = 0;
+    let totalContentSize = 0;
+    let largestEnvelopeSize = 0;
+    let largestContentSize = 0;
+    let largestEnvelopeInscriptionId: string | null = null;
+    let largestContentInscriptionId: string | null = null;
 
     for (const tx of transactions) {
 
@@ -108,8 +114,47 @@ export class DigitalArtifactAnalyserService {
             stats.amount[statKey] = (stats.amount[statKey] ?? 0) + 1;
           }
         }
+
+        // collect extra stats for inscriptions
+        if (artifact.type === DigitalArtifactType.Inscription) {
+
+          const inscription = artifact as ParsedInscription;
+
+          // accessing of the properties only once, to improve performance
+          const envelopeSize = inscription.envelopeSize;
+          const contentSize = inscription.contentSize;
+
+          // Increment total sizes
+          totalEnvelopeSize += envelopeSize;
+          totalContentSize += contentSize;
+
+          // Check for largest envelope size
+          if (envelopeSize > largestEnvelopeSize) {
+            largestEnvelopeSize = envelopeSize;
+            largestEnvelopeInscriptionId = inscription.inscriptionId;
+          }
+
+          // Check for largest content size
+          if (contentSize > largestContentSize) {
+            largestContentSize = contentSize;
+            largestContentInscriptionId = inscription.inscriptionId;
+          }
+        }
       }
     }
+
+    stats.inscription.totalEnvelopeSize = totalEnvelopeSize;
+    stats.inscription.totalContentSize = totalContentSize;
+    stats.inscription.largestEnvelopeSize = largestEnvelopeSize;
+    stats.inscription.largestContentSize = largestContentSize;
+    stats.inscription.largestEnvelopeInscriptionId = largestEnvelopeInscriptionId;
+    stats.inscription.largestContentInscriptionId = largestContentInscriptionId;
+
+    const inscriptionCount = stats.amount.inscriptionMint;
+    stats.inscription.averageEnvelopeSize = inscriptionCount ? totalEnvelopeSize / inscriptionCount : 0;
+    stats.inscription.averageContentSize = inscriptionCount ? totalContentSize / inscriptionCount : 0;
+
+    stats.version = this.version;
 
     return stats;
   }
@@ -146,6 +191,7 @@ export class DigitalArtifactAnalyserService {
           inscription.contentType.startsWith('application/json')
         ) {
 
+          // TODO: chaching for improving performance?!
           const parsedContent = parseJsonObject(inscription.getContent());
           if (parsedContent && parsedContent.p === 'brc-20') {
 
@@ -189,7 +235,7 @@ export class DigitalArtifactAnalyserService {
         const src20 = artifact as ParsedSrc20;
         flags |= OrdpoolTransactionFlags.ordpool_src20;
 
-        // Check for valid JSON content
+        // TODO: chaching for improving performance?!
         const parsedSrcContent = parseJsonObject(src20.getContent());
         if (parsedSrcContent && parsedSrcContent.p === 'src-20') {
           // Check for SRC-20 operations

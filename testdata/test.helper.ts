@@ -1,5 +1,7 @@
 import fs from 'fs';
 import { IEsploraApi } from '../src';
+import zlib from 'zlib';
+
 
 export function readTransaction(txId: string): IEsploraApi.Transaction {
 
@@ -43,4 +45,20 @@ export function readBinaryInscriptionAsBase64(inscriptionId: string, fileEnding:
 export function readBinaryFileAsUint8Array(fileName: string): Uint8Array {
  const filePath = `testdata/${fileName}`;
  return fs.readFileSync(filePath);
+}
+
+/**
+ * Loads and decompresses a Brotli compressed file into memory.
+ *
+ * @param filePath - The path to the Brotli compressed file.
+ * @returns The decompressed data as a JSON object.
+ */
+export function loadCompressedJsonData(fileName: string): any {
+
+  const filePath = `testdata/${fileName}`;
+  const compressedData = fs.readFileSync(filePath);
+  const decompressedData = zlib.brotliDecompressSync(compressedData);
+
+  // Parse the decompressed data as JSON
+  return JSON.parse(decompressedData.toString());
 }

@@ -1,7 +1,6 @@
 import { OrdpoolTransactionFlag, OrdpoolTransactionFlags } from "./ordpool-transaction-flags";
 
 export interface OrdpoolStats {
-  version: number | null;
   amount: {
     atomical: number | null;
     atomicalMint: number | null;
@@ -33,13 +32,27 @@ export interface OrdpoolStats {
     src20Deploy: number | null;
     src20Mint: number | null;
     src20Transfer: number | null;
-  }
+  },
+  inscription: {
+
+    totalEnvelopeSize: number | null;
+    totalContentSize: number | null;
+
+    largestEnvelopeSize: number | null;
+    largestContentSize: number | null;
+
+    largestEnvelopeInscriptionId: string | null;
+    largestContentInscriptionId: string | null;
+
+    averageEnvelopeSize: number | null;
+    averageContentSize: number | null;
+  },
+  version: number | null;
 }
 
 // this empty object represents no parsed data
 export function getEmptyStats(): OrdpoolStats {
   return {
-    version: null,
     amount: {
       atomical: null,
       atomicalMint: null,
@@ -71,7 +84,24 @@ export function getEmptyStats(): OrdpoolStats {
       src20Deploy: null,
       src20Mint: null,
       src20Transfer: null,
-    }
+    },
+    inscription: {
+
+      totalEnvelopeSize: null,
+      totalContentSize: null,
+
+      largestEnvelopeSize: null,
+      largestContentSize: null,
+
+      largestEnvelopeInscriptionId: null,
+      largestContentInscriptionId: null,
+
+      averageEnvelopeSize: null,
+      averageContentSize: null,
+
+    },
+    version: null,
+
   };
 }
 

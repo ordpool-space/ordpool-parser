@@ -58,12 +58,14 @@ export interface ParsedInscription extends DigitalArtifact {
   getDelegates: () => string[];
 
   /**
-   * The size of the envelope including the entire script
+   * The size in bytes of the envelope including the entire script
    */
   envelopeSize: number;
 
   /**
-   * The size of the content (the body of the inscription)
+   * The size in bytes of the content (the body of the inscription).
+   * For compressed content, the unpacked size is not taken into account,
+   * only the size that was actually saved is considered.
    */
   contentSize: number;
 }

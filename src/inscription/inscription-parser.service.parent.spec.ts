@@ -1,5 +1,6 @@
 import { InscriptionParserService } from './inscription-parser.service';
 import { readTransaction } from '../../testdata/test.helper';
+import { measureInscriptionSize } from './inscription-parser.service.helper';
 
 describe('Inscription parser', () => {
 
@@ -66,5 +67,9 @@ describe('Inscription parser', () => {
     expect(inscription.getData()).toBe('');
     expect(inscription.getDataUri()).toBe('data:undefined;base64,');
     expect(inscription.getContentEncoding()).toBe(undefined);
+
+    const expectedEnvelopeSize = measureInscriptionSize(txn.vin[0].witness!); // 63
+    expect(inscription.envelopeSize).toEqual(expectedEnvelopeSize);
+    expect(inscription.contentSize).toBe(0);
   });
 });

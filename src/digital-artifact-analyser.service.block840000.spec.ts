@@ -1,7 +1,7 @@
 import axios from 'axios';
-import { log } from 'console';
+import { log, warn } from 'console';
 
-import { getTransactionsOfBlock840000 } from '../testdata/transactions-of-block-84000';
+import { getBlock840000Txns } from '../testdata/block_840000_txns';
 import { DigitalArtifactAnalyserService } from './digital-artifact-analyser.service';
 import { DigitalArtifactsParserService } from './digital-artifacts-parser.service';
 import { RuneParserService } from './rune/rune-parser.service';
@@ -19,10 +19,14 @@ describe('DigitalArtifacts Parser', () => {
    *
    * see https://ordinals.com/block/840000
    */
-  it('should count all artifacts in block 840000, provided by the mempool backend (esplora API)', () => {
+  it('should count all artifacts in block 840,000, provided by the mempool backend (esplora API)', () => {
 
-    var transactions = getTransactionsOfBlock840000();
+    var transactions = getBlock840000Txns();
+
+    const start = performance.now();
     var ordpoolStats = DigitalArtifactAnalyserService.analyseTransactions(transactions);
+    const end = performance.now();
+    warn(`Block 840,000 txns – Execution time: ${(end - start) / 100} ms`);
 
     // 878 inscriptions according ordinals.com
     expect(ordpoolStats.amount.inscription).toBe(878);
@@ -139,7 +143,7 @@ describe('DigitalArtifacts Parser', () => {
    */
   xit('should identify all 66 invalid runestones of block 840000', async () => {
 
-    var transactions = getTransactionsOfBlock840000();
+    var transactions = getBlock840000Txns();
 
     const allArtifacts: DigitalArtifact[] = [];
     for (const tx of transactions) {

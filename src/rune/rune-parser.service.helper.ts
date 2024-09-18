@@ -1,3 +1,4 @@
+import { RunestoneSpec } from '.';
 import { u128 } from './src/integer';
 import { Network } from './src/network';
 import { Rune } from './src/rune';
@@ -140,4 +141,8 @@ export function commitmentHasAtLeast6Confirmations(transactionBlockHeight: numbe
   const hasAtLeast6Confirmations = (transactionBlockHeight - commitmentBlockHeight) >= 5;
 
   return hasAtLeast6Confirmations;
+}
+
+export function isUncommonGoodsMint(runestone: RunestoneSpec) {
+  return runestone?.mint?.block === 1n && runestone?.mint?.tx === 0;
 }

@@ -1,7 +1,7 @@
 // stripped and fixed version of
 // ordpool -> backend/src/mempool.interfaces.ts
 // ordpool -> backend/src/api/bitcoin/esplora-api.interface.ts
-// to match the data of `transactions-of-block-84000.ts`
+// to match the data of `block_84000_txns.ts`
 
 export namespace IEsploraApi {
 
