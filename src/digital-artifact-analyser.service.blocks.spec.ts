@@ -18,4 +18,17 @@ describe('DigitalArtifacts Parser', () => {
     expect(ordpoolStats.amount.inscription).toBe(1);
     expect(ordpoolStats.amount.inscriptionMint).toBe(1);
   });
+
+  it('should count all artifacts in block 831,802, which holds a lot BRC-20 trio mints and a large video inscription', () => {
+
+    const transactions = loadCompressedJsonData('block_831802_txns.json.br') as TransactionExtended[];
+
+    const start = performance.now();
+    var ordpoolStats = DigitalArtifactAnalyserService.analyseTransactions(transactions);
+    const end = performance.now();
+    warn(`Block 831,802 txns – Execution time: ${(end - start) / 1000 }s`);
+
+    expect(ordpoolStats.amount.brc20).toBe(2100);
+    expect(ordpoolStats.amount.brc20Mint).toBe(2100);
+  });
 });
