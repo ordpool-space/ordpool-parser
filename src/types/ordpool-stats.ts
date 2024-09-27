@@ -1,107 +1,157 @@
 import { OrdpoolTransactionFlag, OrdpoolTransactionFlags } from "./ordpool-transaction-flags";
 
 export interface OrdpoolStats {
+
   amount: {
-    atomical: number | null;
-    atomicalMint: number | null;
-    atomicalTransfer: number | null;
-    atomicalUpdate: number | null;
+    atomical: number;
+    atomicalMint: number;        // unused, for now
+    atomicalTransfer: number;    // unused, for now
+    atomicalUpdate: number;      // unused, for now
 
-    cat21: number | null;
-    cat21Mint: number | null;
-    cat21Transfer: number | null;
+    cat21: number;
+    cat21Mint: number;
+    cat21Transfer: number;       // unused, for now
 
-    inscription: number | null;
-    inscriptionMint: number | null;
-    inscriptionTransfer: number | null;
-    inscriptionBurn: number | null;
+    inscription: number;
+    inscriptionMint: number;
+    inscriptionTransfer: number; // unused, for now
+    inscriptionBurn: number;     // unused, for now
 
-    rune: number | null;
-    runeEtch: number | null;
-    runeMint: number | null;
-    runeCenotaph: number | null;
-    runeTransfer: number | null;
-    runeBurn: number | null;
+    rune: number;
+    runeEtch: number;
+    runeMint: number;
+    runeCenotaph: number;
+    runeTransfer: number;         // unused, for now
+    runeBurn: number;             // unused, for now
 
-    brc20: number | null;
-    brc20Deploy: number | null;
-    brc20Mint: number | null;
-    brc20Transfer: number | null;
+    brc20: number;
+    brc20Deploy: number;
+    brc20Mint: number;
+    brc20Transfer: number;
 
-    src20: number | null;
-    src20Deploy: number | null;
-    src20Mint: number | null;
-    src20Transfer: number | null;
+    src20: number;
+    src20Deploy: number;
+    src20Mint: number;
+    src20Transfer: number;
   },
+
+  fees: {
+    runeMints: number;
+    nonUncommonRuneMints: number;
+    brc20Mints: number;
+    src20Mints: number;
+    cat21Mints: number;
+    atomicals: number;
+    inscriptionMints: number;
+  };
+
   inscription: {
 
-    totalEnvelopeSize: number | null;
-    totalContentSize: number | null;
+    totalEnvelopeSize: number;
+    totalContentSize: number;
 
-    largestEnvelopeSize: number | null;
-    largestContentSize: number | null;
+    largestEnvelopeSize: number;
+    largestContentSize: number;
 
     largestEnvelopeInscriptionId: string | null;
     largestContentInscriptionId: string | null;
 
-    averageEnvelopeSize: number | null;
-    averageContentSize: number | null;
+    averageEnvelopeSize: number;
+    averageContentSize: number;
   },
-  version: number | null;
+
+  rune: {
+    mostActiveMint: string | null;
+    mostActiveNonUncommonMint: string | null;
+  };
+
+  brc20: {
+    mostActiveMint: string | null;
+  };
+
+  src20: {
+    mostActiveMint: string | null;
+  };
+
+  version: number;
 }
 
 // this empty object represents no parsed data
 export function getEmptyStats(): OrdpoolStats {
   return {
     amount: {
-      atomical: null,
-      atomicalMint: null,
-      atomicalTransfer: null,
-      atomicalUpdate: null,
+      atomical: 0,
+      atomicalMint: 0,
+      atomicalTransfer: 0,
+      atomicalUpdate: 0,
 
-      cat21: null,
-      cat21Mint: null,
-      cat21Transfer: null,
+      cat21: 0,
+      cat21Mint: 0,
+      cat21Transfer: 0,
 
-      inscription: null,
-      inscriptionMint: null,
-      inscriptionTransfer: null,
-      inscriptionBurn: null,
+      inscription: 0,
+      inscriptionMint: 0,
+      inscriptionTransfer: 0,
+      inscriptionBurn: 0,
 
-      rune: null,
-      runeEtch: null,
-      runeMint: null,
-      runeCenotaph: null,
-      runeTransfer: null,
-      runeBurn: null,
+      rune: 0,
+      runeEtch: 0,
+      runeMint: 0,
+      runeCenotaph: 0,
+      runeTransfer: 0,
+      runeBurn: 0,
 
-      brc20: null,
-      brc20Deploy: null,
-      brc20Mint: null,
-      brc20Transfer: null,
+      brc20: 0,
+      brc20Deploy: 0,
+      brc20Mint: 0,
+      brc20Transfer: 0,
 
-      src20: null,
-      src20Deploy: null,
-      src20Mint: null,
-      src20Transfer: null,
+      src20: 0,
+      src20Deploy: 0,
+      src20Mint: 0,
+      src20Transfer: 0,
     },
+
+    fees: {
+      runeMints: 0,
+      nonUncommonRuneMints: 0,
+      brc20Mints: 0,
+      src20Mints: 0,
+      cat21Mints: 0,
+      atomicals: 0,
+      inscriptionMints: 0,
+    },
+
     inscription: {
 
-      totalEnvelopeSize: null,
-      totalContentSize: null,
+      totalEnvelopeSize: 0,
+      totalContentSize: 0,
 
-      largestEnvelopeSize: null,
-      largestContentSize: null,
+      largestEnvelopeSize: 0,
+      largestContentSize: 0,
 
       largestEnvelopeInscriptionId: null,
       largestContentInscriptionId: null,
 
-      averageEnvelopeSize: null,
-      averageContentSize: null,
+      averageEnvelopeSize: 0,
+      averageContentSize: 0,
 
     },
-    version: null,
 
+    rune: {
+      mostActiveMint: null,
+      mostActiveNonUncommonMint: null,
+    },
+
+    brc20: {
+      mostActiveMint: null,
+    },
+
+    src20: {
+      mostActiveMint: null,
+    },
+
+    version: 0
   };
 }
 

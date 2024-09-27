@@ -88,9 +88,11 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
     const runestoneArtifact = {
       type: DigitalArtifactType.Runestone,
       runestone: {
-        etching: true,
+        etching: {
+          // content is not analysed here
+        }
       },
-    } as unknown as ParsedRunestone;
+    } as ParsedRunestone;
     const flags = DigitalArtifactAnalyserService.analyse(runestoneArtifact);
     expect(flags).toBe(
       OrdpoolTransactionFlags.ordpool_rune |
@@ -102,9 +104,11 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
     const runestoneArtifact = {
       type: DigitalArtifactType.Runestone,
       runestone: {
-        mint: true,
+        mint: {
+          // content is not analysed here
+        }
       },
-    } as unknown as ParsedRunestone;
+    } as ParsedRunestone;
     const flags = DigitalArtifactAnalyserService.analyse(runestoneArtifact);
     expect(flags).toBe(
       OrdpoolTransactionFlags.ordpool_rune |
@@ -116,9 +120,11 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
     const cenotaphArtifact = {
       type: DigitalArtifactType.Runestone,
       cenotaph: {
-        etching: true,
+        etching: {
+          // content is not analysed here
+        }
       },
-    } as unknown as ParsedRunestone;
+    } as ParsedRunestone;
     const flags = DigitalArtifactAnalyserService.analyse(cenotaphArtifact);
     expect(flags).toBe(
       OrdpoolTransactionFlags.ordpool_rune |
@@ -130,9 +136,11 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
     const cenotaphArtifact = {
       type: DigitalArtifactType.Runestone,
       cenotaph: {
-        mint: true,
+        mint: {
+          // content is not analysed here
+        }
       },
-    } as unknown as ParsedRunestone;
+    } as ParsedRunestone;
     const flags = DigitalArtifactAnalyserService.analyse(cenotaphArtifact);
     expect(flags).toBe(
       OrdpoolTransactionFlags.ordpool_rune |

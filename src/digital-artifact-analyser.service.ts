@@ -4,6 +4,7 @@ import { isFlagSetOnTransaction, parseJsonObject } from './digital-artifact-anal
 import { DigitalArtifactsParserService } from './digital-artifacts-parser.service';
 import { InscriptionParserService } from './inscription/inscription-parser.service';
 import { RuneParserService } from './rune/rune-parser.service';
+import { isUncommonGoodsMint } from './rune/rune-parser.service.helper';
 import { Src20ParserService } from './src20/src20-parser.service';
 import { DigitalArtifact, DigitalArtifactType } from './types/digital-artifact';
 import { getArtifactTypeMap, getEmptyStats, OrdpoolStats } from './types/ordpool-stats';
@@ -92,6 +93,35 @@ export class DigitalArtifactAnalyserService {
     // Initialize OrdpoolStats with null for unknown fields,
     // to be dynamically updated for known fields
     const stats: OrdpoolStats = getEmptyStats();
+    stats.version = this.version;
+
+
+    // Rune mint activity tracking
+    const runeMintActivity: { [key: string]: number } = {};
+    const runeNonUncommonGoodsActivity: { [key: string]: number } = {};
+    let totalRuneMintFees = 0;
+    let totalNonUncommonRuneMintFees = 0;
+    let mostActiveRuneMint = null;
+    let mostActiveRuneMintCount = 0;
+    let mostActiveNonUncommonRuneMint = null;
+    let mostActiveNonUncommonRuneMintCount = 0;
+
+    // BRC-20 mint activity tracking
+    const brc20MintActivity: { [key: string]: number } = {};
+    let totalBrc20MintFees = 0;
+    let mostActiveBrc20Mint = null;
+    let mostActiveBrc20MintCount = 0;
+
+    // SRC-20 mint activity tracking
+    const src20MintActivity: { [key: string]: number } = {};
+    let totalSrc20MintFees = 0;
+    let mostActiveSrc20Mint = null;
+    let mostActiveSrc20MintCount = 0;
+
+    // Fees tracking for different artifact types
+    let totalCat21MintFees = 0;
+    let totalAtomicalFees = 0;
+    let totalInscriptionMintFees = 0;
 
     let totalEnvelopeSize = 0;
     let totalContentSize = 0;
@@ -104,10 +134,22 @@ export class DigitalArtifactAnalyserService {
 
       const artifacts: DigitalArtifact[] = DigitalArtifactsParserService.parse(tx);
 
+      // Flags to track whether fees have been added for this transaction.
+      // If we are summing fees separately for each artifact within the same transaction,
+      // we will end up over-counting the fees, especially when multiple assets share the same transaction.
+      // We need to count the fee once per transaction and distribute it accordingly.
+      let runeMintFeeAdded = false;
+      let nonUncommonRuneMintFeeAdded = false;
+      let brc20MintFeeAdded = false;
+      let src20MintFeeAdded = false;
+      let cat21MintFeeAdded = false;
+      let atomicalFeeAdded = false;
+      let inscriptionMintFeeAdded = false;
+
       for (const artifact of artifacts) {
         const flags = DigitalArtifactAnalyserService.analyse(artifact);
 
-        // Iterate over each flag by checking each bit in the flag set
+        // ** Amounts: Iterate over each flag by checking each bit in the flag set
         for (const [flag, statKey] of artifactTypeMap.entries()) {
           // Check if the flag is set using bitwise AND
           if ((flags & flag) === flag) {
@@ -115,8 +157,115 @@ export class DigitalArtifactAnalyserService {
           }
         }
 
-        // collect extra stats for inscriptions
-        if (artifact.type === DigitalArtifactType.Inscription) {
+        // ** Rune Mints and Fees
+        if ((flags & OrdpoolTransactionFlags.ordpool_rune_mint) === OrdpoolTransactionFlags.ordpool_rune_mint) {
+          const runestone = artifact as ParsedRunestone;
+          if (runestone.runestone?.mint) {
+            const { block, tx: mintTx } = runestone.runestone.mint;
+            const mintKey = `${block.toString()}-${mintTx}`;
+
+            // Track Rune mint activity
+            runeMintActivity[mintKey] = (runeMintActivity[mintKey] ?? 0) + 1;
+            if (runeMintActivity[mintKey] > mostActiveRuneMintCount) {
+              mostActiveRuneMint = mintKey;
+              mostActiveRuneMintCount = runeMintActivity[mintKey];
+            }
+
+            // Track non-UNCOMMON•GOODS Rune mints
+            if (!isUncommonGoodsMint(runestone.runestone)) {
+              runeNonUncommonGoodsActivity[mintKey] = (runeNonUncommonGoodsActivity[mintKey] ?? 0) + 1;
+              if (runeNonUncommonGoodsActivity[mintKey] > mostActiveNonUncommonRuneMintCount) {
+                mostActiveNonUncommonRuneMint = mintKey;
+                mostActiveNonUncommonRuneMintCount = runeNonUncommonGoodsActivity[mintKey];
+              }
+            }
+
+            // Accumulate Rune mint fees if not already added for this transaction
+            if (!runeMintFeeAdded) {
+              const txFee = tx.fee ?? 0;
+              totalRuneMintFees += txFee;
+              runeMintFeeAdded = true;
+
+              // Check and accumulate for non-UncommonGoods mints
+              if (!nonUncommonRuneMintFeeAdded && !isUncommonGoodsMint(runestone.runestone)) {
+                totalNonUncommonRuneMintFees += txFee;
+                nonUncommonRuneMintFeeAdded = true;
+              }
+            }
+          }
+        }
+
+        // ** BRC-20 Mints and Fees
+        if ((flags & OrdpoolTransactionFlags.ordpool_brc20_mint) === OrdpoolTransactionFlags.ordpool_brc20_mint) {
+          if (!brc20MintFeeAdded) {
+            const inscription = artifact as ParsedInscription;
+            const parsedContent = parseJsonObject(inscription.getContent());
+            if (parsedContent && parsedContent.p === 'brc-20') {
+              const mintKey = parsedContent.tick ?? 'unknown';
+
+              // Track BRC-20 mint activity
+              brc20MintActivity[mintKey] = (brc20MintActivity[mintKey] ?? 0) + 1;
+              if (brc20MintActivity[mintKey] > mostActiveBrc20MintCount) {
+                mostActiveBrc20Mint = mintKey;
+                mostActiveBrc20MintCount = brc20MintActivity[mintKey];
+              }
+
+              // Accumulate BRC-20 mint fees only once per transaction
+              const txFee = tx.fee ?? 0;
+              totalBrc20MintFees += txFee;
+              brc20MintFeeAdded = true;
+            }
+          }
+        }
+
+        // ** SRC-20 Mints and Fees
+        if ((flags & OrdpoolTransactionFlags.ordpool_src20_mint) === OrdpoolTransactionFlags.ordpool_src20_mint) {
+          if (!src20MintFeeAdded) {
+            const src20 = artifact as ParsedSrc20;
+            const parsedSrcContent = parseJsonObject(src20.getContent());
+            if (parsedSrcContent && parsedSrcContent.p === 'src-20') {
+              const mintKey = parsedSrcContent.tick ?? 'unknown';
+
+              // Track SRC-20 mint activity
+              src20MintActivity[mintKey] = (src20MintActivity[mintKey] ?? 0) + 1;
+              if (src20MintActivity[mintKey] > mostActiveSrc20MintCount) {
+                mostActiveSrc20Mint = mintKey;
+                mostActiveSrc20MintCount = src20MintActivity[mintKey];
+              }
+
+              // Accumulate SRC-20 mint fees only once per transaction
+              const txFee = tx.fee ?? 0;
+              totalSrc20MintFees += txFee;
+              src20MintFeeAdded = true;
+            }
+          }
+        }
+
+        // ** CAT-21 Fees
+        if ((flags & OrdpoolTransactionFlags.ordpool_cat21_mint) === OrdpoolTransactionFlags.ordpool_cat21_mint) {
+          if (!cat21MintFeeAdded) {
+            const txFee = tx.fee ?? 0;
+            totalCat21MintFees += txFee;
+            cat21MintFeeAdded = true;
+          }
+        }
+
+        // ** Atomical Fees
+        if ((flags & OrdpoolTransactionFlags.ordpool_atomical) === OrdpoolTransactionFlags.ordpool_atomical) {
+          if (!atomicalFeeAdded) {
+            const txFee = tx.fee ?? 0;
+            totalAtomicalFees += txFee;
+            atomicalFeeAdded = true;
+          }
+        }
+
+        // ** Inscription Mint Fees + extra stats for inscriptions
+        if ((flags & OrdpoolTransactionFlags.ordpool_inscription_mint) === OrdpoolTransactionFlags.ordpool_inscription_mint) {
+          if (!inscriptionMintFeeAdded) {
+            const txFee = tx.fee ?? 0;
+            totalInscriptionMintFees += txFee;
+            inscriptionMintFeeAdded = true;
+          }
 
           const inscription = artifact as ParsedInscription;
 
@@ -143,6 +292,27 @@ export class DigitalArtifactAnalyserService {
       }
     }
 
+    // Set final Rune stats
+    stats.rune.mostActiveMint = mostActiveRuneMint;
+    stats.rune.mostActiveNonUncommonMint = mostActiveNonUncommonRuneMint;
+    stats.fees.runeMints = totalRuneMintFees;
+    stats.fees.nonUncommonRuneMints = totalNonUncommonRuneMintFees;
+
+    // Set final BRC-20 stats
+    stats.brc20.mostActiveMint = mostActiveBrc20Mint;
+    stats.fees.brc20Mints = totalBrc20MintFees;
+
+    // Set final SRC-20 stats
+    stats.src20.mostActiveMint = mostActiveSrc20Mint;
+    stats.fees.src20Mints = totalSrc20MintFees;
+
+    // Set fees for other artifact types
+    stats.fees.cat21Mints = totalCat21MintFees;
+    stats.fees.atomicals = totalAtomicalFees;
+    stats.fees.inscriptionMints = totalInscriptionMintFees;
+
+
+    // Set final extra stats for inscriptions
     stats.inscription.totalEnvelopeSize = totalEnvelopeSize;
     stats.inscription.totalContentSize = totalContentSize;
     stats.inscription.largestEnvelopeSize = largestEnvelopeSize;
@@ -153,8 +323,6 @@ export class DigitalArtifactAnalyserService {
     const inscriptionCount = stats.amount.inscriptionMint;
     stats.inscription.averageEnvelopeSize = inscriptionCount ? totalEnvelopeSize / inscriptionCount : 0;
     stats.inscription.averageContentSize = inscriptionCount ? totalContentSize / inscriptionCount : 0;
-
-    stats.version = this.version;
 
     return stats;
   }

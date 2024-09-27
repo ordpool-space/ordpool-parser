@@ -143,6 +143,9 @@ export function commitmentHasAtLeast6Confirmations(transactionBlockHeight: numbe
   return hasAtLeast6Confirmations;
 }
 
+/**
+ * Returns true, if the given runestone is a mint for the only hardcoded rune UNCOMMON•GOODS, false otherwise
+ */
 export function isUncommonGoodsMint(runestone: RunestoneSpec) {
   return runestone?.mint?.block === 1n && runestone?.mint?.tx === 0;
 }

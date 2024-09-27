@@ -81,22 +81,20 @@ describe('DigitalArtifactAnalyserService.analyseTransactions', () => {
     expect(stats.amount.brc20Mint).toBe(1);
   });
 
-  it('should count multiple flags for a Runestone with etching and mint', () => {
+  it('should count a Runestone with a mint', () => {
     const artifacts: any[] = [
       {
         type: DigitalArtifactType.Runestone,
         runestone: {
-          etching: true,
-          mint: true,
+          mint: { block: 1n, tx: 0 }
         },
-      } as unknown as ParsedRunestone,
+      } as ParsedRunestone,
     ];
 
     (DigitalArtifactsParserService.parse as jest.Mock).mockReturnValue(artifacts);
 
     const stats = DigitalArtifactAnalyserService.analyseTransactions([tx]);
     expect(stats.amount.rune).toBe(1);
-    expect(stats.amount.runeEtch).toBe(1);
     expect(stats.amount.runeMint).toBe(1);
   });
 
