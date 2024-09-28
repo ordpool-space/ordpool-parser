@@ -185,12 +185,13 @@ export class DigitalArtifactAnalyserService {
               const txFee = tx.fee ?? 0;
               totalRuneMintFees += txFee;
               runeMintFeeAdded = true;
+            }
 
-              // Check and accumulate for non-UncommonGoods mints
-              if (!nonUncommonRuneMintFeeAdded && !isUncommonGoodsMint(runestone.runestone)) {
-                totalNonUncommonRuneMintFees += txFee;
-                nonUncommonRuneMintFeeAdded = true;
-              }
+            // Accumulate non-UncommonGoods Rune mint fees if not already added for this transaction
+            if (!nonUncommonRuneMintFeeAdded && !isUncommonGoodsMint(runestone.runestone)) {
+              const txFee = tx.fee ?? 0;
+              totalNonUncommonRuneMintFees += txFee;
+              nonUncommonRuneMintFeeAdded = true;
             }
           }
         }
@@ -243,6 +244,8 @@ export class DigitalArtifactAnalyserService {
 
         // ** CAT-21 Fees
         if ((flags & OrdpoolTransactionFlags.ordpool_cat21_mint) === OrdpoolTransactionFlags.ordpool_cat21_mint) {
+
+          // not really necessary, because a transaction can only have one cat
           if (!cat21MintFeeAdded) {
             const txFee = tx.fee ?? 0;
             totalCat21MintFees += txFee;
