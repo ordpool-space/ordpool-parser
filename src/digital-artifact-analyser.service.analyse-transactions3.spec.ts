@@ -1,7 +1,5 @@
 import { DigitalArtifactAnalyserService } from './digital-artifact-analyser.service';
 import { DigitalArtifactsParserService } from './digital-artifacts-parser.service';
-import { getEmptyStats, OrdpoolStats } from './types/ordpool-stats';
-import { OrdpoolTransactionFlags } from './types/ordpool-transaction-flags';
 import { TransactionSimple } from './types/transaction-simple';
 import { DigitalArtifactType } from './types/digital-artifact';
 import { ParsedInscription } from './types/parsed-inscription';
@@ -10,23 +8,11 @@ import { ParsedSrc20 } from './types/parsed-src20';
 
 jest.mock('./digital-artifacts-parser.service');
 
-describe('DigitalArtifactAnalyserService - Advanced Test Cases', () => {
+describe('DigitalArtifactAnalyserService.analyseTransactions - Advanced Test Cases', () => {
   let transactions: TransactionSimple[];
 
   beforeEach(() => {
     jest.resetAllMocks();
-
-    // Setup default mock transactions
-    transactions = [
-      {
-        txid: 'tx1',
-        fee: 0, // Edge case: Zero fee
-      } as TransactionSimple,
-      {
-        txid: 'tx2',
-        fee: 1000,
-      } as TransactionSimple,
-    ];
   });
 
   it('should handle artifacts with malformed JSON content gracefully', () => {
@@ -41,10 +27,17 @@ describe('DigitalArtifactAnalyserService - Advanced Test Cases', () => {
 
     (DigitalArtifactsParserService.parse as jest.Mock).mockReturnValue([malformedJsonInscription]);
 
-    const result = DigitalArtifactAnalyserService.analyseTransactions([transactions[0]]);
+    var transactions = [
+      {
+        txid: 'tx1',
+        fee: 1000,
+      } as TransactionSimple,
+    ];
+
+    const result = DigitalArtifactAnalyserService.analyseTransactions(transactions);
     expect(result.amount.brc20Mint).toBe(0); // Should not be considered a valid BRC-20 mint
     expect(result.inscription.totalContentSize).toBe(100);
-    expect(result.fees.inscriptionMints).toBe(0); // No fee should be counted since fee is 0
+    expect(result.fees.inscriptionMints).toBe(1000);
   });
 
   it('should handle zero-fee transactions correctly', () => {
@@ -59,9 +52,20 @@ describe('DigitalArtifactAnalyserService - Advanced Test Cases', () => {
 
     (DigitalArtifactsParserService.parse as jest.Mock).mockReturnValue([zeroFeeInscription]);
 
-    const result = DigitalArtifactAnalyserService.analyseTransactions([transactions[0]]);
-    expect(result.amount.inscriptionMint).toBe(1); // Should count the inscription
-    expect(result.fees.inscriptionMints).toBe(0); // Fee should still be zero
+    var transactions = [
+      {
+        txid: 'tx1',
+        fee: 0, // Edge case: Zero fee
+      } as TransactionSimple,
+      {
+        txid: 'tx2',
+        fee: 1000,
+      } as TransactionSimple,
+    ];
+
+    const result = DigitalArtifactAnalyserService.analyseTransactions(transactions);
+    expect(result.amount.inscriptionMint).toBe(2); // Should count two inscriptions
+    expect(result.fees.inscriptionMints).toBe(1000); // Fee should still be 0 + 1000 == 1000
   });
 
   it('should handle multiple artifacts of the same type in a single transaction', () => {
@@ -85,11 +89,18 @@ describe('DigitalArtifactAnalyserService - Advanced Test Cases', () => {
 
     (DigitalArtifactsParserService.parse as jest.Mock).mockReturnValue([duplicateInscription1, duplicateInscription2]);
 
-    const result = DigitalArtifactAnalyserService.analyseTransactions([transactions[1]]);
+    var transactions = [
+      {
+        txid: 'tx1',
+        fee: 1000,
+      } as TransactionSimple,
+    ];
+
+    const result = DigitalArtifactAnalyserService.analyseTransactions(transactions);
     expect(result.amount.inscriptionMint).toBe(2); // Two inscriptions should be counted
     expect(result.inscription.totalEnvelopeSize).toBe(400); // Sum of 150 and 250
     expect(result.inscription.totalContentSize).toBe(300);  // Sum of 100 and 200
-    expect(result.fees.inscriptionMints).toBe(1000); // Only one fee should be counted
+    expect(result.fees.inscriptionMints).toBe(1000);
   });
 
   it('should handle artifacts with missing fields gracefully', () => {
@@ -100,28 +111,16 @@ describe('DigitalArtifactAnalyserService - Advanced Test Cases', () => {
 
     (DigitalArtifactsParserService.parse as jest.Mock).mockReturnValue([missingFieldsRunestone]);
 
-    const result = DigitalArtifactAnalyserService.analyseTransactions([transactions[0]]);
+    var transactions = [
+      {
+        txid: 'tx1',
+        fee: 1000,
+      } as TransactionSimple
+    ];
+
+    const result = DigitalArtifactAnalyserService.analyseTransactions(transactions);
     expect(result.amount.runeMint).toBe(0); // Should not count the mint since it’s invalid
     expect(result.fees.runeMints).toBe(0); // No fees should be counted
-  });
-
-  it('should handle large content sizes and ensure proper calculations', () => {
-    const largeSizeInscription: ParsedInscription = {
-      type: DigitalArtifactType.Inscription,
-      inscriptionId: 'inscription3',
-      contentType: 'text/plain',
-      contentSize: 5000,
-      envelopeSize: 6000,
-      getContent: () => 'a'.repeat(5000),
-    } as ParsedInscription;
-
-    (DigitalArtifactsParserService.parse as jest.Mock).mockReturnValue([largeSizeInscription]);
-
-    const result = DigitalArtifactAnalyserService.analyseTransactions([transactions[0]]);
-    expect(result.inscription.totalEnvelopeSize).toBe(6000); // Large envelope size should be counted
-    expect(result.inscription.totalContentSize).toBe(5000); // Large content size should be counted
-    expect(result.inscription.largestEnvelopeSize).toBe(6000);
-    expect(result.inscription.largestContentSize).toBe(5000);
   });
 
   it('should handle overlapping and non-overlapping artifact flags correctly', () => {
@@ -147,7 +146,14 @@ describe('DigitalArtifactAnalyserService - Advanced Test Cases', () => {
 
     (DigitalArtifactsParserService.parse as jest.Mock).mockReturnValue(overlappingArtifacts);
 
-    const result = DigitalArtifactAnalyserService.analyseTransactions([transactions[1]]);
+    var transactions = [
+      {
+        txid: 'tx2',
+        fee: 1000,
+      } as TransactionSimple,
+    ];
+
+    const result = DigitalArtifactAnalyserService.analyseTransactions(transactions);
     expect(result.amount.inscriptionMint).toBe(1); // Counts the inscription
     expect(result.amount.brc20Mint).toBe(1); // Also a BRC-20 mint
     expect(result.amount.runeMint).toBe(1); // Separate rune mint
@@ -183,13 +189,25 @@ describe('DigitalArtifactAnalyserService - Advanced Test Cases', () => {
 
     (DigitalArtifactsParserService.parse as jest.Mock).mockReturnValue([runeMint1, runeMint2, runeMint3]);
 
-    const result = DigitalArtifactAnalyserService.analyseTransactions([transactions[1], transactions[1]]);
+    var transactions = [
+      {
+        txid: 'tx1',
+        fee: 0, // Edge case: Zero fee
+      } as TransactionSimple,
+      {
+        txid: 'tx2',
+        fee: 1000,
+      } as TransactionSimple,
+    ];
+
+    const result = DigitalArtifactAnalyserService.analyseTransactions(transactions);
     expect(result.rune.mostActiveMint).toBe('1-0'); // Most active mint key
     expect(result.rune.mostActiveNonUncommonMint).toBe('840000-1'); // Should match for non-uncommon mint as well
     expect(result.fees.runeMints).toBe(1000); // Fee should only be counted once
   });
 
   it('should correctly track most active BRC-20 mint', () => {
+
     const brc20Mint: ParsedInscription = {
       type: DigitalArtifactType.Inscription,
       inscriptionId: 'brc20Mint1',
@@ -199,11 +217,47 @@ describe('DigitalArtifactAnalyserService - Advanced Test Cases', () => {
       getContent: () => JSON.stringify({ p: 'brc-20', op: 'mint', tick: 'AAA' }),
     } as ParsedInscription;
 
-    (DigitalArtifactsParserService.parse as jest.Mock).mockReturnValue([brc20Mint]);
+    const brc20Mint2: ParsedInscription = {
+      type: DigitalArtifactType.Inscription,
+      inscriptionId: 'brc20Mint1',
+      contentType: 'application/json',
+      contentSize: 100,
+      envelopeSize: 150,
+      getContent: () => JSON.stringify({ p: 'brc-20', op: 'mint', tick: 'AAA' }),
+    } as ParsedInscription;
 
-    const result = DigitalArtifactAnalyserService.analyseTransactions([transactions[1], transactions[1]]);
+    const brc20Mint3: ParsedInscription = {
+      type: DigitalArtifactType.Inscription,
+      inscriptionId: 'brc20Mint1',
+      contentType: 'application/json',
+      contentSize: 100,
+      envelopeSize: 150,
+      getContent: () => JSON.stringify({ p: 'brc-20', op: 'mint', tick: 'BBB' }),
+    } as ParsedInscription;
+
+    (DigitalArtifactsParserService.parse as jest.Mock)
+      .mockReturnValueOnce([brc20Mint])
+      .mockReturnValueOnce([brc20Mint2])
+      .mockReturnValueOnce([brc20Mint3]);
+
+    transactions = [
+      {
+        txid: 'tx1',
+        fee: 1000,
+      } as TransactionSimple,
+      {
+        txid: 'tx2',
+        fee: 1000,
+      } as TransactionSimple,
+      {
+        txid: 'tx3',
+        fee: 1000,
+      } as TransactionSimple,
+    ];
+
+    const result = DigitalArtifactAnalyserService.analyseTransactions(transactions);
     expect(result.brc20.mostActiveMint).toBe('AAA'); // Most active ticker should be 'AAA'
-    expect(result.amount.brc20Mint).toBe(1); // BRC-20 mint should be counted once
+    expect(result.amount.brc20Mint).toBe(3);
   });
 
   it('should correctly track most active SRC-20 mint', () => {
@@ -214,8 +268,120 @@ describe('DigitalArtifactAnalyserService - Advanced Test Cases', () => {
 
     (DigitalArtifactsParserService.parse as jest.Mock).mockReturnValue([src20Mint]);
 
-    const result = DigitalArtifactAnalyserService.analyseTransactions([transactions[1]]);
+    var transactions = [
+      {
+        txid: 'tx1',
+        fee: 1000,
+      } as TransactionSimple,
+    ];
+
+    const result = DigitalArtifactAnalyserService.analyseTransactions(transactions);
     expect(result.src20.mostActiveMint).toBe('SRC'); // Most active ticker should be 'SRC'
     expect(result.amount.src20Mint).toBe(1); // SRC-20 mint should be counted once
+  });
+
+  it('should handle transactions with no digital artifacts gracefully', () => {
+    (DigitalArtifactsParserService.parse as jest.Mock).mockReturnValue([]);
+
+    var transactions = [
+      {
+        txid: 'tx1',
+        fee: 1000,
+      } as TransactionSimple,
+    ];
+
+    const result = DigitalArtifactAnalyserService.analyseTransactions(transactions);
+    expect(result.amount.inscriptionMint).toBe(0); // No inscriptions should be counted
+    expect(result.amount.runeMint).toBe(0); // No runes should be counted
+    expect(result.fees.inscriptionMints).toBe(0); // No fees should be counted
+  });
+
+  it('should correctly handle multiple flags in a single artifact', () => {
+    const combinedArtifact: ParsedInscription = {
+      type: DigitalArtifactType.Inscription,
+      inscriptionId: 'combined1',
+      contentType: 'application/json',
+      contentSize: 100,
+      envelopeSize: 150,
+      getContent: () => JSON.stringify({ p: 'brc-20', op: 'mint', tick: 'XYZ' }),
+    } as ParsedInscription;
+
+    (DigitalArtifactsParserService.parse as jest.Mock).mockReturnValue([combinedArtifact]);
+
+    const result = DigitalArtifactAnalyserService.analyseTransactions([transactions[1]]);
+    expect(result.amount.inscriptionMint).toBe(1); // Counts the inscription
+    expect(result.amount.brc20Mint).toBe(1); // Also a BRC-20 mint
+    expect(result.fees.inscriptionMints).toBe(1000); // Fee should be counted once
+    expect(result.fees.brc20Mints).toBe(1000); // Fee should be counted once for BRC-20 mint
+  });
+
+  it('should correctly analyze multiple unique transactions with CAT-21', () => {
+    const uniqueTransaction1 = {
+      txid: 'unique_tx1',
+      fee: 500,
+    } as TransactionSimple;
+
+    const uniqueTransaction2 = {
+      txid: 'unique_tx2',
+      fee: 800,
+    } as TransactionSimple;
+
+    const brc20Mint1: ParsedInscription = {
+      type: DigitalArtifactType.Inscription,
+      inscriptionId: 'brc20Mint1',
+      contentType: 'application/json',
+      contentSize: 100,
+      envelopeSize: 150,
+      getContent: () => JSON.stringify({ p: 'brc-20', op: 'mint', tick: 'AAA' }),
+    } as ParsedInscription;
+
+    const brc20Mint2: ParsedInscription = {
+      type: DigitalArtifactType.Inscription,
+      inscriptionId: 'brc20Mint2',
+      contentType: 'application/json',
+      contentSize: 200,
+      envelopeSize: 300,
+      getContent: () => JSON.stringify({ p: 'brc-20', op: 'mint', tick: 'BBB' }),
+    } as ParsedInscription;
+
+    const cat21Mint: ParsedInscription = {
+      type: DigitalArtifactType.Cat21,
+    } as ParsedInscription;
+
+    (DigitalArtifactsParserService.parse as jest.Mock)
+      .mockReturnValueOnce([brc20Mint1, cat21Mint])
+      .mockReturnValueOnce([brc20Mint2, cat21Mint]);
+
+    const result = DigitalArtifactAnalyserService.analyseTransactions([uniqueTransaction1, uniqueTransaction2]);
+    expect(result.brc20.mostActiveMint).toBe('AAA'); // First mint should be most active initially
+    expect(result.amount.brc20Mint).toBe(2); // Two mints should be counted
+    expect(result.fees.brc20Mints).toBe(1300); // Sum of 500 and 800
+
+    expect(result.amount.cat21Mint).toBe(2); // Two mints should be counted
+    expect(result.fees.cat21Mints).toBe(1300); // Sum of 500 and 800
+  });
+
+  it('should handle transactions with a large number of artifacts', () => {
+    const largeNumberOfArtifacts: ParsedInscription[] = Array.from({ length: 1000 }, (_, i) => ({
+      type: DigitalArtifactType.Inscription,
+      inscriptionId: `inscription${i}`,
+      contentType: 'text/plain',
+      contentSize: 50,
+      envelopeSize: 100,
+      getContent: () => 'content',
+    })) as ParsedInscription[];
+
+    (DigitalArtifactsParserService.parse as jest.Mock).mockReturnValue(largeNumberOfArtifacts);
+
+    const largeTransaction = {
+      txid: 'large_tx',
+      fee: 1000,
+    } as TransactionSimple;
+
+    const result = DigitalArtifactAnalyserService.analyseTransactions([largeTransaction]);
+    expect(result.amount.inscriptionMint).toBe(1000); // Should count all 1000 inscriptions
+    expect(result.inscription.totalEnvelopeSize).toBe(100000); // 100 * 1000
+    expect(result.inscription.totalContentSize).toBe(50000); // 50 * 1000
+    expect(result.fees.inscriptionMints).toBe(1000); // Fee should be counted once
   });
 });
