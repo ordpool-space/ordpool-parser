@@ -45,7 +45,7 @@ export interface OrdpoolStats {
     inscriptionMints: number;
   };
 
-  inscription: {
+  inscriptions: {
 
     totalEnvelopeSize: number;
     totalContentSize: number;
@@ -60,7 +60,7 @@ export interface OrdpoolStats {
     averageContentSize: number;
   },
 
-  rune: {
+  runes: {
     mostActiveMint: string | null;
     mostActiveNonUncommonMint: string | null;
   };
@@ -122,7 +122,7 @@ export function getEmptyStats(): OrdpoolStats {
       inscriptionMints: 0,
     },
 
-    inscription: {
+    inscriptions: {
 
       totalEnvelopeSize: 0,
       totalContentSize: 0,
@@ -135,10 +135,9 @@ export function getEmptyStats(): OrdpoolStats {
 
       averageEnvelopeSize: 0,
       averageContentSize: 0,
-
     },
 
-    rune: {
+    runes: {
       mostActiveMint: null,
       mostActiveNonUncommonMint: null,
     },
