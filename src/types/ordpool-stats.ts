@@ -2,7 +2,7 @@ import { OrdpoolTransactionFlag, OrdpoolTransactionFlags } from "./ordpool-trans
 
 export interface OrdpoolStats {
 
-  amount: {
+  amounts: {
     atomical: number;
     atomicalMint: number;        // unused, for now
     atomicalTransfer: number;    // unused, for now
@@ -45,7 +45,7 @@ export interface OrdpoolStats {
     inscriptionMints: number;
   };
 
-  inscription: {
+  inscriptions: {
 
     totalEnvelopeSize: number;
     totalContentSize: number;
@@ -60,7 +60,7 @@ export interface OrdpoolStats {
     averageContentSize: number;
   },
 
-  rune: {
+  runes: {
     mostActiveMint: string | null;
     mostActiveNonUncommonMint: string | null;
   };
@@ -79,7 +79,7 @@ export interface OrdpoolStats {
 // this empty object represents no parsed data
 export function getEmptyStats(): OrdpoolStats {
   return {
-    amount: {
+    amounts: {
       atomical: 0,
       atomicalMint: 0,
       atomicalTransfer: 0,
@@ -122,7 +122,7 @@ export function getEmptyStats(): OrdpoolStats {
       inscriptionMints: 0,
     },
 
-    inscription: {
+    inscriptions: {
 
       totalEnvelopeSize: 0,
       totalContentSize: 0,
@@ -138,7 +138,7 @@ export function getEmptyStats(): OrdpoolStats {
 
     },
 
-    rune: {
+    runes: {
       mostActiveMint: null,
       mostActiveNonUncommonMint: null,
     },
@@ -159,7 +159,7 @@ export function getEmptyStats(): OrdpoolStats {
  * Map between OrdpoolTransactionFlag and the corresponding field in OrdpoolStats.
  */
 export function getArtifactTypeMap() {
-  return new Map<OrdpoolTransactionFlag, keyof OrdpoolStats['amount']>([
+  return new Map<OrdpoolTransactionFlag, keyof OrdpoolStats['amounts']>([
 
     [OrdpoolTransactionFlags.ordpool_atomical,              'atomical'],
     [OrdpoolTransactionFlags.ordpool_atomical_mint,         'atomicalMint'],

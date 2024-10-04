@@ -24,7 +24,7 @@ describe('DigitalArtifactAnalyserService.analyseTransactions', () => {
     (DigitalArtifactsParserService.parse as jest.Mock).mockReturnValue(artifacts);
 
     const stats = DigitalArtifactAnalyserService.analyseTransactions([tx]);
-    expect(stats.amount.inscription).toBe(1);
+    expect(stats.amounts.inscription).toBe(1);
   });
 
   it('should count multiple artifacts in one transaction', () => {
@@ -37,8 +37,8 @@ describe('DigitalArtifactAnalyserService.analyseTransactions', () => {
     (DigitalArtifactsParserService.parse as jest.Mock).mockReturnValue(artifacts);
 
     const stats = DigitalArtifactAnalyserService.analyseTransactions([tx]);
-    expect(stats.amount.atomical).toBe(2);
-    expect(stats.amount.cat21).toBe(1);
+    expect(stats.amounts.atomical).toBe(2);
+    expect(stats.amounts.cat21).toBe(1);
   });
 
   it('should handle multiple transactions and artifacts', () => {
@@ -60,8 +60,8 @@ describe('DigitalArtifactAnalyserService.analyseTransactions', () => {
       .mockReturnValueOnce(artifacts2);
 
     const stats = DigitalArtifactAnalyserService.analyseTransactions([tx1, tx2]);
-    expect(stats.amount.atomical).toBe(1);
-    expect(stats.amount.cat21).toBe(3);
+    expect(stats.amounts.atomical).toBe(1);
+    expect(stats.amounts.cat21).toBe(3);
   });
 
   it('should count multiple flags for an Inscription with BRC-20 mint', () => {
@@ -76,9 +76,9 @@ describe('DigitalArtifactAnalyserService.analyseTransactions', () => {
     (DigitalArtifactsParserService.parse as jest.Mock).mockReturnValue(artifacts);
 
     const stats = DigitalArtifactAnalyserService.analyseTransactions([tx]);
-    expect(stats.amount.inscription).toBe(1);
-    expect(stats.amount.inscriptionMint).toBe(1);
-    expect(stats.amount.brc20Mint).toBe(1);
+    expect(stats.amounts.inscription).toBe(1);
+    expect(stats.amounts.inscriptionMint).toBe(1);
+    expect(stats.amounts.brc20Mint).toBe(1);
   });
 
   it('should count a Runestone with a mint', () => {
@@ -94,8 +94,8 @@ describe('DigitalArtifactAnalyserService.analyseTransactions', () => {
     (DigitalArtifactsParserService.parse as jest.Mock).mockReturnValue(artifacts);
 
     const stats = DigitalArtifactAnalyserService.analyseTransactions([tx]);
-    expect(stats.amount.rune).toBe(1);
-    expect(stats.amount.runeMint).toBe(1);
+    expect(stats.amounts.rune).toBe(1);
+    expect(stats.amounts.runeMint).toBe(1);
   });
 
   it('should count SRC-20 deploy correctly', () => {
@@ -109,7 +109,7 @@ describe('DigitalArtifactAnalyserService.analyseTransactions', () => {
     (DigitalArtifactsParserService.parse as jest.Mock).mockReturnValue(artifacts);
 
     const stats = DigitalArtifactAnalyserService.analyseTransactions([tx]);
-    expect(stats.amount.src20).toBe(1);
-    expect(stats.amount.src20Deploy).toBe(1);
+    expect(stats.amounts.src20).toBe(1);
+    expect(stats.amounts.src20Deploy).toBe(1);
   });
 });

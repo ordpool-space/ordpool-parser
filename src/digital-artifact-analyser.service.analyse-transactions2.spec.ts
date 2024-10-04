@@ -93,10 +93,10 @@ describe('DigitalArtifactAnalyserService', () => {
     const result = DigitalArtifactAnalyserService.analyseTransactions(transactions);
 
     // ** Checking the amount counts
-    expect(result.amount.inscription).toBe(2);  // Two inscriptions
-    expect(result.amount.runeMint).toBe(2);     // Two rune mints
-    expect(result.amount.brc20Mint).toBe(1);    // One BRC-20 mint
-    expect(result.amount.src20Mint).toBe(1);    // One SRC-20 mint
+    expect(result.amounts.inscription).toBe(2);  // Two inscriptions
+    expect(result.amounts.runeMint).toBe(2);     // Two rune mints
+    expect(result.amounts.brc20Mint).toBe(1);    // One BRC-20 mint
+    expect(result.amounts.src20Mint).toBe(1);    // One SRC-20 mint
 
     // ** Checking fee calculations
     expect(result.fees.inscriptionMints).toBe(3000); // tx1 and tx2 fees combined for inscription mints
@@ -110,8 +110,8 @@ describe('DigitalArtifactAnalyserService', () => {
     const result = DigitalArtifactAnalyserService.analyseTransactions(transactions);
 
     // Rune mint activity tracking
-    expect(result.rune.mostActiveMint).toBe('1-0'); // Most active mint is Uncommon Goods Rune
-    expect(result.rune.mostActiveNonUncommonMint).toBe('1000-2'); // Most active non-Uncommon mint
+    expect(result.runes.mostActiveMint).toBe('1-0'); // Most active mint is Uncommon Goods Rune
+    expect(result.runes.mostActiveNonUncommonMint).toBe('1000-2'); // Most active non-Uncommon mint
 
     // BRC-20 mint activity tracking
     expect(result.brc20.mostActiveMint).toBe('BRC20');
@@ -124,15 +124,15 @@ describe('DigitalArtifactAnalyserService', () => {
     const result = DigitalArtifactAnalyserService.analyseTransactions(transactions);
 
     // ** Checking the sizes and ids
-    expect(result.inscription.totalEnvelopeSize).toBe(500); // Sum of 200 and 300
-    expect(result.inscription.totalContentSize).toBe(350);  // Sum of 150 and 200
-    expect(result.inscription.largestEnvelopeSize).toBe(300);
-    expect(result.inscription.largestContentSize).toBe(200);
-    expect(result.inscription.largestEnvelopeInscriptionId).toBe('inscription2');
-    expect(result.inscription.largestContentInscriptionId).toBe('inscription2');
+    expect(result.inscriptions.totalEnvelopeSize).toBe(500); // Sum of 200 and 300
+    expect(result.inscriptions.totalContentSize).toBe(350);  // Sum of 150 and 200
+    expect(result.inscriptions.largestEnvelopeSize).toBe(300);
+    expect(result.inscriptions.largestContentSize).toBe(200);
+    expect(result.inscriptions.largestEnvelopeInscriptionId).toBe('inscription2');
+    expect(result.inscriptions.largestContentInscriptionId).toBe('inscription2');
 
-    expect(result.inscription.averageEnvelopeSize).toBe(500 / 2); // 250
-    expect(result.inscription.averageContentSize).toBe(350 / 2); // 175
+    expect(result.inscriptions.averageEnvelopeSize).toBe(500 / 2); // 250
+    expect(result.inscriptions.averageContentSize).toBe(350 / 2); // 175
   });
 
   it('should correctly set empty fields when no artifacts are present', () => {
@@ -142,10 +142,10 @@ describe('DigitalArtifactAnalyserService', () => {
     const result = DigitalArtifactAnalyserService.analyseTransactions(transactions);
 
     // ** Checking all zero or null values
-    expect(result.amount.inscription).toBe(0);
-    expect(result.amount.runeMint).toBe(0);
-    expect(result.amount.brc20Mint).toBe(0);
-    expect(result.amount.src20Mint).toBe(0);
+    expect(result.amounts.inscription).toBe(0);
+    expect(result.amounts.runeMint).toBe(0);
+    expect(result.amounts.brc20Mint).toBe(0);
+    expect(result.amounts.src20Mint).toBe(0);
 
     expect(result.fees.inscriptionMints).toBe(0);
     expect(result.fees.runeMints).toBe(0);
@@ -153,17 +153,17 @@ describe('DigitalArtifactAnalyserService', () => {
     expect(result.fees.brc20Mints).toBe(0);
     expect(result.fees.src20Mints).toBe(0);
 
-    expect(result.inscription.totalEnvelopeSize).toBe(0);
-    expect(result.inscription.totalContentSize).toBe(0);
-    expect(result.inscription.largestEnvelopeSize).toBe(0);
-    expect(result.inscription.largestContentSize).toBe(0);
-    expect(result.inscription.largestEnvelopeInscriptionId).toBe(null);
-    expect(result.inscription.largestContentInscriptionId).toBe(null);
-    expect(result.inscription.averageEnvelopeSize).toBe(0);
-    expect(result.inscription.averageContentSize).toBe(0);
+    expect(result.inscriptions.totalEnvelopeSize).toBe(0);
+    expect(result.inscriptions.totalContentSize).toBe(0);
+    expect(result.inscriptions.largestEnvelopeSize).toBe(0);
+    expect(result.inscriptions.largestContentSize).toBe(0);
+    expect(result.inscriptions.largestEnvelopeInscriptionId).toBe(null);
+    expect(result.inscriptions.largestContentInscriptionId).toBe(null);
+    expect(result.inscriptions.averageEnvelopeSize).toBe(0);
+    expect(result.inscriptions.averageContentSize).toBe(0);
 
-    expect(result.rune.mostActiveMint).toBe(null);
-    expect(result.rune.mostActiveNonUncommonMint).toBe(null);
+    expect(result.runes.mostActiveMint).toBe(null);
+    expect(result.runes.mostActiveNonUncommonMint).toBe(null);
     expect(result.brc20.mostActiveMint).toBe(null);
     expect(result.src20.mostActiveMint).toBe(null);
   });

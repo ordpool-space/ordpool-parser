@@ -29,13 +29,13 @@ describe('DigitalArtifacts Parser', () => {
     warn(`Block 840,000 txns – Execution time: ${(end - start) / 100} ms`);
 
     // 878 inscriptions according ordinals.com
-    expect(ordpoolStats.amount.inscription).toBe(878);
+    expect(ordpoolStats.amounts.inscription).toBe(878);
 
     // 689 runes according ordinals.com -- all 66 invalid ronestones are identified in the next test
-    expect(ordpoolStats.amount.runeEtch).toBe(755);
+    expect(ordpoolStats.amounts.runeEtch).toBe(755);
 
     // i havent verified all of these numbers, but at least we know that something has changed, if this object differs
-    expect(ordpoolStats.amount).toEqual({
+    expect(ordpoolStats.amounts).toEqual({
       atomical: 0,
       atomicalMint: 0,
       atomicalTransfer: 0,
@@ -141,7 +141,7 @@ describe('DigitalArtifacts Parser', () => {
    * Invalid rune in 00c2896d35bec83eb5467fcbda422e70b1f683b9d893711973128ae8900ba6ce – PEPE•ON•BITCOIN – NameAlreadyTaken
    * Invalid rune in 67491a9ad5f911aa038a3bfa8d9b9e9602806e1582c21a447891621ce0cb0482 – RUNNING•BITCOIN – NameAlreadyTaken
    */
-  xit('should identify all 66 invalid runestones of block 840000', async () => {
+  xit('SLOW: should identify all 66 invalid runestones of block 840000', async () => {
 
     var transactions = getBlock840000Txns();
 

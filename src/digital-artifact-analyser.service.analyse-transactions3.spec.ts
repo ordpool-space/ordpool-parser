@@ -35,8 +35,8 @@ describe('DigitalArtifactAnalyserService.analyseTransactions - Advanced Test Cas
     ];
 
     const result = DigitalArtifactAnalyserService.analyseTransactions(transactions);
-    expect(result.amount.brc20Mint).toBe(0); // Should not be considered a valid BRC-20 mint
-    expect(result.inscription.totalContentSize).toBe(100);
+    expect(result.amounts.brc20Mint).toBe(0); // Should not be considered a valid BRC-20 mint
+    expect(result.inscriptions.totalContentSize).toBe(100);
     expect(result.fees.inscriptionMints).toBe(1000);
   });
 
@@ -64,7 +64,7 @@ describe('DigitalArtifactAnalyserService.analyseTransactions - Advanced Test Cas
     ];
 
     const result = DigitalArtifactAnalyserService.analyseTransactions(transactions);
-    expect(result.amount.inscriptionMint).toBe(2); // Should count two inscriptions
+    expect(result.amounts.inscriptionMint).toBe(2); // Should count two inscriptions
     expect(result.fees.inscriptionMints).toBe(1000); // Fee should still be 0 + 1000 == 1000
   });
 
@@ -97,9 +97,9 @@ describe('DigitalArtifactAnalyserService.analyseTransactions - Advanced Test Cas
     ];
 
     const result = DigitalArtifactAnalyserService.analyseTransactions(transactions);
-    expect(result.amount.inscriptionMint).toBe(2); // Two inscriptions should be counted
-    expect(result.inscription.totalEnvelopeSize).toBe(400); // Sum of 150 and 250
-    expect(result.inscription.totalContentSize).toBe(300);  // Sum of 100 and 200
+    expect(result.amounts.inscriptionMint).toBe(2); // Two inscriptions should be counted
+    expect(result.inscriptions.totalEnvelopeSize).toBe(400); // Sum of 150 and 250
+    expect(result.inscriptions.totalContentSize).toBe(300);  // Sum of 100 and 200
     expect(result.fees.inscriptionMints).toBe(1000);
   });
 
@@ -119,7 +119,7 @@ describe('DigitalArtifactAnalyserService.analyseTransactions - Advanced Test Cas
     ];
 
     const result = DigitalArtifactAnalyserService.analyseTransactions(transactions);
-    expect(result.amount.runeMint).toBe(0); // Should not count the mint since it’s invalid
+    expect(result.amounts.runeMint).toBe(0); // Should not count the mint since it’s invalid
     expect(result.fees.runeMints).toBe(0); // No fees should be counted
   });
 
@@ -154,9 +154,9 @@ describe('DigitalArtifactAnalyserService.analyseTransactions - Advanced Test Cas
     ];
 
     const result = DigitalArtifactAnalyserService.analyseTransactions(transactions);
-    expect(result.amount.inscriptionMint).toBe(1); // Counts the inscription
-    expect(result.amount.brc20Mint).toBe(1); // Also a BRC-20 mint
-    expect(result.amount.runeMint).toBe(1); // Separate rune mint
+    expect(result.amounts.inscriptionMint).toBe(1); // Counts the inscription
+    expect(result.amounts.brc20Mint).toBe(1); // Also a BRC-20 mint
+    expect(result.amounts.runeMint).toBe(1); // Separate rune mint
     expect(result.fees.inscriptionMints).toBe(1000); // Fee should be counted only once
     expect(result.fees.brc20Mints).toBe(1000); // Fee should be counted only once for BRC-20 mint
     expect(result.fees.runeMints).toBe(1000); // Fee should be counted once for the rune mint
@@ -201,8 +201,8 @@ describe('DigitalArtifactAnalyserService.analyseTransactions - Advanced Test Cas
     ];
 
     const result = DigitalArtifactAnalyserService.analyseTransactions(transactions);
-    expect(result.rune.mostActiveMint).toBe('1-0'); // Most active mint key
-    expect(result.rune.mostActiveNonUncommonMint).toBe('840000-1'); // Should match for non-uncommon mint as well
+    expect(result.runes.mostActiveMint).toBe('1-0'); // Most active mint key
+    expect(result.runes.mostActiveNonUncommonMint).toBe('840000-1'); // Should match for non-uncommon mint as well
     expect(result.fees.runeMints).toBe(1000); // Fee should only be counted once
   });
 
@@ -257,7 +257,7 @@ describe('DigitalArtifactAnalyserService.analyseTransactions - Advanced Test Cas
 
     const result = DigitalArtifactAnalyserService.analyseTransactions(transactions);
     expect(result.brc20.mostActiveMint).toBe('AAA'); // Most active ticker should be 'AAA'
-    expect(result.amount.brc20Mint).toBe(3);
+    expect(result.amounts.brc20Mint).toBe(3);
   });
 
   it('should correctly track most active SRC-20 mint', () => {
@@ -277,7 +277,7 @@ describe('DigitalArtifactAnalyserService.analyseTransactions - Advanced Test Cas
 
     const result = DigitalArtifactAnalyserService.analyseTransactions(transactions);
     expect(result.src20.mostActiveMint).toBe('SRC'); // Most active ticker should be 'SRC'
-    expect(result.amount.src20Mint).toBe(1); // SRC-20 mint should be counted once
+    expect(result.amounts.src20Mint).toBe(1); // SRC-20 mint should be counted once
   });
 
   it('should handle transactions with no digital artifacts gracefully', () => {
@@ -291,8 +291,8 @@ describe('DigitalArtifactAnalyserService.analyseTransactions - Advanced Test Cas
     ];
 
     const result = DigitalArtifactAnalyserService.analyseTransactions(transactions);
-    expect(result.amount.inscriptionMint).toBe(0); // No inscriptions should be counted
-    expect(result.amount.runeMint).toBe(0); // No runes should be counted
+    expect(result.amounts.inscriptionMint).toBe(0); // No inscriptions should be counted
+    expect(result.amounts.runeMint).toBe(0); // No runes should be counted
     expect(result.fees.inscriptionMints).toBe(0); // No fees should be counted
   });
 
@@ -309,8 +309,8 @@ describe('DigitalArtifactAnalyserService.analyseTransactions - Advanced Test Cas
     (DigitalArtifactsParserService.parse as jest.Mock).mockReturnValue([combinedArtifact]);
 
     const result = DigitalArtifactAnalyserService.analyseTransactions([transactions[1]]);
-    expect(result.amount.inscriptionMint).toBe(1); // Counts the inscription
-    expect(result.amount.brc20Mint).toBe(1); // Also a BRC-20 mint
+    expect(result.amounts.inscriptionMint).toBe(1); // Counts the inscription
+    expect(result.amounts.brc20Mint).toBe(1); // Also a BRC-20 mint
     expect(result.fees.inscriptionMints).toBe(1000); // Fee should be counted once
     expect(result.fees.brc20Mints).toBe(1000); // Fee should be counted once for BRC-20 mint
   });
@@ -354,10 +354,10 @@ describe('DigitalArtifactAnalyserService.analyseTransactions - Advanced Test Cas
 
     const result = DigitalArtifactAnalyserService.analyseTransactions([uniqueTransaction1, uniqueTransaction2]);
     expect(result.brc20.mostActiveMint).toBe('AAA'); // First mint should be most active initially
-    expect(result.amount.brc20Mint).toBe(2); // Two mints should be counted
+    expect(result.amounts.brc20Mint).toBe(2); // Two mints should be counted
     expect(result.fees.brc20Mints).toBe(1300); // Sum of 500 and 800
 
-    expect(result.amount.cat21Mint).toBe(2); // Two mints should be counted
+    expect(result.amounts.cat21Mint).toBe(2); // Two mints should be counted
     expect(result.fees.cat21Mints).toBe(1300); // Sum of 500 and 800
   });
 
@@ -379,9 +379,9 @@ describe('DigitalArtifactAnalyserService.analyseTransactions - Advanced Test Cas
     } as TransactionSimple;
 
     const result = DigitalArtifactAnalyserService.analyseTransactions([largeTransaction]);
-    expect(result.amount.inscriptionMint).toBe(1000); // Should count all 1000 inscriptions
-    expect(result.inscription.totalEnvelopeSize).toBe(100000); // 100 * 1000
-    expect(result.inscription.totalContentSize).toBe(50000); // 50 * 1000
+    expect(result.amounts.inscriptionMint).toBe(1000); // Should count all 1000 inscriptions
+    expect(result.inscriptions.totalEnvelopeSize).toBe(100000); // 100 * 1000
+    expect(result.inscriptions.totalContentSize).toBe(50000); // 50 * 1000
     expect(result.fees.inscriptionMints).toBe(1000); // Fee should be counted once
   });
 });

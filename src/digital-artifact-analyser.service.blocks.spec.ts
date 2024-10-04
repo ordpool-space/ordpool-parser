@@ -15,8 +15,8 @@ describe('DigitalArtifacts Parser', () => {
     const end = performance.now();
     warn(`Block 832,947 txns – Execution time: ${(end - start) / 1000 }s`);
 
-    expect(ordpoolStats.amount.inscription).toBe(1);
-    expect(ordpoolStats.amount.inscriptionMint).toBe(1);
+    expect(ordpoolStats.amounts.inscription).toBe(1);
+    expect(ordpoolStats.amounts.inscriptionMint).toBe(1);
   });
 
   it('should count all artifacts in block 831,802, which holds a lot BRC-20 trio mints and a large video inscription', () => {
@@ -28,7 +28,7 @@ describe('DigitalArtifacts Parser', () => {
     const end = performance.now();
     warn(`Block 831,802 txns – Execution time: ${(end - start) / 1000 }s`);
 
-    expect(ordpoolStats.amount.brc20).toBe(2100);
-    expect(ordpoolStats.amount.brc20Mint).toBe(2100);
+    expect(ordpoolStats.amounts.brc20).toBe(2100);
+    expect(ordpoolStats.amounts.brc20Mint).toBe(2100);
   });
 });

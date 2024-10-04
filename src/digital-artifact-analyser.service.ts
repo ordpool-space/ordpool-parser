@@ -153,7 +153,7 @@ export class DigitalArtifactAnalyserService {
         for (const [flag, statKey] of artifactTypeMap.entries()) {
           // Check if the flag is set using bitwise AND
           if ((flags & flag) === flag) {
-            stats.amount[statKey] = (stats.amount[statKey] ?? 0) + 1;
+            stats.amounts[statKey] = (stats.amounts[statKey] ?? 0) + 1;
           }
         }
 
@@ -296,8 +296,8 @@ export class DigitalArtifactAnalyserService {
     }
 
     // Set final Rune stats
-    stats.rune.mostActiveMint = mostActiveRuneMint;
-    stats.rune.mostActiveNonUncommonMint = mostActiveNonUncommonRuneMint;
+    stats.runes.mostActiveMint = mostActiveRuneMint;
+    stats.runes.mostActiveNonUncommonMint = mostActiveNonUncommonRuneMint;
     stats.fees.runeMints = totalRuneMintFees;
     stats.fees.nonUncommonRuneMints = totalNonUncommonRuneMintFees;
 
@@ -316,16 +316,16 @@ export class DigitalArtifactAnalyserService {
 
 
     // Set final extra stats for inscriptions
-    stats.inscription.totalEnvelopeSize = totalEnvelopeSize;
-    stats.inscription.totalContentSize = totalContentSize;
-    stats.inscription.largestEnvelopeSize = largestEnvelopeSize;
-    stats.inscription.largestContentSize = largestContentSize;
-    stats.inscription.largestEnvelopeInscriptionId = largestEnvelopeInscriptionId;
-    stats.inscription.largestContentInscriptionId = largestContentInscriptionId;
+    stats.inscriptions.totalEnvelopeSize = totalEnvelopeSize;
+    stats.inscriptions.totalContentSize = totalContentSize;
+    stats.inscriptions.largestEnvelopeSize = largestEnvelopeSize;
+    stats.inscriptions.largestContentSize = largestContentSize;
+    stats.inscriptions.largestEnvelopeInscriptionId = largestEnvelopeInscriptionId;
+    stats.inscriptions.largestContentInscriptionId = largestContentInscriptionId;
 
-    const inscriptionCount = stats.amount.inscriptionMint;
-    stats.inscription.averageEnvelopeSize = inscriptionCount ? totalEnvelopeSize / inscriptionCount : 0;
-    stats.inscription.averageContentSize = inscriptionCount ? totalContentSize / inscriptionCount : 0;
+    const inscriptionCount = stats.amounts.inscriptionMint;
+    stats.inscriptions.averageEnvelopeSize = inscriptionCount ? totalEnvelopeSize / inscriptionCount : 0;
+    stats.inscriptions.averageContentSize = inscriptionCount ? totalContentSize / inscriptionCount : 0;
 
     return stats;
   }
