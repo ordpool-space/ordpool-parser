@@ -201,8 +201,8 @@ describe('DigitalArtifactAnalyserService.analyseTransactions - Advanced Test Cas
     ];
 
     const result = DigitalArtifactAnalyserService.analyseTransactions(transactions);
-    expect(result.runes.mostActiveMint).toBe('1-0'); // Most active mint key
-    expect(result.runes.mostActiveNonUncommonMint).toBe('840000-1'); // Should match for non-uncommon mint as well
+    expect(result.runes.mostActiveMint).toBe('1:0'); // Most active mint key
+    expect(result.runes.mostActiveNonUncommonMint).toBe('840000:1'); // Should match for non-uncommon mint as well
     expect(result.fees.runeMints).toBe(1000); // Fee should only be counted once
   });
 

@@ -1,7 +1,5 @@
 import { DigitalArtifactAnalyserService } from './digital-artifact-analyser.service';
 import { DigitalArtifactsParserService } from './digital-artifacts-parser.service';
-import { getEmptyStats, OrdpoolStats } from './types/ordpool-stats';
-import { OrdpoolTransactionFlags } from './types/ordpool-transaction-flags';
 import { TransactionSimple } from './types/transaction-simple';
 import { DigitalArtifactType } from './types/digital-artifact';
 import { ParsedInscription } from './types/parsed-inscription';
@@ -110,8 +108,8 @@ describe('DigitalArtifactAnalyserService', () => {
     const result = DigitalArtifactAnalyserService.analyseTransactions(transactions);
 
     // Rune mint activity tracking
-    expect(result.runes.mostActiveMint).toBe('1-0'); // Most active mint is Uncommon Goods Rune
-    expect(result.runes.mostActiveNonUncommonMint).toBe('1000-2'); // Most active non-Uncommon mint
+    expect(result.runes.mostActiveMint).toBe('1:0'); // Most active mint is Uncommon Goods Rune
+    expect(result.runes.mostActiveNonUncommonMint).toBe('1000:2'); // Most active non-Uncommon mint
 
     // BRC-20 mint activity tracking
     expect(result.brc20.mostActiveMint).toBe('BRC20');

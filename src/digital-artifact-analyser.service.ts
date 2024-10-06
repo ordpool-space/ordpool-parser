@@ -162,7 +162,7 @@ export class DigitalArtifactAnalyserService {
           const runestone = artifact as ParsedRunestone;
           if (runestone.runestone?.mint) {
             const { block, tx: mintTx } = runestone.runestone.mint;
-            const mintKey = `${block.toString()}-${mintTx}`;
+            const mintKey = `${block.toString()}:${mintTx}`;
 
             // Track Rune mint activity
             runeMintActivity[mintKey] = (runeMintActivity[mintKey] ?? 0) + 1;
@@ -171,8 +171,9 @@ export class DigitalArtifactAnalyserService {
               mostActiveRuneMintCount = runeMintActivity[mintKey];
             }
 
+            var isUncommonGoods = isUncommonGoodsMint(runestone.runestone);
             // Track non-UNCOMMON•GOODS Rune mints
-            if (!isUncommonGoodsMint(runestone.runestone)) {
+            if (!isUncommonGoods) {
               runeNonUncommonGoodsActivity[mintKey] = (runeNonUncommonGoodsActivity[mintKey] ?? 0) + 1;
               if (runeNonUncommonGoodsActivity[mintKey] > mostActiveNonUncommonRuneMintCount) {
                 mostActiveNonUncommonRuneMint = mintKey;
@@ -188,7 +189,7 @@ export class DigitalArtifactAnalyserService {
             }
 
             // Accumulate non-UncommonGoods Rune mint fees if not already added for this transaction
-            if (!nonUncommonRuneMintFeeAdded && !isUncommonGoodsMint(runestone.runestone)) {
+            if (!nonUncommonRuneMintFeeAdded && !isUncommonGoods) {
               const txFee = tx.fee ?? 0;
               totalNonUncommonRuneMintFees += txFee;
               nonUncommonRuneMintFeeAdded = true;
@@ -202,7 +203,7 @@ export class DigitalArtifactAnalyserService {
             const inscription = artifact as ParsedInscription;
             const parsedContent = parseJsonObject(inscription.getContent());
             if (parsedContent && parsedContent.p === 'brc-20') {
-              const mintKey = parsedContent.tick ?? 'unknown';
+              const mintKey = parsedContent.tick ?? 'unknown'; // unknown should never happen
 
               // Track BRC-20 mint activity
               brc20MintActivity[mintKey] = (brc20MintActivity[mintKey] ?? 0) + 1;
@@ -225,7 +226,7 @@ export class DigitalArtifactAnalyserService {
             const src20 = artifact as ParsedSrc20;
             const parsedSrcContent = parseJsonObject(src20.getContent());
             if (parsedSrcContent && parsedSrcContent.p === 'src-20') {
-              const mintKey = parsedSrcContent.tick ?? 'unknown';
+              const mintKey = parsedSrcContent.tick ?? 'unknown'; // unknown should never happen
 
               // Track SRC-20 mint activity
               src20MintActivity[mintKey] = (src20MintActivity[mintKey] ?? 0) + 1;
@@ -451,6 +452,7 @@ export class DigitalArtifactAnalyserService {
       isFlagSetOnTransaction(tx, OrdpoolTransactionFlags.ordpool_cat21) ||
       isFlagSetOnTransaction(tx, OrdpoolTransactionFlags.ordpool_inscription) ||
       isFlagSetOnTransaction(tx, OrdpoolTransactionFlags.ordpool_rune) ||
+      isFlagSetOnTransaction(tx, OrdpoolTransactionFlags.ordpool_brc20) ||
       isFlagSetOnTransaction(tx, OrdpoolTransactionFlags.ordpool_src20);
   }
 
@@ -465,13 +467,14 @@ export class DigitalArtifactAnalyserService {
    * (e.g., Atomical, CAT-21, Inscription, Rune, SRC-20 but NOT BRC-20 (since it's already an inscription))
    * is present in the transaction and sets the corresponding flag(s) in the `flags` variable.
    *
-   * Used in:
+   * Previously used in:
    * - ordpool: backend/src/api/common.ts
    * - ordpool: frontend/src/app/shared/transaction.utils.ts
    *
    * @param tx - The transaction to be evaluated for digital artifacts.
    * @param flags - The existing flags to which new flags will be added.
    * @return The updated flags with the appropriate ordpool transaction flags set.
+   * @deprecated It's faster, but can have false positive results. It also ignores BRC-20
    */
   static quickAnalyseTransaction(tx: TransactionSimple, flags: bigint): bigint {
 
@@ -493,6 +496,31 @@ export class DigitalArtifactAnalyserService {
 
     if (Src20ParserService.hasSrc20(tx)) {
       flags |= OrdpoolTransactionFlags.ordpool_src20;
+    }
+
+    return flags;
+  }
+
+  /**
+   * Computes and returns the transaction flags for the given transaction.
+   *
+   * Used in:
+   * - ordpool: backend/src/api/common.ts
+   * - ordpool: frontend/src/app/shared/transaction.utils.ts
+   *
+   * @param tx - The transaction to be evaluated for digital artifacts.
+   * @param flags - The existing flags to which new flags will be added.
+   * @return The updated flags with the appropriate ordpool transaction flags set.
+   */
+  static analyseTransaction(tx: TransactionSimple, flags: bigint): bigint {
+
+    const artifacts: DigitalArtifact[] = DigitalArtifactsParserService.parse(tx);
+
+    for (const artifact of artifacts) {
+      const ordpoolFlags = DigitalArtifactAnalyserService.analyse(artifact);
+
+      // Apply ordpoolFlags to the existing flags using bitwise OR
+      flags |= ordpoolFlags;
     }
 
     return flags;
