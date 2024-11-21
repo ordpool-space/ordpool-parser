@@ -108,12 +108,6 @@ The goal of this parser is to parse byte-perfect inscriptions that are identical
 
 ### Build
 
-To build a version without the tests:
-
-```bash
-npm run build
-```
-
 To publish a new version to NPM:
 
 ```bash
