@@ -19,12 +19,12 @@ describe('DigitalArtifacts Parser', () => {
    *
    * see https://ordinals.com/block/840000
    */
-  it('should count all artifacts in block 840,000, provided by the mempool backend (esplora API)', () => {
+  it('should count all artifacts in block 840,000, provided by the mempool backend (esplora API)', async () => {
 
     var transactions = getBlock840000Txns();
 
     const start = performance.now();
-    var ordpoolStats = DigitalArtifactAnalyserService.analyseTransactions(transactions);
+    var ordpoolStats = await DigitalArtifactAnalyserService.analyseTransactions(transactions);
     const end = performance.now();
     warn(`Block 840,000 txns – Execution time: ${(end - start) / 100} ms`);
 

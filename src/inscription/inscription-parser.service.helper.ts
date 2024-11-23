@@ -146,6 +146,23 @@ export function extractPointer(value: Uint8Array | undefined): number | undefine
   return littleEndianBytesToNumber(value);
 }
 
+export async function getDecodedContent(contentEncoding: string | undefined, combinedData: Uint8Array): Promise<Uint8Array> {
+
+  if (!contentEncoding) {
+    return combinedData;
+  }
+
+  if (contentEncoding === 'br') {
+    return brotliDecodeUint8Array(combinedData);
+  }
+  if (contentEncoding === 'gzip') {
+    return await gzipDecode(combinedData);
+  }
+
+  return new TextEncoder().encode('Error: unknown content encoding!');
+}
+
+
 /**
  * Decompresses a Uint8Array using the Brotli algorithm.
  *
@@ -183,6 +200,48 @@ export function brotliDecodeUint8Array(bytes: Uint8Array): Uint8Array {
     throw error;
   }
 }
+
+export async function gzipDecode(bytes: Uint8Array): Promise<Uint8Array> {
+  if (typeof DecompressionStream !== 'undefined') {
+    // Create a DecompressionStream for "gzip"
+    const ds = new DecompressionStream('gzip');
+
+    // Write the input bytes to the stream
+    const writer = ds.writable.getWriter();
+    writer.write(bytes);
+    writer.close();
+
+    // Read and concatenate the output bytes
+    const reader = ds.readable.getReader();
+    const chunks: Uint8Array[] = [];
+    let totalSize = 0;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      if (value) {
+        chunks.push(value);
+        totalSize += value.byteLength;
+      }
+    }
+
+    // Combine chunks into a single Uint8Array
+    const result = new Uint8Array(totalSize);
+    let offset = 0;
+    for (const chunk of chunks) {
+      result.set(chunk, offset);
+      offset += chunk.length;
+    }
+
+    return result;
+  } else {
+    throw new Error(
+      'gzip decoding is not supported in this environment. For Node.js, upgrade to version 18 or higher.'
+    );
+  }
+}
+
 
 /**
  * Extracts an inscription ID from a field in an inscription.

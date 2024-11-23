@@ -13,3 +13,6 @@ global.TextDecoder = util.TextDecoder;
 
 // add this too
 global.Uint8Array = Uint8Array;
+
+const { DecompressionStream } = require('stream/web');
+global.DecompressionStream = DecompressionStream;

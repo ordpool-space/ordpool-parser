@@ -4,24 +4,27 @@ export interface ParsedInscription extends DigitalArtifact {
 
   inscriptionId: string;
 
-  contentType: string | 'undefined'; // delegates do not need a contentType, the parser will return the string 'undefined'
+  /**
+   * Delegates do not need a contentType, the parser will return undefined
+   */
+  contentType: string | undefined;
 
   fields: { tag: number; value: Uint8Array }[];
 
   /**
    * Data as UTF-8 encoded string (not intended for binary content like images or videos)
    */
-  getContent: () => string; // returns an empty string if no data is available
+  getContent: () => Promise<string>; // returns an empty string if no data is available
 
   /**
    * The raw data (base64 encoded)
    */
-  getData: () => string;
+  getData: () => Promise<string>;
 
   /**
    * The raw Base64 encoded data as an URI that can be displayed in an iframe
    */
-  getDataUri: () => string;
+  getDataUri: () => Promise<string>;
 
   /**
    * Get Pointer, from tag 2

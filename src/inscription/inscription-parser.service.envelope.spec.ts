@@ -18,12 +18,12 @@ describe('Inscription parser', () => {
    *   OP_PUSH "Hello, world!"            ---> OP_PUSHBYTES_13 "Hello, world!"
    * OP_ENDIF
    */
-  it('should parse a simple `Hello, world!` envelope', () => {
+  it('should parse a simple `Hello, world!` envelope', async () => {
 
     const txn = readTransaction('c1e013bdd1434450c6e1155417c81eb888e20cbde2e0cde37ec238d91cf37045');
 
     const inscription = InscriptionParserService.parse(txn)[0];
-    const actualFileData = inscription.getData();
+    const actualFileData = await inscription.getData();
     const expectedFileData = readInscriptionAsBase64('c1e013bdd1434450c6e1155417c81eb888e20cbde2e0cde37ec238d91cf37045i0', 'txt');
 
     expect(actualFileData).toEqual(expectedFileData);
@@ -48,12 +48,12 @@ describe('Inscription parser', () => {
    *   OP_PUSH "...long text</html>"      ---> OP_PUSHDATA1, <1 Byte Lenght>, data
    * OP_ENDIF
    */
-  it('should parse a larger envelope (an Ordinal Cube, of course!)', () => {
+  it('should parse a larger envelope', async () => {
 
     const txn = readTransaction('78fa9d6e9b2b49fbb9f4838e1792dba7c1ec836f22e3206561e2d52759708251');
 
     const inscription = InscriptionParserService.parse(txn)[0];
-    const actualFileData = inscription.getData();
+    const actualFileData = await inscription.getData();
     const expectedFileData = readInscriptionAsBase64('78fa9d6e9b2b49fbb9f4838e1792dba7c1ec836f22e3206561e2d52759708251i0', 'html');
 
     expect(actualFileData).toEqual(expectedFileData);
@@ -62,7 +62,7 @@ describe('Inscription parser', () => {
     const expectedEnvelopeSize = measureInscriptionSize(txn.vin[0].witness!); // 640
     expect(inscription.envelopeSize).toEqual(expectedEnvelopeSize);
 
-    expect(atob(inscription.getData()).length).toBe(615);
+    expect(atob(actualFileData).length).toBe(615);
     expect(inscription.contentSize).toBe(615);
   });
 
@@ -81,12 +81,12 @@ describe('Inscription parser', () => {
    *   OP_PUSH "<html>long text..."       ---> OP_PUSHDATA1 <1 Byte Lenght> (<html><body><embed width='100%' height='100%' src='/content/493e940d306f3cdabb7bf82513dd502128fa7c27ce603615bd85e209a8d7e1c9?qkey=032200102103001' /></body></html>)
    * OP_ENDIF
    */
-  it('should parse a envelope with unknown fields (envelope with Quadkey)', () => {
+  it('should parse a envelope with unknown fields (envelope with Quadkey)', async () => {
 
     const txn = readTransaction('f531eea03671ac17100a9887d5212532250d5eae09e7c8873cdd2efa6f7fab57');
 
     const inscription = InscriptionParserService.parse(txn)[0];
-    const actualFileData = inscription.getData();
+    const actualFileData = await inscription.getData();
     const expectedFileData = readInscriptionAsBase64('f531eea03671ac17100a9887d5212532250d5eae09e7c8873cdd2efa6f7fab57i0', 'html');
 
     expect(actualFileData).toEqual(expectedFileData);
@@ -97,7 +97,7 @@ describe('Inscription parser', () => {
    * Text inscription with unicode characters were displayed incorrectly,
    * see https://github.com/haushoppe/ordpool/issues/5
    */
-  it('should parse text inscriptions with unicode characters', () => {
+  it('should parse text inscriptions with unicode characters', async () => {
 
     const txn = readTransaction('430901147831e41111aced3895ee4b9742cf72ac3cffa132624bd38c551ef379');
 
@@ -105,8 +105,8 @@ describe('Inscription parser', () => {
     const expectedFileData = readInscriptionAsBase64('430901147831e41111aced3895ee4b9742cf72ac3cffa132624bd38c551ef379i0', 'txt');
 
     const contentType = inscription?.contentType;
-    const contentString = inscription?.getContent();
-    const actualFileData = inscription?.getData();
+    const contentString = await inscription?.getContent();
+    const actualFileData = await inscription?.getData();
 
     expect(contentType).toEqual('text/plain;charset=utf-8');
     expect(contentString).toEqual('ob🤝cpfp');

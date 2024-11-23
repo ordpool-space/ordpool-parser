@@ -57,12 +57,12 @@ describe('Inscription parser', () => {
    * https://ordpool.space/tx/7923e59abd8f8ab40dcc7915ae864d8b7ad6776811ba4d478f42248a7827a7f3
    * https://ordinals.com/inscription/7923e59abd8f8ab40dcc7915ae864d8b7ad6776811ba4d478f42248a7827a7f3i0
    */
-  it('should parse inscription 70,279,628', () => {
+  it('should parse inscription 70,279,628', async () => {
 
     const txn = readTransaction('7923e59abd8f8ab40dcc7915ae864d8b7ad6776811ba4d478f42248a7827a7f3');
 
     const inscription = InscriptionParserService.parse(txn)[0];
-    const actualFileData = inscription.getData();
+    const actualFileData = await inscription.getData();
     const expectedFileData = readBinaryInscriptionAsBase64('7923e59abd8f8ab40dcc7915ae864d8b7ad6776811ba4d478f42248a7827a7f3i0', 'jpeg');
 
     expect(actualFileData).toEqual(expectedFileData);
@@ -101,7 +101,7 @@ describe('Inscription parser', () => {
    *
    * https://ordpool.space/tx/aa2ab56587c7d6609c95157e6dff37c5c3fa6531702f41229a289a5613887077
   */
-    it('should parse a transaction with multiple pointers', () => {
+    it('should parse a transaction with multiple pointers', async () => {
 
       const txn = readTransaction('aa2ab56587c7d6609c95157e6dff37c5c3fa6531702f41229a289a5613887077');
 
@@ -109,11 +109,11 @@ describe('Inscription parser', () => {
       expect(inscriptions.length).toEqual(5);
 
       const expectedContent = '{"p":"orc-20","op":"mint","params":{"tick":"mouse","tid":"43911153","amt":"500000"}}';
-      expect(inscriptions[0].getContent()).toBe(expectedContent); // 'aa2ab56587c7d6609c95157e6dff37c5c3fa6531702f41229a289a5613887077i0'
-      expect(inscriptions[1].getContent()).toBe(expectedContent); // 'aa2ab56587c7d6609c95157e6dff37c5c3fa6531702f41229a289a5613887077i1'
-      expect(inscriptions[2].getContent()).toBe(expectedContent); // 'aa2ab56587c7d6609c95157e6dff37c5c3fa6531702f41229a289a5613887077i2'
-      expect(inscriptions[3].getContent()).toBe(expectedContent); // 'aa2ab56587c7d6609c95157e6dff37c5c3fa6531702f41229a289a5613887077i3'
-      expect(inscriptions[4].getContent()).toBe(expectedContent); // 'aa2ab56587c7d6609c95157e6dff37c5c3fa6531702f41229a289a5613887077i4'
+      expect(await inscriptions[0].getContent()).toBe(expectedContent); // 'aa2ab56587c7d6609c95157e6dff37c5c3fa6531702f41229a289a5613887077i0'
+      expect(await inscriptions[1].getContent()).toBe(expectedContent); // 'aa2ab56587c7d6609c95157e6dff37c5c3fa6531702f41229a289a5613887077i1'
+      expect(await inscriptions[2].getContent()).toBe(expectedContent); // 'aa2ab56587c7d6609c95157e6dff37c5c3fa6531702f41229a289a5613887077i2'
+      expect(await inscriptions[3].getContent()).toBe(expectedContent); // 'aa2ab56587c7d6609c95157e6dff37c5c3fa6531702f41229a289a5613887077i3'
+      expect(await inscriptions[4].getContent()).toBe(expectedContent); // 'aa2ab56587c7d6609c95157e6dff37c5c3fa6531702f41229a289a5613887077i4'
 
       const satsOutput1 = txn.vout[0].value; // 294
       const satsOutput2 = txn.vout[1].value; // 294
@@ -129,7 +129,7 @@ describe('Inscription parser', () => {
       const pointer4 = inscriptions[3].getPointer(); // 3552822
       const pointer5 = inscriptions[4].getPointer(); // 3684408
 
-      // yep, they are overlowing!
+      // yep, they are overflowing!
       expect(pointer2).toBeGreaterThan(availableSats);
       expect(pointer3).toBeGreaterThan(availableSats);
       expect(pointer4).toBeGreaterThan(availableSats);

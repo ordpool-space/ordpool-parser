@@ -37,7 +37,7 @@ describe('DigitalArtifactAnalyserService', () => {
         contentType: 'text/plain',
         contentSize: 150,
         envelopeSize: 200,
-        getContent: () => 'test content',
+        getContent: () => Promise.resolve('test content'),
       } as ParsedInscription,
       {
         type: DigitalArtifactType.Inscription,
@@ -45,7 +45,7 @@ describe('DigitalArtifactAnalyserService', () => {
         contentType: 'application/json',
         contentSize: 200,
         envelopeSize: 300,
-        getContent: () => JSON.stringify({ p: 'brc-20', op: 'mint', tick: 'BRC20' }),
+        getContent: () => Promise.resolve(JSON.stringify({ p: 'brc-20', op: 'mint', tick: 'BRC20' })),
       } as ParsedInscription,
     ];
 
@@ -87,8 +87,8 @@ describe('DigitalArtifactAnalyserService', () => {
     });
   });
 
-  it('should correctly analyze transaction artifacts and count amounts', () => {
-    const result = DigitalArtifactAnalyserService.analyseTransactions(transactions);
+  it('should correctly analyze transaction artifacts and count amounts', async () => {
+    const result = await DigitalArtifactAnalyserService.analyseTransactions(transactions);
 
     // ** Checking the amount counts
     expect(result.amounts.inscription).toBe(2);  // Two inscriptions
@@ -104,8 +104,8 @@ describe('DigitalArtifactAnalyserService', () => {
     expect(result.fees.src20Mints).toBe(1500);       // tx3 fee for SRC-20 mint
   });
 
-  it('should track the most active mint tickers for runes, BRC-20, and SRC-20', () => {
-    const result = DigitalArtifactAnalyserService.analyseTransactions(transactions);
+  it('should track the most active mint tickers for runes, BRC-20, and SRC-20', async () => {
+    const result = await DigitalArtifactAnalyserService.analyseTransactions(transactions);
 
     // Rune mint activity tracking
     expect(result.runes.mostActiveMint).toBe('1:0'); // Most active mint is Uncommon Goods Rune
@@ -118,8 +118,8 @@ describe('DigitalArtifactAnalyserService', () => {
     expect(result.src20.mostActiveMint).toBe('SRC20');
   });
 
-  it('should calculate the total and average envelope and content sizes for inscriptions', () => {
-    const result = DigitalArtifactAnalyserService.analyseTransactions(transactions);
+  it('should calculate the total and average envelope and content sizes for inscriptions', async () => {
+    const result = await DigitalArtifactAnalyserService.analyseTransactions(transactions);
 
     // ** Checking the sizes and ids
     expect(result.inscriptions.totalEnvelopeSize).toBe(500); // Sum of 200 and 300
@@ -133,11 +133,11 @@ describe('DigitalArtifactAnalyserService', () => {
     expect(result.inscriptions.averageContentSize).toBe(350 / 2); // 175
   });
 
-  it('should correctly set empty fields when no artifacts are present', () => {
+  it('should correctly set empty fields when no artifacts are present', async () => {
     // Clear the mock parser's return value for this test case
     (DigitalArtifactsParserService.parse as jest.Mock).mockReturnValue([]);
 
-    const result = DigitalArtifactAnalyserService.analyseTransactions(transactions);
+    const result = await DigitalArtifactAnalyserService.analyseTransactions(transactions);
 
     // ** Checking all zero or null values
     expect(result.amounts.inscription).toBe(0);

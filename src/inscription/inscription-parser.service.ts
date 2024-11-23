@@ -1,19 +1,25 @@
+import { CBOR } from '../lib/cbor';
 import {
-  brotliDecodeUint8Array,
+  binaryStringToBase64,
+  bytesToBinaryString,
+  bytesToUnicodeString,
+  hexToBytes,
+  littleEndianBytesToNumber,
+} from '../lib/conversions';
+import { OP_0, OP_ENDIF } from '../lib/op-codes';
+import { readPushdata } from '../lib/reader';
+import { DigitalArtifactType } from '../types/digital-artifact';
+import { ParsedInscription } from '../types/parsed-inscription';
+import {
   extractInscriptionId,
   extractPointer,
+  getDecodedContent,
   getKnownFieldValue,
   getKnownFieldValues,
   getNextInscriptionMark,
   hasInscription,
-  knownFields
+  knownFields,
 } from './inscription-parser.service.helper';
-import { CBOR } from '../lib/cbor';
-import { binaryStringToBase64, bytesToBinaryString, bytesToUnicodeString, hexToBytes, littleEndianBytesToNumber } from '../lib/conversions';
-import { readPushdata } from '../lib/reader';
-import { DigitalArtifactType } from '../types/digital-artifact';
-import { ParsedInscription } from '../types/parsed-inscription';
-import { OP_0, OP_ENDIF } from '../lib/op-codes';
 
 /**
  * Extracts all Ordinal inscriptions from a Bitcoin transaction.
@@ -201,30 +207,20 @@ export class InscriptionParserService {
       }
 
       const contentTypeRaw = getKnownFieldValue(fields, knownFields.content_type);
-      let contentType: string;
-      let contentEncoding: string | undefined = undefined;
+      let contentType: string | undefined = undefined;
 
-      // an inscriptions without a contentType, probably a delegate
-      if (!contentTypeRaw) {
-
-        contentType = 'undefined'; // hint: I might change this in the future!
-
-      } else {
-
+      // an inscriptions with no contentType is most probably a delegate
+      if (contentTypeRaw) {
         // strings are (always) UTF-8, according to https://github.com/ordinals/ord/issues/2505
         contentType = bytesToUnicodeString(contentTypeRaw);
+      }
 
-        // figure out if the body is encoded via brotli
-        const contentEncodingRaw = getKnownFieldValue(fields, knownFields.content_encoding);
-        if (contentEncodingRaw) {
-          contentEncoding = bytesToUnicodeString(contentEncodingRaw);
-        }
+      // figure out if the body is encoded via brotli or gzip
+      const contentEncodingRaw = getKnownFieldValue(fields, knownFields.content_encoding);
+      let contentEncoding: string | undefined = undefined;
 
-        if (contentEncoding === 'br') {
-          combinedData = brotliDecodeUint8Array(combinedData);
-        }
-
-        // TODO: add support for gzip
+      if (contentEncodingRaw) {
+        contentEncoding = bytesToUnicodeString(contentEncodingRaw);
       }
 
       return {
@@ -239,17 +235,20 @@ export class InscriptionParserService {
 
         fields,
 
-        getContent() {
-          return bytesToUnicodeString(combinedData) + ''; // never return undefined here
+        getContent: async (): Promise<string> => {
+          const decodedData = await getDecodedContent(contentEncoding, combinedData);
+          return bytesToUnicodeString(decodedData) + ''; // never return undefined here
         },
 
-        getData: (): string => {
-          const content = bytesToBinaryString(combinedData);
+        getData: async (): Promise<string> => {
+          const decodedData = await getDecodedContent(contentEncoding, combinedData);
+          const content = bytesToBinaryString(decodedData);
           return binaryStringToBase64(content);
         },
 
-        getDataUri: (): string => {
-          const content = bytesToBinaryString(combinedData);
+        getDataUri: async(): Promise<string> => {
+          const decodedData = await getDecodedContent(contentEncoding, combinedData);
+          const content = bytesToBinaryString(decodedData);
           const fullBase64Data = binaryStringToBase64(content);
           return `data:${contentType};base64,${fullBase64Data}`;
         },

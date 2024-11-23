@@ -18,19 +18,19 @@ describe('DigitalArtifactAnalyserService.analyseTransaction', () => {
     jest.resetAllMocks();
   });
 
-  it('should return the initial flags when no artifacts are found', () => {
+  it('should return the initial flags when no artifacts are found', async () => {
     const transaction = { txid: 'test-txid' } as TransactionSimple;
     const initialFlags = BigInt(0);
 
     // Mock parse to return an empty array (no artifacts)
     (DigitalArtifactsParserService.parse as jest.Mock).mockReturnValue([]);
 
-    const result = DigitalArtifactAnalyserService.analyseTransaction(transaction, initialFlags);
+    const result = await DigitalArtifactAnalyserService.analyseTransaction(transaction, initialFlags);
 
     expect(result).toBe(initialFlags); // Should return the initial flags
   });
 
-  it('should apply a single artifact flag to the transaction', () => {
+  it('should apply a single artifact flag to the transaction', async () => {
     const transaction = { txid: 'test-txid' } as TransactionSimple;
     const initialFlags = BigInt(0);
 
@@ -42,12 +42,12 @@ describe('DigitalArtifactAnalyserService.analyseTransaction', () => {
     const mockFlag = OrdpoolTransactionFlags.ordpool_cat21;
     (DigitalArtifactAnalyserService.analyse as jest.Mock).mockReturnValue(mockFlag);
 
-    const result = DigitalArtifactAnalyserService.analyseTransaction(transaction, initialFlags);
+    const result = await DigitalArtifactAnalyserService.analyseTransaction(transaction, initialFlags);
 
     expect(result).toBe(mockFlag); // Should return the flag set by the artifact
   });
 
-  it('should accumulate flags for multiple artifacts', () => {
+  it('should accumulate flags for multiple artifacts', async () => {
     const transaction = { txid: 'test-txid' } as TransactionSimple;
     const initialFlags = BigInt(0);
 
@@ -67,12 +67,12 @@ describe('DigitalArtifactAnalyserService.analyseTransaction', () => {
 
     const expectedFlags = cat21Flag | inscriptionFlag;
 
-    const result = DigitalArtifactAnalyserService.analyseTransaction(transaction, initialFlags);
+    const result = await DigitalArtifactAnalyserService.analyseTransaction(transaction, initialFlags);
 
     expect(result).toBe(expectedFlags); // Should return the combined flags of Cat21 and Inscription
   });
 
-  it('should retain existing flags while adding new flags', () => {
+  it('should retain existing flags while adding new flags', async () => {
     const transaction = { txid: 'test-txid' } as TransactionSimple;
     const initialFlags = TransactionFlags.rbf; // Pre-existing RBF flag
 
@@ -86,7 +86,7 @@ describe('DigitalArtifactAnalyserService.analyseTransaction', () => {
 
     const expectedFlags = initialFlags | newFlag;
 
-    const result = DigitalArtifactAnalyserService.analyseTransaction(transaction, initialFlags);
+    const result = await DigitalArtifactAnalyserService.analyseTransaction(transaction, initialFlags);
 
     expect(result).toBe(expectedFlags); // Should combine the existing RBF flag with the new Inscription flag
   });

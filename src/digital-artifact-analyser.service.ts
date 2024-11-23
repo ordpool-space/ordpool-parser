@@ -86,7 +86,7 @@ export class DigitalArtifactAnalyserService {
    * @param transactions - The array of transactions to analyze.
    * @returns The OrdpoolStats object with counted amounts for each artifact type.
    */
-  static analyseTransactions(transactions: TransactionSimple[]): OrdpoolStats {
+  static async analyseTransactions(transactions: TransactionSimple[]): Promise<OrdpoolStats> {
 
     const artifactTypeMap = getArtifactTypeMap();
 
@@ -147,7 +147,7 @@ export class DigitalArtifactAnalyserService {
       let inscriptionMintFeeAdded = false;
 
       for (const artifact of artifacts) {
-        const flags = DigitalArtifactAnalyserService.analyse(artifact);
+        const flags = await DigitalArtifactAnalyserService.analyse(artifact);
 
         // ** Amounts: Iterate over each flag by checking each bit in the flag set
         for (const [flag, statKey] of artifactTypeMap.entries()) {
@@ -201,7 +201,7 @@ export class DigitalArtifactAnalyserService {
         if ((flags & OrdpoolTransactionFlags.ordpool_brc20_mint) === OrdpoolTransactionFlags.ordpool_brc20_mint) {
           if (!brc20MintFeeAdded) {
             const inscription = artifact as ParsedInscription;
-            const parsedContent = parseJsonObject(inscription.getContent());
+            const parsedContent = parseJsonObject(await inscription.getContent());
             if (parsedContent && parsedContent.p === 'brc-20') {
               const mintKey = parsedContent.tick ?? 'unknown'; // unknown should never happen
 
@@ -338,7 +338,7 @@ export class DigitalArtifactAnalyserService {
    * @param artifact - The digital artifact to analyze.
    * @returns The corresponding flags for the artifact type (multiple flags can be combined).
    */
-  static analyse(artifact: DigitalArtifact): bigint {
+  static async analyse(artifact: DigitalArtifact): Promise<bigint> {
 
     let flags: bigint = BigInt(0);
 
@@ -359,12 +359,12 @@ export class DigitalArtifactAnalyserService {
 
         // Check for valid JSON content
         if (
-          inscription.contentType.startsWith('text/plain') ||
-          inscription.contentType.startsWith('application/json')
+          inscription.contentType?.startsWith('text/plain') ||
+          inscription.contentType?.startsWith('application/json')
         ) {
 
           // TODO: chaching for improving performance?!
-          const parsedContent = parseJsonObject(inscription.getContent());
+          const parsedContent = parseJsonObject(await inscription.getContent());
           if (parsedContent && parsedContent.p === 'brc-20') {
 
             flags |= OrdpoolTransactionFlags.ordpool_brc20;
@@ -512,12 +512,12 @@ export class DigitalArtifactAnalyserService {
    * @param flags - The existing flags to which new flags will be added.
    * @return The updated flags with the appropriate ordpool transaction flags set.
    */
-  static analyseTransaction(tx: TransactionSimple, flags: bigint): bigint {
+  static async analyseTransaction(tx: TransactionSimple, flags: bigint): Promise<bigint> {
 
     const artifacts: DigitalArtifact[] = DigitalArtifactsParserService.parse(tx);
 
     for (const artifact of artifacts) {
-      const ordpoolFlags = DigitalArtifactAnalyserService.analyse(artifact);
+      const ordpoolFlags = await DigitalArtifactAnalyserService.analyse(artifact);
 
       // Apply ordpoolFlags to the existing flags using bitwise OR
       flags |= ordpoolFlags;

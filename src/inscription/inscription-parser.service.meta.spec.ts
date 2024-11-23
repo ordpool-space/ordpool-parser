@@ -7,13 +7,13 @@ describe('Inscription parser', () => {
    * These are inscriptions, where multiples inputs were used
    * see https://ordinals.com/inscription/49cbc5cbac92cf917dd4539d62720a3e528d17e22ef5fc47070a17ec0d3cf307i0
    */
-  it('should parse metadata using the metadata field', () => {
+  it('should parse metadata using the metadata field', async () => {
 
     const txn = readTransaction('49cbc5cbac92cf917dd4539d62720a3e528d17e22ef5fc47070a17ec0d3cf307');
 
     const inscriptions = InscriptionParserService.parse(txn);
 
-    const actualFileData = inscriptions[0].getData();
+    const actualFileData = await inscriptions[0].getData();
     const metaprotocol = inscriptions[0].getMetaprotocol();
     const metadata = inscriptions[0].getMetadata();
     const expectedFileData = readInscriptionAsBase64('49cbc5cbac92cf917dd4539d62720a3e528d17e22ef5fc47070a17ec0d3cf307i0', 'txt');

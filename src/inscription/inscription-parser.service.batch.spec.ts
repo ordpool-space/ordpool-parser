@@ -12,15 +12,15 @@ describe('Inscription parser', () => {
    * --> 092111e882a8025f3f05ab791982e8cc7fd7395afe849a5949fd56255b5c41cc --> has 116 inputs 🤯
    * --> this txn has a lot of inscriptions vin[x]
    */
-  it('should parse inscriptions on multiple inputs', () => {
+  it('should parse inscriptions on multiple inputs', async () => {
 
     const txn = readTransaction('092111e882a8025f3f05ab791982e8cc7fd7395afe849a5949fd56255b5c41cc');
 
     const inscriptions = InscriptionParserService.parse(txn);
 
-    const actualFileData0 = inscriptions[0].getData();
-    const actualFileData1 = inscriptions[1].getData();
-    const actualFileData2 = inscriptions[2].getData();
+    const actualFileData0 = await inscriptions[0].getData();
+    const actualFileData1 = await inscriptions[1].getData();
+    const actualFileData2 = await inscriptions[2].getData();
 
     const expectedFileData0 = readBinaryInscriptionAsBase64('092111e882a8025f3f05ab791982e8cc7fd7395afe849a5949fd56255b5c41cci0', 'png');
     const expectedFileData1 = readBinaryInscriptionAsBase64('092111e882a8025f3f05ab791982e8cc7fd7395afe849a5949fd56255b5c41cci1', 'png');
@@ -44,7 +44,7 @@ describe('Inscription parser', () => {
    *
    * --> this txn has all inscriptions in vin[1]
    */
-  it('should parse batch inscriptions using pointers', () => {
+  it('should parse batch inscriptions using pointers', async () => {
 
     const txn = readTransaction('11d3f4b39e8ab97995bab1eacf7dcbf1345ec59c07261c0197e18bf29b88d8da');
 
@@ -55,9 +55,9 @@ describe('Inscription parser', () => {
     expect(inscriptions.length).toEqual(666);
 
 
-    const actualFileData0 = inscriptions[0].getData();
-    const actualFileData1 = inscriptions[1].getData();
-    const actualFileData2 = inscriptions[2].getData();
+    const actualFileData0 = await inscriptions[0].getData();
+    const actualFileData1 = await inscriptions[1].getData();
+    const actualFileData2 = await inscriptions[2].getData();
 
     const expectedFileData0 = readInscriptionAsBase64('11d3f4b39e8ab97995bab1eacf7dcbf1345ec59c07261c0197e18bf29b88d8dai0', 'html');
     const expectedFileData1 = readInscriptionAsBase64('11d3f4b39e8ab97995bab1eacf7dcbf1345ec59c07261c0197e18bf29b88d8dai1', 'html');
