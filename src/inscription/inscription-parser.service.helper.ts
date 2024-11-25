@@ -304,3 +304,16 @@ export function measureInscriptionSize(witness: string[]): number | null {
   // Add the size of the inscription mark (6 bytes) + OP_ENDIF (1 byte)
   return inscriptionSize + 7;
 }
+
+/**
+ * Validates whether a given string is a valid inscription ID.
+ *
+ * Inscription IDs are of the form TXIDiN, where TXID is the transaction ID of the reveal transaction,
+ * and N is the index of the inscription in the reveal transaction.
+ *
+ * @param id - The string to validate as an inscription ID.
+ * @returns `true` if the input is a valid inscription ID, otherwise `false`.
+ */
+export function isValidInscriptionId(id: string): boolean {
+  return /^[a-f0-9]{64}i\d{1,}$/.test(id);
+}

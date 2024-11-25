@@ -1,4 +1,4 @@
-import { extractInscriptionId, extractPointer, getKnownFieldValue, getKnownFieldValues, getNextInscriptionMark, measureInscriptionSize } from './inscription-parser.service.helper';
+import { extractInscriptionId, extractPointer, getKnownFieldValue, getKnownFieldValues, getNextInscriptionMark, isValidInscriptionId, measureInscriptionSize } from './inscription-parser.service.helper';
 import { hexToBytes } from '../lib/conversions';
 
 describe('getKnownFieldValue', () => {
@@ -330,5 +330,36 @@ describe('measureInscriptionSize', () => {
 
     const expectedSize = 7 + 7; // 7 bytes of data + 7 bytes overhead
     expect(measureInscriptionSize(witness)).toBe(expectedSize);
+  });
+});
+
+describe('isValidInscriptionId', () => {
+  it('should return true for a valid inscription ID', () => {
+    const validId = "521f8eccffa4c41a3a7728dd012ea5a4a02feed81f41159231251ecf1e5c79dai0";
+    expect(isValidInscriptionId(validId)).toBe(true);
+  });
+
+  it('should return false for an invalid inscription ID with incorrect TXID length', () => {
+    const invalidId = "521f8eccffa4c41ai0"; // Short TXID
+    expect(isValidInscriptionId(invalidId)).toBe(false);
+  });
+
+  it('should return false for an invalid inscription ID with uppercase hex characters', () => {
+    const invalidId = "521F8ECCFFA4C41A3A7728DD012EA5A4A02FEED81F41159231251ECF1E5C79DAI0";
+    expect(isValidInscriptionId(invalidId)).toBe(false);
+  });
+
+  it('should return false for an invalid inscription ID without the "i" separator', () => {
+    const invalidId = "521f8eccffa4c41a3a7728dd012ea5a4a02feed81f41159231251ecf1e5c79da0";
+    expect(isValidInscriptionId(invalidId)).toBe(false);
+  });
+
+  it('should return false for an invalid inscription ID without an index', () => {
+    const invalidId = "521f8eccffa4c41a3a7728dd012ea5a4a02feed81f41159231251ecf1e5c79dai";
+    expect(isValidInscriptionId(invalidId)).toBe(false);
+  });
+
+  it('should return false for undefined', () => {
+    expect(isValidInscriptionId(undefined as any)).toBe(false);
   });
 });

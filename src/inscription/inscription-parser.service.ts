@@ -253,6 +253,10 @@ export class InscriptionParserService {
           return `data:${contentType};base64,${fullBase64Data}`;
         },
 
+        getDataRaw: (): Uint8Array => {
+          return combinedData;
+        },
+
         getPointer: (): number | undefined => {
           const pointerRaw = getKnownFieldValue(fields, knownFields.pointer);
           return extractPointer(pointerRaw);
