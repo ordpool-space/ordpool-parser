@@ -11,6 +11,7 @@ export * from './digital-artifacts-parser.service';
 export * from './inscription/decode-data-uri';
 export * from './inscription/inscription-parser.service.helper';
 export * from './inscription/inscription-parser.service';
+export * from './inscription/inscription-preview.service';
 export * from './lib/arc4';
 export * from './lib/brotli-decode';
 export * from './lib/cbor';
