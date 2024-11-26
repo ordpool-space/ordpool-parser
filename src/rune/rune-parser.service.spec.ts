@@ -364,4 +364,16 @@ describe('Rune parser', () => {
 
     expect(result).toBe(null);
   });
+
+  /*
+   * artifact has no etching and not mint, so the message is empty
+   * example: https://ordinals.com/tx/28baf9374797230174803b0c3f63fd39e22bb1972a25cc2af4e791ca8fc89dae
+   * it's just a OP_RETURN OP_PUSHNUM_13 OP_PUSHBYTES_1 00, whatever this txn means, it's not a meaningful for us
+   */
+  it('should ignore empty artifacts', () => {
+
+    const txn = readTransaction('28baf9374797230174803b0c3f63fd39e22bb1972a25cc2af4e791ca8fc89dae');
+    const runestone = RuneParserService.parse(txn);
+    expect(runestone).toBe(null);
+  });
 });

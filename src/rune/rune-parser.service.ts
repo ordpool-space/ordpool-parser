@@ -43,6 +43,12 @@ export class RuneParserService {
         return null;
       }
 
+      // artifact is completely empty
+      // example: 28baf9374797230174803b0c3f63fd39e22bb1972a25cc2af4e791ca8fc89dae
+      if (!Object.keys(artifact).length) {
+        return null;
+      }
+
       if (isRunestone(artifact)) {
         const runestone: RunestoneSpec = artifact;
 

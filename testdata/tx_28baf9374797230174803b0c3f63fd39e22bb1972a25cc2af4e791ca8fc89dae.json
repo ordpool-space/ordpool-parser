@@ -1,0 +1,102 @@
+{
+  "txid": "28baf9374797230174803b0c3f63fd39e22bb1972a25cc2af4e791ca8fc89dae",
+  "version": 2,
+  "locktime": 0,
+  "vin": [
+    {
+      "txid": "e1ce557e8228667937ce4b07472a8dfa5db4c3c294329204f5472b0dbf3de60e",
+      "vout": 0,
+      "prevout": {
+        "scriptpubkey": "5120f22bfa8346fe4b6e47275b7023a016de5352d2f2613e938032e444bf0ba501b6",
+        "scriptpubkey_asm": "OP_PUSHNUM_1 OP_PUSHBYTES_32 f22bfa8346fe4b6e47275b7023a016de5352d2f2613e938032e444bf0ba501b6",
+        "scriptpubkey_type": "v1_p2tr",
+        "scriptpubkey_address": "bc1p7g4l4q6xle9ku3e8tdcz8gqkmef495hjvylf8qpju3zt7za9qxmq2gp0dr",
+        "value": 546
+      },
+      "scriptsig": "",
+      "scriptsig_asm": "",
+      "witness": [
+        "7f0b332a94bdc622bcc2f3b230e5169ab29e926a6c073a7fbe544b78afcd6d3eeae12485160b0f562ef8763ca1bf06e3b967867196d0244934eb686971612580"
+      ],
+      "is_coinbase": false,
+      "sequence": 4294967295
+    },
+    {
+      "txid": "977f72d457daf95b94eab8a2a47ed6449d0aba576c02d44597e2e08d0a412d3e",
+      "vout": 2,
+      "prevout": {
+        "scriptpubkey": "0014c63ffc331ace5ec33f9468985d09b4671a0eb5a3",
+        "scriptpubkey_asm": "OP_0 OP_PUSHBYTES_20 c63ffc331ace5ec33f9468985d09b4671a0eb5a3",
+        "scriptpubkey_type": "v0_p2wpkh",
+        "scriptpubkey_address": "bc1qccllcvc6ee0vx0u5dzv96zd5vudqaddry7h4fr",
+        "value": 3369227
+      },
+      "scriptsig": "",
+      "scriptsig_asm": "",
+      "witness": [
+        "304402201b424861c856eba261c6c49b139bee129cc2a1fb4d9b99f1d19b520fa6f0660f02207c6900a8c90431afa4cae6c1d151e788732f79b96a781a0536cb70834d0aed2b01",
+        "02f8ecddd510f01f53803d402b3a06434820d97994fa247edc281e60009f711959"
+      ],
+      "is_coinbase": false,
+      "sequence": 4294967295
+    },
+    {
+      "txid": "d28f90a10dbcfe72fef442067dd79ba61494c48d910093c757370663973f621c",
+      "vout": 2,
+      "prevout": {
+        "scriptpubkey": "0014c63ffc331ace5ec33f9468985d09b4671a0eb5a3",
+        "scriptpubkey_asm": "OP_0 OP_PUSHBYTES_20 c63ffc331ace5ec33f9468985d09b4671a0eb5a3",
+        "scriptpubkey_type": "v0_p2wpkh",
+        "scriptpubkey_address": "bc1qccllcvc6ee0vx0u5dzv96zd5vudqaddry7h4fr",
+        "value": 3027642
+      },
+      "scriptsig": "",
+      "scriptsig_asm": "",
+      "witness": [
+        "304402204c78a767d7974d3a0feda8a90182dc43034912fedea1db78a057118b64518127022019d8586ec380adae70d54b1fa95df474a40b67cadfd8494fcf5d16e025f780b401",
+        "02f8ecddd510f01f53803d402b3a06434820d97994fa247edc281e60009f711959"
+      ],
+      "is_coinbase": false,
+      "sequence": 4294967295
+    }
+  ],
+  "vout": [
+    {
+      "scriptpubkey": "6a5d0100",
+      "scriptpubkey_asm": "OP_RETURN OP_PUSHNUM_13 OP_PUSHBYTES_1 00",
+      "scriptpubkey_type": "op_return",
+      "value": 0
+    },
+    {
+      "scriptpubkey": "5120c1e4d439a4d0eb55a03c08d7039c9b85cab1bb066b61c3eb48e1e13ac1c775e3",
+      "scriptpubkey_asm": "OP_PUSHNUM_1 OP_PUSHBYTES_32 c1e4d439a4d0eb55a03c08d7039c9b85cab1bb066b61c3eb48e1e13ac1c775e3",
+      "scriptpubkey_type": "v1_p2tr",
+      "scriptpubkey_address": "bc1pc8jdgwdy6r44tgpuprts88ymsh9trwcxddsu866gu8sn4sw8wh3sfkngsk",
+      "value": 546
+    },
+    {
+      "scriptpubkey": "a9142217c95ce11e2928df34faa93fc8326d271b587d87",
+      "scriptpubkey_asm": "OP_HASH160 OP_PUSHBYTES_20 2217c95ce11e2928df34faa93fc8326d271b587d OP_EQUAL",
+      "scriptpubkey_type": "p2sh",
+      "scriptpubkey_address": "34oHPnYejchZLZgVfxH71iVzUP2tNbF6Ka",
+      "value": 4050179
+    },
+    {
+      "scriptpubkey": "0014c63ffc331ace5ec33f9468985d09b4671a0eb5a3",
+      "scriptpubkey_asm": "OP_0 OP_PUSHBYTES_20 c63ffc331ace5ec33f9468985d09b4671a0eb5a3",
+      "scriptpubkey_type": "v0_p2wpkh",
+      "scriptpubkey_address": "bc1qccllcvc6ee0vx0u5dzv96zd5vudqaddry7h4fr",
+      "value": 2339869
+    }
+  ],
+  "size": 534,
+  "weight": 1290,
+  "sigops": 2,
+  "fee": 6821,
+  "status": {
+    "confirmed": true,
+    "block_height": 872084,
+    "block_hash": "00000000000000000001116dc8bc1b051a08af82f635ad439465e21f2fc4a705",
+    "block_time": 1732633549
+  }
+}
