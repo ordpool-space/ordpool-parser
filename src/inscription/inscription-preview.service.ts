@@ -100,6 +100,7 @@ export class InscriptionPreviewService {
     if (inscription.contentType?.startsWith('application/yaml') ||
       inscription.contentType?.startsWith('text/css') ||
       inscription.contentType?.startsWith('text/javascript') ||
+      inscription.contentType?.startsWith('application/javascript') || // not mapped by ord, but valid as per RFC 4329
       inscription.contentType?.startsWith('application/x-javascript')) {
 
       content = content || await inscription.getContent();
@@ -126,6 +127,7 @@ const table: { [key: string]: (inscription: ParsedInscription) => Promise<string
   'application/pgp-signature': getPreviewText,
   'application/protobuf': getPreviewUnknown,
   'application/x-javascript': getPreviewText,
+  'application/javascript': getPreviewText, // not mapped by ord, but valid as per RFC 4329
   'application/yaml': getPreviewText,
   'audio/flac': getPreviewAudio,
   'audio/mpeg': getPreviewAudio,
