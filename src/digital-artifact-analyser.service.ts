@@ -315,6 +315,10 @@ export class DigitalArtifactAnalyserService {
     stats.fees.atomicals = totalAtomicalFees;
     stats.fees.inscriptionMints = totalInscriptionMintFees;
 
+    // Store mint activity with counts
+    stats.runes.runeMintActivity = runeMintActivity;
+    stats.brc20.brc20MintActivity = brc20MintActivity;
+    stats.src20.src20MintActivity = src20MintActivity;
 
     // Set final extra stats for inscriptions
     stats.inscriptions.totalEnvelopeSize = totalEnvelopeSize;
