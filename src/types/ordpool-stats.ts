@@ -64,16 +64,19 @@ export interface OrdpoolStats {
     mostActiveMint: string | null;
     mostActiveNonUncommonMint: string | null;
     runeMintActivity: { [key: string]: number };
+    runeEtchAttempts: { [identifier: string]: string[] };
   };
 
   brc20: {
     mostActiveMint: string | null;
     brc20MintActivity: { [key: string]: number };
+    brc20DeployAttempts: { [ticker: string]: string[] };
   };
 
   src20: {
     mostActiveMint: string | null;
     src20MintActivity: { [key: string]: number };
+    src20DeployAttempts: { [ticker: string]: string[] };
   };
 
   version: number;
@@ -144,17 +147,20 @@ export function getEmptyStats(): OrdpoolStats {
     runes: {
       mostActiveMint: null,
       mostActiveNonUncommonMint: null,
-      runeMintActivity: {}
+      runeMintActivity: {},
+      runeEtchAttempts: {}
     },
 
     brc20: {
       mostActiveMint: null,
-      brc20MintActivity: {}
+      brc20MintActivity: {},
+      brc20DeployAttempts: {}
     },
 
     src20: {
       mostActiveMint: null,
-      src20MintActivity: {}
+      src20MintActivity: {},
+      src20DeployAttempts: {}
     },
 
     version: 0

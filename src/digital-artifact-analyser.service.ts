@@ -1,6 +1,6 @@
 import { AtomicalParserService } from './atomical/atomical-parser.service';
 import { Cat21ParserService } from './cat21/cat21-parser.service';
-import { isFlagSetOnTransaction, parseJsonObject } from './digital-artifact-analyser.service.helper';
+import { addEntry, isFlagSetOnTransaction, parseJsonObject } from './digital-artifact-analyser.service.helper';
 import { DigitalArtifactsParserService } from './digital-artifacts-parser.service';
 import { InscriptionParserService } from './inscription/inscription-parser.service';
 import { RuneParserService } from './rune/rune-parser.service';
@@ -129,6 +129,11 @@ export class DigitalArtifactAnalyserService {
     let largestContentSize = 0;
     let largestEnvelopeInscriptionId: string | null = null;
     let largestContentInscriptionId: string | null = null;
+
+    // etching/deployments: this allows us to store all attempts for a given identifier
+    const runeEtchAttempts: { [identifier: string]: string[] } = {};
+    const brc20DeployAttempts: { [ticker: string]: string[] } = {};
+    const src20DeployAttempts: { [ticker: string]: string[] } = {};
 
     for (const tx of transactions) {
 
@@ -293,6 +298,33 @@ export class DigitalArtifactAnalyserService {
             largestContentInscriptionId = inscription.inscriptionId;
           }
         }
+
+        // ** Rune Etch Attempts
+        if ((flags & OrdpoolTransactionFlags.ordpool_rune_etch) === OrdpoolTransactionFlags.ordpool_rune_etch) {
+          const runestone = artifact as ParsedRunestone;
+          const runeName = runestone.runestone?.etching?.runeName;
+          addEntry(runeEtchAttempts, runeName, tx.txid);
+        }
+
+        // ** BRC-20 Deployment Attempts
+        if ((flags & OrdpoolTransactionFlags.ordpool_brc20_deploy) === OrdpoolTransactionFlags.ordpool_brc20_deploy) {
+          const inscription = artifact as ParsedInscription;
+          const parsedContent = parseJsonObject(await inscription.getContent());
+          if (parsedContent && parsedContent.p === 'brc-20' && parsedContent.op === 'deploy') {
+            const tick = parsedContent.tick;
+            addEntry(brc20DeployAttempts, tick, tx.txid);
+          }
+        }
+
+        // ** SRC-20 Deployment Attempts
+        if ((flags & OrdpoolTransactionFlags.ordpool_src20_deploy) === OrdpoolTransactionFlags.ordpool_src20_deploy) {
+          const src20 = artifact as ParsedSrc20;
+          const parsedContent = parseJsonObject(src20.getContent());
+          if (parsedContent && parsedContent.p === 'src-20' && parsedContent.op === 'deploy') {
+            const tick = parsedContent.tick;
+            addEntry(src20DeployAttempts, tick, tx.txid);
+          }
+        }
       }
     }
 
@@ -315,11 +347,6 @@ export class DigitalArtifactAnalyserService {
     stats.fees.atomicals = totalAtomicalFees;
     stats.fees.inscriptionMints = totalInscriptionMintFees;
 
-    // Store mint activity with counts
-    stats.runes.runeMintActivity = runeMintActivity;
-    stats.brc20.brc20MintActivity = brc20MintActivity;
-    stats.src20.src20MintActivity = src20MintActivity;
-
     // Set final extra stats for inscriptions
     stats.inscriptions.totalEnvelopeSize = totalEnvelopeSize;
     stats.inscriptions.totalContentSize = totalContentSize;
@@ -331,6 +358,15 @@ export class DigitalArtifactAnalyserService {
     const inscriptionCount = stats.amounts.inscriptionMint;
     stats.inscriptions.averageEnvelopeSize = inscriptionCount ? totalEnvelopeSize / inscriptionCount : 0;
     stats.inscriptions.averageContentSize = inscriptionCount ? totalContentSize / inscriptionCount : 0;
+
+    // Store mint activity with counts
+    stats.runes.runeMintActivity = runeMintActivity;
+    stats.brc20.brc20MintActivity = brc20MintActivity;
+    stats.src20.src20MintActivity = src20MintActivity;
+
+    stats.runes.runeEtchAttempts = runeEtchAttempts;
+    stats.brc20.brc20DeployAttempts = brc20DeployAttempts;
+    stats.src20.src20DeployAttempts = src20DeployAttempts;
 
     return stats;
   }

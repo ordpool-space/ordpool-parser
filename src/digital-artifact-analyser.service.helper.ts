@@ -55,3 +55,26 @@ export function parseJsonObject(content: string): any | null {
 
   return null;
 }
+
+/**
+ * Adds a transaction ID to the list of entries for a given key in the target object.
+ * If the key does not exist in the target, it initializes a new array for the key.
+ *
+ * @param target - The target object where entries are stored. Each key maps to an array of strings.
+ * @param key - The key to associate the entry with. If undefined, the function does nothing.
+ * @param entry - The string entry (e.g., a transaction ID) to add to the list for the given key.
+ */
+export function addEntry(target: { [key: string]: string[] }, key: string | undefined, entry: string): void {
+
+  if (!key) {
+    return;
+  }
+
+  // Initialize the array for the key if it doesn't exist
+  if (!target[key]) {
+    target[key] = [];
+  }
+
+  // Add the entry to the list
+  target[key].push(entry);
+}
