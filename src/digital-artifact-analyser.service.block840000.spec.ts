@@ -24,7 +24,7 @@ describe('DigitalArtifacts Parser', () => {
     var transactions = getBlock840000Txns();
 
     const start = performance.now();
-    var ordpoolStats = await DigitalArtifactAnalyserService.analyseTransactions(transactions);
+    var ordpoolStats = await DigitalArtifactAnalyserService.analyseTransactions(transactions, 840000);
     const end = performance.now();
     warn(`Block 840,000 txns – Execution time: ${(end - start) / 100} ms`);
 
@@ -62,6 +62,14 @@ describe('DigitalArtifacts Parser', () => {
       src20Mint: 0,
       src20Transfer: 0
     });
+
+    expect(ordpoolStats.runes.runeEtchAttempts.length).toBe(755);
+
+    const zzFEHU = ordpoolStats.runes.runeEtchAttempts[0];
+
+    expect(zzFEHU.runeId).toBe('840000:1');
+    expect(zzFEHU.runeName).toBe('Z•Z•Z•Z•Z•FEHU•Z•Z•Z•Z•Z');
+    expect(zzFEHU.txId).toBe('2bb85f4b004be6da54f766c17c1e855187327112c231ef2ff35ebad0ea67c69e');
   });
 
   /*

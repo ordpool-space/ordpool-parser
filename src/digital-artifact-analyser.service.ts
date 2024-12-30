@@ -1,13 +1,13 @@
 import { AtomicalParserService } from './atomical/atomical-parser.service';
 import { Cat21ParserService } from './cat21/cat21-parser.service';
-import { addEntry, convertToActivities, convertToAttempts, isFlagSetOnTransaction, parseJsonObject } from './digital-artifact-analyser.service.helper';
+import { convertToActivities, isFlagSetOnTransaction, parseJsonObject } from './digital-artifact-analyser.service.helper';
 import { DigitalArtifactsParserService } from './digital-artifacts-parser.service';
 import { InscriptionParserService } from './inscription/inscription-parser.service';
 import { RuneParserService } from './rune/rune-parser.service';
 import { isUncommonGoodsMint } from './rune/rune-parser.service.helper';
 import { Src20ParserService } from './src20/src20-parser.service';
 import { DigitalArtifact, DigitalArtifactType } from './types/digital-artifact';
-import { getArtifactTypeMap, getEmptyStats, OrdpoolStats } from './types/ordpool-stats';
+import { Brc20DeployAttempt, getArtifactTypeMap, getEmptyStats, OrdpoolStats, RuneEtchAttempt, Src20DeployAttempt } from './types/ordpool-stats';
 import { OrdpoolTransactionFlags } from './types/ordpool-transaction-flags';
 import { ParsedInscription } from './types/parsed-inscription';
 import { ParsedRunestone } from './types/parsed-runestone';
@@ -84,9 +84,10 @@ export class DigitalArtifactAnalyserService {
    * (this one calls the method only with a list of one transaction, which is the coinbase txn)
    *
    * @param transactions - The array of transactions to analyze.
+   * @param blockHeight - Default to -1 for mempool transactions.
    * @returns The OrdpoolStats object with counted amounts for each artifact type.
    */
-  static async analyseTransactions(transactions: TransactionSimple[]): Promise<OrdpoolStats> {
+  static async analyseTransactions(transactions: TransactionSimple[], blockHeight: number = -1): Promise<OrdpoolStats> {
 
     const artifactTypeMap = getArtifactTypeMap();
 
@@ -130,12 +131,15 @@ export class DigitalArtifactAnalyserService {
     let largestEnvelopeInscriptionId: string | null = null;
     let largestContentInscriptionId: string | null = null;
 
-    // etching/deployments: this allows us to store all attempts for a given identifier
-    const runeEtchAttempts: { [identifier: string]: string[] } = {};
-    const brc20DeployAttempts: { [ticker: string]: string[] } = {};
-    const src20DeployAttempts: { [ticker: string]: string[] } = {};
+    // etching/deployments: store all attempts, which might or might not have been successfull
+    const runeEtchAttempts: RuneEtchAttempt[] = [];
+    const brc20DeployAttempts: Brc20DeployAttempt[] = [];
+    const src20DeployAttempts: Src20DeployAttempt[] = [];
 
+    // index is zero-based, we start at -1 so that the 1st txn has number 0
+    let txIndex = -1;
     for (const tx of transactions) {
+      txIndex++;
 
       const artifacts: DigitalArtifact[] = DigitalArtifactsParserService.parse(tx);
 
@@ -302,17 +306,33 @@ export class DigitalArtifactAnalyserService {
         // ** Rune Etch Attempts
         if ((flags & OrdpoolTransactionFlags.ordpool_rune_etch) === OrdpoolTransactionFlags.ordpool_rune_etch) {
           const runestone = artifact as ParsedRunestone;
-          const runeName = runestone.runestone?.etching?.runeName;
-          addEntry(runeEtchAttempts, runeName, tx.txid);
+          const runeId = `${blockHeight}:${txIndex}`;
+          const etchingSpec = runestone.runestone?.etching;
+          const runeName = etchingSpec?.runeName;
+
+          if (etchingSpec) {
+            runeEtchAttempts.push({
+              txId: tx.txid,
+              runeId,
+              runeName,
+              etchingSpec,
+            });
+          }
         }
 
         // ** BRC-20 Deployment Attempts
         if ((flags & OrdpoolTransactionFlags.ordpool_brc20_deploy) === OrdpoolTransactionFlags.ordpool_brc20_deploy) {
           const inscription = artifact as ParsedInscription;
           const parsedContent = parseJsonObject(await inscription.getContent());
+
           if (parsedContent && parsedContent.p === 'brc-20' && parsedContent.op === 'deploy') {
-            const tick = parsedContent.tick;
-            addEntry(brc20DeployAttempts, tick, tx.txid);
+            brc20DeployAttempts.push({
+              txId: tx.txid,
+              ticker: parsedContent.tick ?? 'ERROR', // Required
+              maxSupply: parsedContent.max ?? 'ERROR', // Required
+              mintLimit: parsedContent.lim, // Optional
+              decimals: parsedContent.dec, // Optional
+            });
           }
         }
 
@@ -320,9 +340,15 @@ export class DigitalArtifactAnalyserService {
         if ((flags & OrdpoolTransactionFlags.ordpool_src20_deploy) === OrdpoolTransactionFlags.ordpool_src20_deploy) {
           const src20 = artifact as ParsedSrc20;
           const parsedContent = parseJsonObject(src20.getContent());
+
           if (parsedContent && parsedContent.p === 'src-20' && parsedContent.op === 'deploy') {
-            const tick = parsedContent.tick;
-            addEntry(src20DeployAttempts, tick, tx.txid);
+            src20DeployAttempts.push({
+              txId: tx.txid,
+              ticker: parsedContent.tick ?? 'ERROR', // Required
+              maxSupply: parsedContent.max ?? 'ERROR', // Required
+              mintLimit: parsedContent.lim ?? 'ERROR', // Required
+              decimals: parsedContent.dec, // Optional
+            });
           }
         }
       }
@@ -364,9 +390,9 @@ export class DigitalArtifactAnalyserService {
     stats.brc20.brc20MintActivity = convertToActivities(brc20MintActivity);
     stats.src20.src20MintActivity = convertToActivities(src20MintActivity);
 
-    stats.runes.runeEtchAttempts = convertToAttempts(runeEtchAttempts);
-    stats.brc20.brc20DeployAttempts = convertToAttempts(brc20DeployAttempts);
-    stats.src20.src20DeployAttempts = convertToAttempts(src20DeployAttempts);
+    stats.runes.runeEtchAttempts = runeEtchAttempts;
+    stats.brc20.brc20DeployAttempts = brc20DeployAttempts;
+    stats.src20.src20DeployAttempts = src20DeployAttempts;
 
     return stats;
   }
@@ -403,7 +429,6 @@ export class DigitalArtifactAnalyserService {
           inscription.contentType?.startsWith('application/json')
         ) {
 
-          // TODO: chaching for improving performance?!
           const parsedContent = parseJsonObject(await inscription.getContent());
           if (parsedContent && parsedContent.p === 'brc-20') {
 
@@ -445,17 +470,18 @@ export class DigitalArtifactAnalyserService {
 
       case DigitalArtifactType.Src20:
         const src20 = artifact as ParsedSrc20;
-        flags |= OrdpoolTransactionFlags.ordpool_src20;
 
-        // TODO: chaching for improving performance?!
-        const parsedSrcContent = parseJsonObject(src20.getContent());
-        if (parsedSrcContent && parsedSrcContent.p === 'src-20') {
+        const parsedContent = parseJsonObject(src20.getContent());
+        if (parsedContent && parsedContent.p === 'src-20') {
+
+          flags |= OrdpoolTransactionFlags.ordpool_src20;
+
           // Check for SRC-20 operations
-          if (parsedSrcContent.op === 'deploy') {
+          if (parsedContent.op === 'deploy') {
             flags |= OrdpoolTransactionFlags.ordpool_src20_deploy;
-          } else if (parsedSrcContent.op === 'mint') {
+          } else if (parsedContent.op === 'mint') {
             flags |= OrdpoolTransactionFlags.ordpool_src20_mint;
-          } else if (parsedSrcContent.op === 'transfer') {
+          } else if (parsedContent.op === 'transfer') {
             flags |= OrdpoolTransactionFlags.ordpool_src20_transfer;
           }
         }

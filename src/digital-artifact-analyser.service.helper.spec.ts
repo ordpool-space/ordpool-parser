@@ -1,4 +1,4 @@
-import { convertToActivities, convertToAttempts, isFlagSetOnTransaction, parseJsonObject } from "./digital-artifact-analyser.service.helper";
+import { convertToActivities, isFlagSetOnTransaction, parseJsonObject } from "./digital-artifact-analyser.service.helper";
 import { OrdpoolTransactionFlags } from "./types/ordpool-transaction-flags";
 
 
@@ -141,24 +141,6 @@ describe('convertToActivities', () => {
   it('should return an empty array for an empty object', () => {
     const data = {};
     const result = convertToActivities(data);
-    expect(result).toEqual([]);
-  });
-});
-
-describe('convertToAttempts', () => {
-  it('should convert an object to Attempts format', () => {
-    const data = { id1: ['tx1', 'tx2'], id2: ['tx3'], id3: ['tx4', 'tx5', 'tx6'] };
-    const result = convertToAttempts(data);
-    expect(result).toEqual([
-      ['id1', ['tx1', 'tx2']],
-      ['id2', ['tx3']],
-      ['id3', ['tx4', 'tx5', 'tx6']],
-    ]);
-  });
-
-  it('should return an empty array for an empty object', () => {
-    const data = {};
-    const result = convertToAttempts(data);
     expect(result).toEqual([]);
   });
 });

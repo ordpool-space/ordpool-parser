@@ -184,12 +184,12 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
     );
   });
 
-  it('should return correct flags for unsupported SRC-20 JSON content', async () => {
+  it('should ignore unsupported SRC-20 JSON content (`p` must always be `src-20`)', async () => {
     const src20Artifact = {
       type: DigitalArtifactType.Src20,
       getContent: () => JSON.stringify({ p: 'unsupported', op: 'transfer' }),
     } as ParsedSrc20;
     const flags = await DigitalArtifactAnalyserService.analyse(src20Artifact);
-    expect(flags).toBe(OrdpoolTransactionFlags.ordpool_src20);
+    expect(flags).toBe(0n);
   });
 });

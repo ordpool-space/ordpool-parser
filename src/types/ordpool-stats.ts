@@ -1,7 +1,30 @@
+import { RuneEtchingSpec } from "../rune/src/etching";
 import { OrdpoolTransactionFlag, OrdpoolTransactionFlags } from "./ordpool-transaction-flags";
 
-type Activities = [string, number][]; // Each item is [identifier, count]
-type Attempts = [string, string[]][]; // Each item is [identifier, [txId1, txId2, ...]]
+type MintActivities = [string, number][]; // Each item is [identifier, count]
+
+export interface RuneEtchAttempt {
+  txId: string;
+  runeId: string; // blockHeight:txIndex
+  runeName?: string;
+  etchingSpec: RuneEtchingSpec;
+}
+
+export interface Brc20DeployAttempt {
+  txId: string;
+  ticker: string;
+  maxSupply: string;
+  mintLimit?: string;
+  decimals?: string; // Default to 18 if not specified
+}
+
+export interface Src20DeployAttempt {
+  txId: string;
+  ticker: string;
+  maxSupply: string;
+  mintLimit: string; // Required for SRC-20
+  decimals?: string; // Default to 18 if not specified
+}
 
 export interface OrdpoolStats {
 
@@ -66,20 +89,20 @@ export interface OrdpoolStats {
   runes: {
     mostActiveMint: string | null;
     mostActiveNonUncommonMint: string | null;
-    runeMintActivity: Activities;
-    runeEtchAttempts: Attempts;
+    runeMintActivity: MintActivities;
+    runeEtchAttempts: RuneEtchAttempt[];
   };
 
   brc20: {
     mostActiveMint: string | null;
-    brc20MintActivity: Activities;
-    brc20DeployAttempts: Attempts;
+    brc20MintActivity: MintActivities;
+    brc20DeployAttempts: Brc20DeployAttempt[];
   };
 
   src20: {
     mostActiveMint: string | null;
-    src20MintActivity: Activities;
-    src20DeployAttempts: Attempts;
+    src20MintActivity: MintActivities;
+    src20DeployAttempts: Src20DeployAttempt[];
   };
 
   version: number;
