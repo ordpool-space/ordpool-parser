@@ -78,3 +78,34 @@ export function addEntry(target: { [key: string]: string[] }, key: string | unde
   // Add the entry to the list
   target[key].push(entry);
 }
+
+/**
+ * Converts a key-value object into Activities format.
+ *
+ * @param data - An object where the keys represent identifiers and the values represent counts.
+ * @returns A multi-dimensional array of Activities, where each entry is [identifier, count].
+ *
+ * @example
+ * const data = { 'id1': 10, 'id2': 20 };
+ * const result = convertToActivities(data);
+ * // result: [['id1', 10], ['id2', 20]]
+ */
+export function convertToActivities(data: { [key: string]: number }): [string, number][] {
+  return Object.entries(data);
+}
+
+/**
+ * Converts a key-value object into Attempts format.
+ *
+ * @param data - An object where the keys represent identifiers and the values are arrays of transaction IDs.
+ * @returns A multi-dimensional array of Attempts, where each entry is [identifier, [txId1, txId2, ...]].
+ *
+ * @example
+ * const data = { 'id1': ['tx1', 'tx2'], 'id2': ['tx3'] };
+ * const result = convertToAttempts(data);
+ * // result: [['id1', ['tx1', 'tx2']], ['id2', ['tx3']]]
+ */
+export function convertToAttempts(data: { [identifier: string]: string[] }): [string, string[]][] {
+  return Object.entries(data);
+}
+  

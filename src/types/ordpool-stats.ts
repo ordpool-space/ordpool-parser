@@ -1,5 +1,8 @@
 import { OrdpoolTransactionFlag, OrdpoolTransactionFlags } from "./ordpool-transaction-flags";
 
+type Activities = [string, number][]; // Each item is [identifier, count]
+type Attempts = [string, string[]][]; // Each item is [identifier, [txId1, txId2, ...]]
+
 export interface OrdpoolStats {
 
   amounts: {
@@ -63,20 +66,20 @@ export interface OrdpoolStats {
   runes: {
     mostActiveMint: string | null;
     mostActiveNonUncommonMint: string | null;
-    runeMintActivity: { [key: string]: number };
-    runeEtchAttempts: { [identifier: string]: string[] };
+    runeMintActivity: Activities;
+    runeEtchAttempts: Attempts;
   };
 
   brc20: {
     mostActiveMint: string | null;
-    brc20MintActivity: { [key: string]: number };
-    brc20DeployAttempts: { [ticker: string]: string[] };
+    brc20MintActivity: Activities;
+    brc20DeployAttempts: Attempts;
   };
 
   src20: {
     mostActiveMint: string | null;
-    src20MintActivity: { [key: string]: number };
-    src20DeployAttempts: { [ticker: string]: string[] };
+    src20MintActivity: Activities;
+    src20DeployAttempts: Attempts;
   };
 
   version: number;
@@ -147,20 +150,20 @@ export function getEmptyStats(): OrdpoolStats {
     runes: {
       mostActiveMint: null,
       mostActiveNonUncommonMint: null,
-      runeMintActivity: {},
-      runeEtchAttempts: {}
+      runeMintActivity: [],
+      runeEtchAttempts: []
     },
 
     brc20: {
       mostActiveMint: null,
-      brc20MintActivity: {},
-      brc20DeployAttempts: {}
+      brc20MintActivity: [],
+      brc20DeployAttempts: []
     },
 
     src20: {
       mostActiveMint: null,
-      src20MintActivity: {},
-      src20DeployAttempts: {}
+      src20MintActivity: [],
+      src20DeployAttempts: []
     },
 
     version: 0

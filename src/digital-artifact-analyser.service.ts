@@ -1,6 +1,6 @@
 import { AtomicalParserService } from './atomical/atomical-parser.service';
 import { Cat21ParserService } from './cat21/cat21-parser.service';
-import { addEntry, isFlagSetOnTransaction, parseJsonObject } from './digital-artifact-analyser.service.helper';
+import { addEntry, convertToActivities, convertToAttempts, isFlagSetOnTransaction, parseJsonObject } from './digital-artifact-analyser.service.helper';
 import { DigitalArtifactsParserService } from './digital-artifacts-parser.service';
 import { InscriptionParserService } from './inscription/inscription-parser.service';
 import { RuneParserService } from './rune/rune-parser.service';
@@ -360,13 +360,13 @@ export class DigitalArtifactAnalyserService {
     stats.inscriptions.averageContentSize = inscriptionCount ? totalContentSize / inscriptionCount : 0;
 
     // Store mint activity with counts
-    stats.runes.runeMintActivity = runeMintActivity;
-    stats.brc20.brc20MintActivity = brc20MintActivity;
-    stats.src20.src20MintActivity = src20MintActivity;
+    stats.runes.runeMintActivity = convertToActivities(runeMintActivity);
+    stats.brc20.brc20MintActivity = convertToActivities(brc20MintActivity);
+    stats.src20.src20MintActivity = convertToActivities(src20MintActivity);
 
-    stats.runes.runeEtchAttempts = runeEtchAttempts;
-    stats.brc20.brc20DeployAttempts = brc20DeployAttempts;
-    stats.src20.src20DeployAttempts = src20DeployAttempts;
+    stats.runes.runeEtchAttempts = convertToAttempts(runeEtchAttempts);
+    stats.brc20.brc20DeployAttempts = convertToAttempts(brc20DeployAttempts);
+    stats.src20.src20DeployAttempts = convertToAttempts(src20DeployAttempts);
 
     return stats;
   }

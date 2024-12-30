@@ -1,4 +1,4 @@
-import { isFlagSetOnTransaction, parseJsonObject } from "./digital-artifact-analyser.service.helper";
+import { convertToActivities, convertToAttempts, isFlagSetOnTransaction, parseJsonObject } from "./digital-artifact-analyser.service.helper";
 import { OrdpoolTransactionFlags } from "./types/ordpool-transaction-flags";
 
 
@@ -124,5 +124,41 @@ describe('parseJsonObject', () => {
   it('should return null for non-string input (e.g., object)', () => {
     const result = parseJsonObject({ key: 'value' } as unknown as string);
     expect(result).toBeNull();
+  });
+});
+
+describe('convertToActivities', () => {
+  it('should convert an object to Activities format', () => {
+    const data = { id1: 10, id2: 20, id3: 30 };
+    const result = convertToActivities(data);
+    expect(result).toEqual([
+      ['id1', 10],
+      ['id2', 20],
+      ['id3', 30],
+    ]);
+  });
+
+  it('should return an empty array for an empty object', () => {
+    const data = {};
+    const result = convertToActivities(data);
+    expect(result).toEqual([]);
+  });
+});
+
+describe('convertToAttempts', () => {
+  it('should convert an object to Attempts format', () => {
+    const data = { id1: ['tx1', 'tx2'], id2: ['tx3'], id3: ['tx4', 'tx5', 'tx6'] };
+    const result = convertToAttempts(data);
+    expect(result).toEqual([
+      ['id1', ['tx1', 'tx2']],
+      ['id2', ['tx3']],
+      ['id3', ['tx4', 'tx5', 'tx6']],
+    ]);
+  });
+
+  it('should return an empty array for an empty object', () => {
+    const data = {};
+    const result = convertToAttempts(data);
+    expect(result).toEqual([]);
   });
 });
