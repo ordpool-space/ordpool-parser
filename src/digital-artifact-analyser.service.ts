@@ -1,6 +1,6 @@
 import { AtomicalParserService } from './atomical/atomical-parser.service';
 import { Cat21ParserService } from './cat21/cat21-parser.service';
-import { convertToActivities, isFlagSetOnTransaction, parseJsonObject } from './digital-artifact-analyser.service.helper';
+import { convertToActivities, createRuneEtchAttempt, isFlagSetOnTransaction, parseJsonObject } from './digital-artifact-analyser.service.helper';
 import { DigitalArtifactsParserService } from './digital-artifacts-parser.service';
 import { InscriptionParserService } from './inscription/inscription-parser.service';
 import { RuneParserService } from './rune/rune-parser.service';
@@ -306,17 +306,10 @@ export class DigitalArtifactAnalyserService {
         // ** Rune Etch Attempts
         if ((flags & OrdpoolTransactionFlags.ordpool_rune_etch) === OrdpoolTransactionFlags.ordpool_rune_etch) {
           const runestone = artifact as ParsedRunestone;
-          const runeId = `${blockHeight}:${txIndex}`;
-          const etchingSpec = runestone.runestone?.etching;
-          const runeName = etchingSpec?.runeName;
+          const runeEtchAttempt = createRuneEtchAttempt(tx.txid, blockHeight, txIndex, runestone.runestone?.etching)
 
-          if (etchingSpec) {
-            runeEtchAttempts.push({
-              txId: tx.txid,
-              runeId,
-              runeName,
-              etchingSpec,
-            });
+          if (runeEtchAttempt) {
+            runeEtchAttempts.push(runeEtchAttempt);
           }
         }
 

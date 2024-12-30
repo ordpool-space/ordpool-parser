@@ -1,13 +1,23 @@
-import { RuneEtchingSpec } from "../rune/src/etching";
 import { OrdpoolTransactionFlag, OrdpoolTransactionFlags } from "./ordpool-transaction-flags";
 
-type MintActivities = [string, number][]; // Each item is [identifier, count]
+export type MintActivity = [string, number];
+export type MintActivities = MintActivity[]; // Each item is [identifier, count]
 
+// flattened version of RuneEtchingSpec
 export interface RuneEtchAttempt {
   txId: string;
   runeId: string; // blockHeight:txIndex
   runeName?: string;
-  etchingSpec: RuneEtchingSpec;
+  divisibility?: number;
+  premine?: bigint;
+  symbol?: string;
+  cap?: bigint; // Cap of the Rune (from terms)
+  amount?: bigint; // Amount of the Rune (from terms)
+  offsetStart?: bigint; // Offset start (from terms.offset)
+  offsetEnd?: bigint; // Offset end (from terms.offset)
+  heightStart?: bigint; // Height start (from terms.height)
+  heightEnd?: bigint; // Height end (from terms.height)
+  turbo?: boolean;
 }
 
 export interface Brc20DeployAttempt {
