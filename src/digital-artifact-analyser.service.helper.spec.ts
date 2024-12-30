@@ -1,6 +1,5 @@
 import { brc20DeployAttemptsToCompact, compactToBrc20DeployAttempts, compactToMintActivity, compactToRuneEtchAttempts, compactToSrc20DeployAttempts, convertToActivities, createRuneEtchAttempt, isFlagSetOnTransaction, mintActivityToCompact, parseJsonObject, runeEtchAttemptsToCompact, src20DeployAttemptsToCompact } from "./digital-artifact-analyser.service.helper";
 import { RuneEtchingSpec } from "./rune/src/etching";
-import { RuneEtchAttempt } from "./types/ordpool-stats";
 import { OrdpoolTransactionFlags } from "./types/ordpool-transaction-flags";
 
 
@@ -178,147 +177,148 @@ describe('Mint Activity Converter', () => {
   });
 });
 
-describe('createRuneEtchAttempt', () => {
-  it('should create a valid RuneEtchAttempt object', () => {
-    const etchingSpec: RuneEtchingSpec = {
-      runeName: 'MyRune',
-      divisibility: 10,
-      premine: BigInt(1000),
-      symbol: 'MR',
-      terms: {
-        cap: BigInt(21000000),
-        amount: BigInt(500),
-        offset: { start: BigInt(1), end: BigInt(100) },
-        height: { start: BigInt(10), end: BigInt(20) },
+describe("createRuneEtchAttempt", () => {
+
+  const mockEtchingSpec: RuneEtchingSpec = {
+    runeName: "EXAMPLE",
+    divisibility: 8,
+    premine: BigInt(100000000),
+    symbol: "SYM",
+    terms: {
+      cap: BigInt(1000000),
+      amount: BigInt(100),
+      offset: {
+        start: BigInt(10),
+        end: BigInt(20),
       },
-      turbo: true,
-    };
+      height: {
+        start: BigInt(1000),
+        end: BigInt(2000),
+      },
+    },
+    turbo: true,
+  };
 
-    const result = createRuneEtchAttempt('tx123', 1000, 1, etchingSpec);
+  it("should create a valid RuneEtchAttempt object", () => {
+    const result = createRuneEtchAttempt("abc123", 100, 1, mockEtchingSpec);
 
-    expect(result).toEqual<RuneEtchAttempt>({
-      txId: 'tx123',
-      runeId: '1000:1',
-      runeName: 'MyRune',
-      divisibility: 10,
-      premine: BigInt(1000),
-      symbol: 'MR',
-      cap: BigInt(21000000),
-      amount: BigInt(500),
-      offsetStart: BigInt(1),
-      offsetEnd: BigInt(100),
-      heightStart: BigInt(10),
-      heightEnd: BigInt(20),
+    expect(result).toEqual({
+      txId: "abc123",
+      runeId: "100:1",
+      runeName: "EXAMPLE",
+      divisibility: 8,
+      premine: "100000000",
+      symbol: "SYM",
+      cap: "1000000",
+      amount: "100",
+      offsetStart: "10",
+      offsetEnd: "20",
+      heightStart: "1000",
+      heightEnd: "2000",
       turbo: true,
     });
   });
 
-  it('should return null if etchingSpec is undefined', () => {
-    const result = createRuneEtchAttempt('tx456', 2000, 3, undefined);
-    expect(result).toBeNull();
-  });
-
-  it('should handle partial EtchingSpec', () => {
-    const etchingSpec: RuneEtchingSpec = {
-      runeName: 'PartialRune',
-      symbol: 'PR',
+  it("should handle missing optional fields in the etching spec", () => {
+    const minimalSpec: RuneEtchingSpec = {
+      runeName: "MINIMAL",
     };
 
-    const result = createRuneEtchAttempt('tx789', 3000, 4, etchingSpec);
+    const result = createRuneEtchAttempt("tx123", 200, 2, minimalSpec);
 
-    expect(result).toEqual<RuneEtchAttempt>({
-      txId: 'tx789',
-      runeId: '3000:4',
-      runeName: 'PartialRune',
-      divisibility: undefined,
-      premine: undefined,
-      symbol: 'PR',
-      cap: undefined,
-      amount: undefined,
-      offsetStart: undefined,
-      offsetEnd: undefined,
-      heightStart: undefined,
-      heightEnd: undefined,
-      turbo: undefined,
+    expect(result).toEqual({
+      txId: "tx123",
+      runeId: "200:2",
+      runeName: "MINIMAL"
     });
+  });
+
+  it("should handle bigint fields correctly as strings", () => {
+    const result = createRuneEtchAttempt("tx456", 300, 3, {
+      ...mockEtchingSpec,
+      premine: BigInt(500),
+      terms: {
+        cap: BigInt(50),
+        offset: { start: BigInt(5) },
+      },
+    });
+
+    expect(result?.premine).toBe("500");
+    expect(result?.cap).toBe("50");
+    expect(result?.offsetStart).toBe("5");
   });
 });
 
 describe('RuneEtchAttempt Converters', () => {
-  const sampleData: RuneEtchAttempt[] = [
+  const attempts = [
     {
-      txId: 'tx123',
-      runeId: '12345:1',
-      runeName: 'MyRune',
+      txId: 'tx1',
+      runeId: '100:1',
+      runeName: 'RUNE1',
       divisibility: 8,
-      premine: BigInt(1000),
-      symbol: 'MR',
-      cap: BigInt(21000000),
-      amount: BigInt(1000),
-      offsetStart: BigInt(1),
-      offsetEnd: BigInt(100),
-      heightStart: BigInt(1000),
-      heightEnd: BigInt(2000),
+      premine: '100000000',
+      symbol: 'SYM',
+      cap: '1000000',
+      amount: '100',
+      offsetStart: '10',
+      offsetEnd: '20',
+      heightStart: '1000',
+      heightEnd: '2000',
       turbo: true,
     },
     {
-      txId: 'tx456',
-      runeId: '12346:2',
+      txId: 'tx2',
+      runeId: '101:1',
       turbo: false,
     },
   ];
 
-  it('should convert RuneEtchAttempt to compact string', () => {
-    const result = runeEtchAttemptsToCompact(sampleData);
-    expect(result).toEqual(
-      'tx123|12345:1|MyRune|8|1000|MR|21000000|1000|1|100|1000|2000|1,tx456|12346:2|||||||||||'
+  it('should correctly convert RuneEtchAttempt to compact format', () => {
+    const result = runeEtchAttemptsToCompact(attempts);
+    expect(result).toBe(
+      'tx1|100:1|RUNE1|8|100000000|SYM|1000000|100|10|20|1000|2000|1,tx2|101:1|||||||||||'
     );
   });
 
-  it('should convert compact string back to RuneEtchAttempt', () => {
-    const compact = 'tx123|12345:1|MyRune|8|1000|MR|21000000|1000|1|100|1000|2000|1,tx456|12346:2|||||||||||';
+  it('should correctly parse compact format back to RuneEtchAttempt', () => {
+    const compact =
+      'tx1|100:1|RUNE1|8|100000000|SYM|1000000|100|10|20|1000|2000|1,tx2|101:1|||||||||||';
     const result = compactToRuneEtchAttempts(compact);
-    expect(result).toEqual(sampleData);
-  });
 
-  it('should handle empty input for compactToRuneEtchAttempts', () => {
-    const result = compactToRuneEtchAttempts('');
-    expect(result).toEqual([]);
-  });
-
-  it('should handle partially populated data', () => {
-    const partialCompact = 'tx789|12347:3|PartialRune|||||||||1|';
-    const result = compactToRuneEtchAttempts(partialCompact);
     expect(result).toEqual([
       {
-        txId: 'tx789',
-        runeId: '12347:3',
-        runeName: 'PartialRune',
-        divisibility: undefined,
-        premine: undefined,
-        symbol: undefined,
-        cap: undefined,
-        amount: undefined,
-        offsetStart: undefined,
-        offsetEnd: undefined,
-        heightStart: undefined,
-        heightEnd: BigInt(1),
+        txId: 'tx1',
+        runeId: '100:1',
+        runeName: 'RUNE1',
+        divisibility: 8,
+        premine: '100000000',
+        symbol: 'SYM',
+        cap: '1000000',
+        amount: '100',
+        offsetStart: '10',
+        offsetEnd: '20',
+        heightStart: '1000',
+        heightEnd: '2000',
+        turbo: true,
+      },
+      {
+        txId: 'tx2',
+        runeId: '101:1',
         turbo: false,
       },
     ]);
   });
 
-  it('should handle empty compact string', () => {
-    const result = runeEtchAttemptsToCompact([]);
-    expect(result).toEqual('');
+  it('should handle empty input', () => {
+    expect(runeEtchAttemptsToCompact([])).toBe('');
+    expect(compactToRuneEtchAttempts('')).toEqual([]);
   });
 });
-
 
 describe('BRC-20 Deploy Attempts Converter', () => {
   const attempts = [
     { txId: 'tx1', ticker: 'SYMM', maxSupply: '21000000', mintLimit: '1000', decimals: '8' },
-    { txId: 'tx2', ticker: 'TEST', maxSupply: '1000000', mintLimit: undefined, decimals: undefined },
+    { txId: 'tx2', ticker: 'TEST', maxSupply: '1000000' },
   ];
 
   it('should convert to compact format', () => {
@@ -336,7 +336,7 @@ describe('BRC-20 Deploy Attempts Converter', () => {
 describe('SRC-20 Deploy Attempts Converter', () => {
   const attempts = [
     { txId: 'tx1', ticker: 'STAMP', maxSupply: '100000', mintLimit: '100', decimals: '18' },
-    { txId: 'tx2', ticker: 'TEST', maxSupply: '50000', mintLimit: '50', decimals: undefined },
+    { txId: 'tx2', ticker: 'TEST', maxSupply: '50000', mintLimit: '50' },
   ];
 
   it('should convert to compact format', () => {

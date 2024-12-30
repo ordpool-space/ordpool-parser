@@ -130,14 +130,14 @@ export function createRuneEtchAttempt(
     runeId: `${blockHeight}:${txIndex}`,
     runeName: etchingSpec.runeName,
     divisibility: etchingSpec.divisibility,
-    premine: etchingSpec.premine,
+    premine: etchingSpec.premine?.toString(),
     symbol: etchingSpec.symbol,
-    cap: etchingSpec.terms?.cap,
-    amount: etchingSpec.terms?.amount,
-    offsetStart: etchingSpec.terms?.offset?.start,
-    offsetEnd: etchingSpec.terms?.offset?.end,
-    heightStart: etchingSpec.terms?.height?.start,
-    heightEnd: etchingSpec.terms?.height?.end,
+    cap: etchingSpec.terms?.cap?.toString(),
+    amount: etchingSpec.terms?.amount?.toString(),
+    offsetStart: etchingSpec.terms?.offset?.start?.toString(),
+    offsetEnd: etchingSpec.terms?.offset?.end?.toString(),
+    heightStart: etchingSpec.terms?.height?.start?.toString(),
+    heightEnd: etchingSpec.terms?.height?.end?.toString(),
     turbo: etchingSpec.turbo,
   };
 }
@@ -156,16 +156,16 @@ export function runeEtchAttemptsToCompact(attempts: RuneEtchAttempt[]): string {
       [
         a.txId,
         a.runeId,
-        a.runeName ?? '',
+        a.runeName || '',
         a.divisibility ?? '',
-        a.premine?.toString() ?? '',
-        a.symbol ?? '',
-        a.cap?.toString() ?? '',
-        a.amount?.toString() ?? '',
-        a.offsetStart?.toString() ?? '',
-        a.offsetEnd?.toString() ?? '',
-        a.heightStart?.toString() ?? '',
-        a.heightEnd?.toString() ?? '',
+        a.premine ?? '',
+        a.symbol || '',
+        a.cap ?? '',
+        a.amount ?? '',
+        a.offsetStart ?? '',
+        a.offsetEnd ?? '',
+        a.heightStart ?? '',
+        a.heightEnd ?? '',
         a.turbo ? '1' : '' // Turbo is represented as '1' for true and empty for false.
       ].join('|')
     )
@@ -174,7 +174,6 @@ export function runeEtchAttemptsToCompact(attempts: RuneEtchAttempt[]): string {
 
 /**
  * Converts a compact string format back to an array of RuneEtchAttempt objects.
- * Parses each property from the compact string.
  *
  * @param data - Compact string representing RuneEtchAttempt objects.
  * @returns An array of parsed RuneEtchAttempt objects.
@@ -205,15 +204,15 @@ export function compactToRuneEtchAttempts(data: string): RuneEtchAttempt[] {
       txId,
       runeId,
       runeName: runeName || undefined,
-      divisibility: divisibility ? parseInt(divisibility, 10) : undefined,
-      premine: premine ? BigInt(premine) : undefined,
+      divisibility: divisibility ? Number(divisibility) : undefined,
+      premine: premine || undefined,
       symbol: symbol || undefined,
-      cap: cap ? BigInt(cap) : undefined,
-      amount: amount ? BigInt(amount) : undefined,
-      offsetStart: offsetStart ? BigInt(offsetStart) : undefined,
-      offsetEnd: offsetEnd ? BigInt(offsetEnd) : undefined,
-      heightStart: heightStart ? BigInt(heightStart) : undefined,
-      heightEnd: heightEnd ? BigInt(heightEnd) : undefined,
+      cap: cap || undefined,
+      amount: amount || undefined,
+      offsetStart: offsetStart || undefined,
+      offsetEnd: offsetEnd || undefined,
+      heightStart: heightStart || undefined,
+      heightEnd: heightEnd || undefined,
       turbo: turbo === '1',
     };
   });
@@ -227,66 +226,66 @@ export function compactToRuneEtchAttempts(data: string): RuneEtchAttempt[] {
  * @returns A comma-separated string where each attempt is represented as `txId|ticker|maxSupply|mintLimit|decimals`.
  */
 export function brc20DeployAttemptsToCompact(data: Brc20DeployAttempt[]): string {
-  return data
-    .map(a => `${a.txId}|${a.ticker}|${a.maxSupply}|${a.mintLimit ?? ''}|${a.decimals ?? ''}`)
-    .join(',');
-}
-
-/**
- * Converts a compact comma-separated string of BRC-20 deploy attempts into an array of BRC-20 deploy attempts.
- *
- * @param data - A comma-separated string where each attempt is represented as `txId|ticker|maxSupply|mintLimit|decimals`.
- * @returns An array of BRC-20 deploy attempts.
- */
-export function compactToBrc20DeployAttempts(data: string): Brc20DeployAttempt[] {
-  if (!data) {
-    return [];
+    return data
+      .map(a => `${a.txId}|${a.ticker}|${a.maxSupply}|${a.mintLimit ?? ''}|${a.decimals ?? ''}`)
+      .join(',');
   }
 
-  return data.split(',').map((entry) => {
-    const [txId, ticker, maxSupply, mintLimit, decimals] = entry.split('|', 5);
-    return {
-      txId,
-      ticker,
-      maxSupply,
-      mintLimit: mintLimit || undefined,
-      decimals: decimals || undefined
-    };
-  });
-}
+  /**
+   * Converts a compact comma-separated string of BRC-20 deploy attempts into an array of BRC-20 deploy attempts.
+   *
+   * @param data - A comma-separated string where each attempt is represented as `txId|ticker|maxSupply|mintLimit|decimals`.
+   * @returns An array of BRC-20 deploy attempts.
+   */
+  export function compactToBrc20DeployAttempts(data: string): Brc20DeployAttempt[] {
+    if (!data) {
+      return [];
+    }
 
-/**
- * Converts an array of SRC-20 deploy attempts into a compact comma-separated string format.
- * Each attempt's values are separated by pipes (|).
- *
- * @param data - The array of SRC-20 deploy attempts to compact.
- * @returns A comma-separated string where each attempt is represented as `txId|ticker|maxSupply|mintLimit|decimals`.
- */
-export function src20DeployAttemptsToCompact(data: Src20DeployAttempt[]): string {
-  return data
-    .map(a => `${a.txId}|${a.ticker}|${a.maxSupply}|${a.mintLimit}|${a.decimals ?? ''}`)
-    .join(',');
-}
-
-/**
- * Converts a compact comma-separated string of SRC-20 deploy attempts into an array of SRC-20 deploy attempts.
- *
- * @param data - A comma-separated string where each attempt is represented as `txId|ticker|maxSupply|mintLimit|decimals`.
- * @returns An array of SRC-20 deploy attempts.
- */
-export function compactToSrc20DeployAttempts(data: string): Src20DeployAttempt[] {
-  if (!data) {
-    return [];
+    return data.split(',').map((entry) => {
+      const [txId, ticker, maxSupply, mintLimit, decimals] = entry.split('|', 5);
+      return {
+        txId,
+        ticker,
+        maxSupply,
+        mintLimit: mintLimit || undefined,
+        decimals: decimals || undefined
+      };
+    });
   }
 
-  return data.split(',').map((entry) => {
-    const [txId, ticker, maxSupply, mintLimit, decimals] = entry.split('|', 5);
-    return {
-      txId,
-      ticker,
-      maxSupply,
-      mintLimit,
-      decimals: decimals || undefined
-    };
-  });
-}
+  /**
+   * Converts an array of SRC-20 deploy attempts into a compact comma-separated string format.
+   * Each attempt's values are separated by pipes (|).
+   *
+   * @param data - The array of SRC-20 deploy attempts to compact.
+   * @returns A comma-separated string where each attempt is represented as `txId|ticker|maxSupply|mintLimit|decimals`.
+   */
+  export function src20DeployAttemptsToCompact(data: Src20DeployAttempt[]): string {
+    return data
+      .map(a => `${a.txId}|${a.ticker}|${a.maxSupply}|${a.mintLimit}|${a.decimals ?? ''}`)
+      .join(',');
+  }
+
+  /**
+   * Converts a compact comma-separated string of SRC-20 deploy attempts into an array of SRC-20 deploy attempts.
+   *
+   * @param data - A comma-separated string where each attempt is represented as `txId|ticker|maxSupply|mintLimit|decimals`.
+   * @returns An array of SRC-20 deploy attempts.
+   */
+  export function compactToSrc20DeployAttempts(data: string): Src20DeployAttempt[] {
+    if (!data) {
+      return [];
+    }
+
+    return data.split(',').map((entry) => {
+      const [txId, ticker, maxSupply, mintLimit, decimals] = entry.split('|', 5);
+      return {
+        txId,
+        ticker,
+        maxSupply,
+        mintLimit,
+        decimals: decimals || undefined
+      };
+    });
+  }

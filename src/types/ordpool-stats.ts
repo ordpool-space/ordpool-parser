@@ -3,20 +3,20 @@ import { OrdpoolTransactionFlag, OrdpoolTransactionFlags } from "./ordpool-trans
 export type MintActivity = [string, number];
 export type MintActivities = MintActivity[]; // Each item is [identifier, count]
 
-// flattened version of RuneEtchingSpec
+// flattened version of RuneEtchingSpec, with strings instead of bigint for better serializability
 export interface RuneEtchAttempt {
   txId: string;
   runeId: string; // blockHeight:txIndex
   runeName?: string;
   divisibility?: number;
-  premine?: bigint;
+  premine?: string;
   symbol?: string;
-  cap?: bigint; // Cap of the Rune (from terms)
-  amount?: bigint; // Amount of the Rune (from terms)
-  offsetStart?: bigint; // Offset start (from terms.offset)
-  offsetEnd?: bigint; // Offset end (from terms.offset)
-  heightStart?: bigint; // Height start (from terms.height)
-  heightEnd?: bigint; // Height end (from terms.height)
+  cap?: string; // Cap of the Rune (from terms)
+  amount?: string; // Amount of the Rune (from terms)
+  offsetStart?: string; // Offset start (from terms.offset)
+  offsetEnd?: string; // Offset end (from terms.offset)
+  heightStart?: string; // Height start (from terms.height)
+  heightEnd?: string; // Height end (from terms.height)
   turbo?: boolean;
 }
 
