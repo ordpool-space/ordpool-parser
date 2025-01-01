@@ -1,5 +1,5 @@
 import { RuneEtchingSpec } from "./rune/src/etching";
-import { Brc20DeployAttempt, Src20DeployAttempt, MintActivities, RuneEtchAttempt, Cat21Mint } from "./types/ordpool-stats";
+import { Brc20DeployAttempt, Src20DeployAttempt, MintActivities, RuneEtchAttempt, Cat21Mint, MinimalCat21Mint } from "./types/ordpool-stats";
 import { OrdpoolTransactionFlag } from "./types/ordpool-transaction-flags";
 import { CatTraits, ParsedCat21 } from "./types/parsed-cat21";
 import { TransactionSimplePlus } from "./types/transaction-simple";
@@ -304,9 +304,9 @@ export function traitsToCompactColors(traits: CatTraits): {
   glassesColors: string;
 } {
   return {
-    catColors: traits.catColors.join(',').replace(/#/g, ''),
-    backgroundColors: traits.backgroundColors.join(',').replace(/#/g, ''),
-    glassesColors: traits.glassesColors.join(',').replace(/#/g, ''),
+    catColors: traits.catColors.join(';').replace(/#/g, ''),
+    backgroundColors: traits.backgroundColors.join(';').replace(/#/g, ''),
+    glassesColors: traits.glassesColors.join(';').replace(/#/g, ''),
   };
 }
 
@@ -324,9 +324,9 @@ export function compactColorsToTraits(
   glassesColors: string
 ): Partial<CatTraits> {
   return {
-    catColors: catColors.split(',').map(color => `#${color}`),
-    backgroundColors: backgroundColors.split(',').map(color => `#${color}`),
-    glassesColors: glassesColors.split(',').map(color => `#${color}`)
+    catColors: catColors.split(';').map(color => `#${color}`),
+    backgroundColors: backgroundColors.split(';').map(color => `#${color}`),
+    glassesColors: glassesColors.split(';').map(color => `#${color}`)
   };
 }
 
@@ -373,4 +373,39 @@ export function constructCat21Mint(
     };
 
     return catMint;
+}
+
+/**
+ * Converts a compact string to an array of MinimalCat21Mint objects.
+ *
+ * @param compact - A string in the format: "transactionId|fee|weight,transactionId2|fee2|weight2,...".
+ * @returns An array of MinimalCat21Mint objects.
+ * @throws An error if the compact format is invalid or missing required fields.
+ */
+export function compactToMinimalCat21Mints(compact: string): MinimalCat21Mint[] {
+  if (!compact) {
+    return [];
+  }
+
+  return compact.split(',').map((entry) => {
+    const [transactionId, fee, weight] = entry.split('|', 3);
+
+    return {
+      transactionId,
+      fee: parseInt(fee, 10),
+      weight: parseInt(weight, 10),
+    };
+  });
+}
+
+/**
+ * Converts an array of MinimalCat21Mint objects to a compact string.
+ *
+ * @param mints - An array of MinimalCat21Mint objects.
+ * @returns A string in the format: "transactionId|fee|weight,transactionId2|fee2|weight2,...".
+ */
+export function minimalCat21MintsToCompact(mints: MinimalCat21Mint[]): string {
+  return mints
+    .map((mint) => `${mint.transactionId}|${mint.fee}|${mint.weight}`)
+    .join(',');
 }

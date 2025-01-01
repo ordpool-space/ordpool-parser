@@ -109,6 +109,24 @@ export interface Cat21Mint {
   traits: CatTraits;
 }
 
+export interface MinimalCat21Mint {
+  /**
+   * The transactionId (hash in hex format) where the CAT-21 ordinal was created / minted
+   */
+  transactionId: string;
+
+  /**
+  /**
+   * Total fees paid to process the mint transaction (Unit: sats)
+   */
+  fee: number;
+
+  /**
+   * Weight of the mint transaction, which is a measurement to compare the size of different transactions to each other in proportion to the block size limit (Unit: WU)
+   */
+  weight: number;
+}
+
 
 export interface OrdpoolStats {
 
@@ -190,7 +208,8 @@ export interface OrdpoolStats {
   };
 
   cat21: {
-    cat21MintActivity: Cat21Mint[];
+    cat21MintActivity?: Cat21Mint[];
+    minimalCat21MintActivity?: MinimalCat21Mint[];
   }
 
   version: number;
@@ -278,7 +297,8 @@ export function getEmptyStats(): OrdpoolStats {
     },
 
     cat21: {
-      cat21MintActivity: []
+      cat21MintActivity: [],
+      minimalCat21MintActivity: undefined
     },
 
     version: 0

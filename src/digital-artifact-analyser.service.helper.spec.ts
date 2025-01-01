@@ -1,4 +1,4 @@
-import { brc20DeployAttemptsToCompact, compactColorsToTraits, compactToBrc20DeployAttempts, compactToMintActivity, compactToRuneEtchAttempts, compactToSrc20DeployAttempts, convertToActivities, contructRuneEtchAttempt, isFlagSetOnTransaction, mintActivityToCompact, parseJsonObject, runeEtchAttemptsToCompact, src20DeployAttemptsToCompact, traitsToCompactColors, constructCat21Mint } from "./digital-artifact-analyser.service.helper";
+import { brc20DeployAttemptsToCompact, compactColorsToTraits, compactToBrc20DeployAttempts, compactToMintActivity, compactToRuneEtchAttempts, compactToSrc20DeployAttempts, convertToActivities, contructRuneEtchAttempt, isFlagSetOnTransaction, mintActivityToCompact, parseJsonObject, runeEtchAttemptsToCompact, src20DeployAttemptsToCompact, traitsToCompactColors, constructCat21Mint, compactToMinimalCat21Mints, minimalCat21MintsToCompact } from "./digital-artifact-analyser.service.helper";
 import { RuneEtchingSpec } from "./rune/src/etching";
 import { OrdpoolTransactionFlags } from "./types/ordpool-transaction-flags";
 import { CatTraits } from "./types/parsed-cat21";
@@ -373,17 +373,17 @@ describe('CatTraits Conversion Utilities', () => {
   it('should correctly convert CatTraits to compact format', () => {
     const result = traitsToCompactColors(sampleTraits);
     expect(result).toEqual({
-      catColors: '555555,d3d3d3',
-      backgroundColors: 'ff9900,ffffff',
-      glassesColors: '000000,ff00ff',
+      catColors: '555555;d3d3d3',
+      backgroundColors: 'ff9900;ffffff',
+      glassesColors: '000000;ff00ff',
     });
   });
 
   it('should correctly convert compact format back to CatTraits', () => {
     const compact = {
-      catColors: '555555,d3d3d3',
-      backgroundColors: 'ff9900,ffffff',
-      glassesColors: '000000,ff00ff',
+      catColors: '555555;d3d3d3',
+      backgroundColors: 'ff9900;ffffff',
+      glassesColors: '000000;ff00ff',
     };
     const result = compactColorsToTraits(compact.catColors, compact.backgroundColors, compact.glassesColors);
     expect(result.catColors).toEqual(['#555555', '#d3d3d3']);
@@ -546,6 +546,38 @@ describe('constructCat21Mint', () => {
         glasses: 'Black',
         glassesColors: ['#ffffff'],
       },
+    });
+  });
+});
+
+describe('MinimalCat21Mints Conversion', () => {
+  const validCompact = 'tx12345|1000|400,tx67890|1500|600';
+  const validArray = [
+    { transactionId: 'tx12345', fee: 1000, weight: 400 },
+    { transactionId: 'tx67890', fee: 1500, weight: 600 },
+  ];
+
+  describe('compactToMinimalCat21Mints', () => {
+    it('should correctly convert a valid compact string to an array of MinimalCat21Mint objects', () => {
+      const result = compactToMinimalCat21Mints(validCompact);
+      expect(result).toEqual(validArray);
+    });
+
+    it('should return an empty array for an empty string', () => {
+      const result = compactToMinimalCat21Mints('');
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('minimalCat21MintsToCompact', () => {
+    it('should correctly convert an array of MinimalCat21Mint objects to a compact string', () => {
+      const result = minimalCat21MintsToCompact(validArray);
+      expect(result).toEqual(validCompact);
+    });
+
+    it('should return an empty string for an empty array', () => {
+      const result = minimalCat21MintsToCompact([]);
+      expect(result).toEqual('');
     });
   });
 });
