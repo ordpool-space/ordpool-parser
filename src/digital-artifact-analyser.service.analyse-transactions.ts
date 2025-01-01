@@ -4,15 +4,15 @@ import { DigitalArtifact, DigitalArtifactType } from "./types/digital-artifact";
 import { ParsedInscription } from "./types/parsed-inscription";
 import { ParsedRunestone } from "./types/parsed-runestone";
 import { ParsedSrc20 } from "./types/parsed-src20";
-import { TransactionSimple } from "./types/transaction-simple";
+import { TransactionSimplePlus } from "./types/transaction-simple";
 
 jest.mock('./digital-artifacts-parser.service');
 
 describe('DigitalArtifactAnalyserService.analyseTransactions', () => {
-  let tx: TransactionSimple;
+  let tx: TransactionSimplePlus;
 
   beforeEach(() => {
-    tx = { txid: 'dummy_txid' } as TransactionSimple;
+    tx = { txid: 'dummy_txid' } as TransactionSimplePlus;
     jest.resetAllMocks();
   });
 
@@ -42,8 +42,8 @@ describe('DigitalArtifactAnalyserService.analyseTransactions', () => {
   });
 
   it('should handle multiple transactions and artifacts', async () => {
-    const tx1: TransactionSimple = { txid: 'tx1' } as TransactionSimple;
-    const tx2: TransactionSimple = { txid: 'tx2' } as TransactionSimple;
+    const tx1: TransactionSimplePlus = { txid: 'tx1' } as TransactionSimplePlus;
+    const tx2: TransactionSimplePlus = { txid: 'tx2' } as TransactionSimplePlus;
 
     const artifacts1: DigitalArtifact[] = [
       { type: DigitalArtifactType.Atomical, uniqueId: 'unique1', transactionId: 'tx1' }

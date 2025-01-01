@@ -41,19 +41,22 @@ export interface Cat21Mint {
   /**
    * The transactionId (hash in hex format) where the CAT-21 ordinal was created / minted
    */
-  txId: string;
+  transactionId: string;
   /**
    * The blockId (hash in hex format) where the CAT-21 ordinal was created / minted
    */
-  hash: string;
+  blockId: string;
+
   /**
    * The index of the transaction in the block
    */
   txIndex: number;
+
   /**
    * The incremented number of the cat. Cat #0 is the first one. `undefined` if the number is not determined yet.
    */
   number?: number;
+
   /**
    * The paid fee rate that determines the color of the cat.
    */
@@ -62,7 +65,12 @@ export interface Cat21Mint {
   /**
    * The block height where the CAT-21 ordinal was created / minted
    */
-  height: number;
+  blockHeight: number;
+
+  /**
+   * The block time where the CAT-21 ordinal was created / minted (Unit: seconds)'
+   */
+  blockTime: number;
 
   /**
   /**
@@ -96,7 +104,7 @@ export interface Cat21Mint {
   firstOwner: string;
 
   /**
-   * All traits
+   * All traits of the cat
    */
   traits: CatTraits;
 }

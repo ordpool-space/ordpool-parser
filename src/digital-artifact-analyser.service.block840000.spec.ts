@@ -24,7 +24,7 @@ describe('DigitalArtifacts Parser', () => {
     var transactions = getBlock840000Txns();
 
     const start = performance.now();
-    var ordpoolStats = await DigitalArtifactAnalyserService.analyseTransactions(transactions, 840000);
+    var ordpoolStats = await DigitalArtifactAnalyserService.analyseTransactions(transactions);
     const end = performance.now();
     warn(`Block 840,000 txns – Execution time: ${(end - start) / 100} ms`);
 

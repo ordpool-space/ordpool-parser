@@ -1,6 +1,6 @@
 import { DigitalArtifactAnalyserService } from './digital-artifact-analyser.service';
 import { DigitalArtifactsParserService } from './digital-artifacts-parser.service';
-import { TransactionSimple } from './types/transaction-simple';
+import { TransactionSimplePlus } from './types/transaction-simple';
 import { DigitalArtifactType } from './types/digital-artifact';
 import { ParsedInscription } from './types/parsed-inscription';
 import { ParsedRunestone } from './types/parsed-runestone';
@@ -9,7 +9,7 @@ import { ParsedSrc20 } from './types/parsed-src20';
 jest.mock('./digital-artifacts-parser.service');
 
 describe('DigitalArtifactAnalyserService', () => {
-  let transactions: TransactionSimple[];
+  let transactions: TransactionSimplePlus[];
 
   beforeEach(() => {
     jest.resetAllMocks();
@@ -19,15 +19,15 @@ describe('DigitalArtifactAnalyserService', () => {
       {
         txid: 'tx1',
         fee: 1000,
-      } as TransactionSimple,
+      } as TransactionSimplePlus,
       {
         txid: 'tx2',
         fee: 2000,
-      } as TransactionSimple,
+      } as TransactionSimplePlus,
       {
         txid: 'tx3',
         fee: 1500,
-      } as TransactionSimple,
+      } as TransactionSimplePlus,
     ];
 
     const mockInscriptions: ParsedInscription[] = [
@@ -75,7 +75,7 @@ describe('DigitalArtifactAnalyserService', () => {
       getContent: () => JSON.stringify({ p: 'src-20', op: 'mint', tick: 'SRC20' }),
     } as ParsedSrc20;
 
-    (DigitalArtifactsParserService.parse as jest.Mock).mockImplementation((tx: TransactionSimple) => {
+    (DigitalArtifactsParserService.parse as jest.Mock).mockImplementation((tx: TransactionSimplePlus) => {
       if (tx.txid === 'tx1') {
         return [mockInscriptions[0]]; // Only plain text inscription
       } else if (tx.txid === 'tx2') {

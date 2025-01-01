@@ -1,4 +1,4 @@
-import { brc20DeployAttemptsToCompact, compactColorsToTraits, compactToBrc20DeployAttempts, compactToMintActivity, compactToRuneEtchAttempts, compactToSrc20DeployAttempts, convertToActivities, contructRuneEtchAttempt, isFlagSetOnTransaction, mintActivityToCompact, parseJsonObject, runeEtchAttemptsToCompact, src20DeployAttemptsToCompact, traitsToCompactColors } from "./digital-artifact-analyser.service.helper";
+import { brc20DeployAttemptsToCompact, compactColorsToTraits, compactToBrc20DeployAttempts, compactToMintActivity, compactToRuneEtchAttempts, compactToSrc20DeployAttempts, convertToActivities, contructRuneEtchAttempt, isFlagSetOnTransaction, mintActivityToCompact, parseJsonObject, runeEtchAttemptsToCompact, src20DeployAttemptsToCompact, traitsToCompactColors, constructCat21Mint } from "./digital-artifact-analyser.service.helper";
 import { RuneEtchingSpec } from "./rune/src/etching";
 import { OrdpoolTransactionFlags } from "./types/ordpool-transaction-flags";
 import { CatTraits } from "./types/parsed-cat21";
@@ -389,5 +389,163 @@ describe('CatTraits Conversion Utilities', () => {
     expect(result.catColors).toEqual(['#555555', '#d3d3d3']);
     expect(result.backgroundColors).toEqual(['#ff9900', '#ffffff']);
     expect(result.glassesColors).toEqual(['#000000', '#ff00ff']);
+  });
+});
+
+
+describe('constructCat21Mint', () => {
+  it('should construct a Cat21Mint object when traits are present', () => {
+    const mockParsedCat21 = {
+      getTraits: () => ({
+        genesis: true,
+        catColors: ['#ffffff', '#000000'],
+        gender: 'Male',
+        designIndex: 42,
+        designPose: 'Standing',
+        designExpression: 'Smile',
+        designPattern: 'Solid',
+        designFacing: 'Left',
+        laserEyes: 'Red',
+        background: 'Block9',
+        backgroundColors: ['#ff9900'],
+        crown: 'Gold',
+        glasses: 'Cool',
+        glassesColors: ['#000000'],
+      }),
+    };
+
+    const mockTransaction = {
+      txid: 'abc123',
+      status: {
+        block_hash: 'block456',
+        block_height: 1000,
+        block_time: 222
+      },
+      fee: 2000,        // Fee in sats
+      weight: 8000,     // Weight in WU
+      size: 200,        // Size in bytes
+      vout: [{ value: 1000000, scriptpubkey_address: 'address789' }],
+    };
+
+    const result = constructCat21Mint(mockParsedCat21 as any, 5, mockTransaction as any);
+
+    expect(result).toEqual({
+      transactionId: 'abc123',
+      blockId: 'block456',
+      txIndex: 5,
+      number: undefined,
+      feeRate: 2000 / (8000 / 4), // = 1 (sats/vB)
+      blockHeight: 1000,
+      blockTime: 222,
+      fee: 2000,
+      size: 200,
+      weight: 8000,
+      value: 1000000,
+      sat: undefined,
+      firstOwner: 'address789',
+      traits: {
+        genesis: true,
+        catColors: ['#ffffff', '#000000'],
+        gender: 'Male',
+        designIndex: 42,
+        designPose: 'Standing',
+        designExpression: 'Smile',
+        designPattern: 'Solid',
+        designFacing: 'Left',
+        laserEyes: 'Red',
+        background: 'Block9',
+        backgroundColors: ['#ff9900'],
+        crown: 'Gold',
+        glasses: 'Cool',
+        glassesColors: ['#000000'],
+      },
+    });
+  });
+
+  it('should return null if traits are missing', () => {
+    const mockParsedCat21 = {
+      getTraits: () => null,
+    };
+
+    const mockTransaction = {
+      txid: 'abc123',
+      status: {
+        block_hash: 'block456',
+        block_height: 1000,
+        block_time: 123
+      },
+      fee: 2000,
+      weight: 8000,
+      size: 200,
+      vout: [{ value: 1000000, scriptpubkey_address: 'address789' }],
+    };
+
+    const result = constructCat21Mint(mockParsedCat21 as any, 5, mockTransaction as any);
+
+    expect(result).toBeNull();
+  });
+
+  it('should handle fallback values for missing blockId, blockHeight, blockTime, or owner', () => {
+    const mockParsedCat21 = {
+      getTraits: () => ({
+        genesis: true,
+        catColors: ['#ffffff'],
+        gender: 'Female',
+        designIndex: 1,
+        designPose: 'Sleeping',
+        designExpression: 'Grumpy',
+        designPattern: 'Striped',
+        designFacing: 'Right',
+        laserEyes: 'Green',
+        background: 'Whitepaper',
+        backgroundColors: ['#aaaaaa'],
+        crown: 'None',
+        glasses: 'Black',
+        glassesColors: ['#ffffff'],
+      }),
+    };
+
+    const mockTransaction = {
+      txid: 'abc123',
+      status: {}, // Missing block_hash, block_height and block_time
+      fee: 3000,
+      weight: 12000,
+      size: 300,
+      vout: [{ value: 5000000 }], // Missing scriptpubkey_address
+    };
+
+    const result = constructCat21Mint(mockParsedCat21 as any, 7, mockTransaction as any);
+
+    expect(result).toEqual({
+      transactionId: 'abc123',
+      blockId: 'ERROR',
+      txIndex: 7,
+      number: undefined,
+      feeRate: 1, // 3000 sats / (12000 WU / 4)
+      blockHeight: -1,
+      blockTime: -1,
+      fee: 3000,
+      size: 300,
+      weight: 12000,
+      value: 5000000,
+      sat: undefined,
+      firstOwner: 'ERROR',
+      traits: {
+        genesis: true,
+        catColors: ['#ffffff'],
+        gender: 'Female',
+        designIndex: 1,
+        designPose: 'Sleeping',
+        designExpression: 'Grumpy',
+        designPattern: 'Striped',
+        designFacing: 'Right',
+        laserEyes: 'Green',
+        background: 'Whitepaper',
+        backgroundColors: ['#aaaaaa'],
+        crown: 'None',
+        glasses: 'Black',
+        glassesColors: ['#ffffff'],
+      },
+    });
   });
 });

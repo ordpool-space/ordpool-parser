@@ -1,6 +1,6 @@
 import { DigitalArtifactAnalyserService } from './digital-artifact-analyser.service';
 import { DigitalArtifactsParserService } from './digital-artifacts-parser.service';
-import { TransactionSimple } from './types/transaction-simple';
+import { TransactionSimplePlus } from './types/transaction-simple';
 import { DigitalArtifactType } from './types/digital-artifact';
 import { ParsedInscription } from './types/parsed-inscription';
 import { ParsedRunestone } from './types/parsed-runestone';
@@ -9,7 +9,7 @@ import { ParsedSrc20 } from './types/parsed-src20';
 jest.mock('./digital-artifacts-parser.service');
 
 describe('DigitalArtifactAnalyserService.analyseTransactions - Advanced Test Cases', () => {
-  let transactions: TransactionSimple[];
+  let transactions: TransactionSimplePlus[];
 
   beforeEach(() => {
     jest.resetAllMocks();
@@ -31,7 +31,7 @@ describe('DigitalArtifactAnalyserService.analyseTransactions - Advanced Test Cas
       {
         txid: 'tx1',
         fee: 1000,
-      } as TransactionSimple,
+      } as TransactionSimplePlus,
     ];
 
     const result = await DigitalArtifactAnalyserService.analyseTransactions(transactions);
@@ -56,11 +56,11 @@ describe('DigitalArtifactAnalyserService.analyseTransactions - Advanced Test Cas
       {
         txid: 'tx1',
         fee: 0, // Edge case: Zero fee
-      } as TransactionSimple,
+      } as TransactionSimplePlus,
       {
         txid: 'tx2',
         fee: 1000,
-      } as TransactionSimple,
+      } as TransactionSimplePlus,
     ];
 
     const result = await DigitalArtifactAnalyserService.analyseTransactions(transactions);
@@ -93,7 +93,7 @@ describe('DigitalArtifactAnalyserService.analyseTransactions - Advanced Test Cas
       {
         txid: 'tx1',
         fee: 1000,
-      } as TransactionSimple,
+      } as TransactionSimplePlus,
     ];
 
     const result = await DigitalArtifactAnalyserService.analyseTransactions(transactions);
@@ -115,7 +115,7 @@ describe('DigitalArtifactAnalyserService.analyseTransactions - Advanced Test Cas
       {
         txid: 'tx1',
         fee: 1000,
-      } as TransactionSimple
+      } as TransactionSimplePlus
     ];
 
     const result = await DigitalArtifactAnalyserService.analyseTransactions(transactions);
@@ -150,7 +150,7 @@ describe('DigitalArtifactAnalyserService.analyseTransactions - Advanced Test Cas
       {
         txid: 'tx2',
         fee: 1000,
-      } as TransactionSimple,
+      } as TransactionSimplePlus,
     ];
 
     const result = await DigitalArtifactAnalyserService.analyseTransactions(transactions);
@@ -193,11 +193,11 @@ describe('DigitalArtifactAnalyserService.analyseTransactions - Advanced Test Cas
       {
         txid: 'tx1',
         fee: 0, // Edge case: Zero fee
-      } as TransactionSimple,
+      } as TransactionSimplePlus,
       {
         txid: 'tx2',
         fee: 1000,
-      } as TransactionSimple,
+      } as TransactionSimplePlus,
     ];
 
     const result = await DigitalArtifactAnalyserService.analyseTransactions(transactions);
@@ -244,15 +244,15 @@ describe('DigitalArtifactAnalyserService.analyseTransactions - Advanced Test Cas
       {
         txid: 'tx1',
         fee: 1000,
-      } as TransactionSimple,
+      } as TransactionSimplePlus,
       {
         txid: 'tx2',
         fee: 1000,
-      } as TransactionSimple,
+      } as TransactionSimplePlus,
       {
         txid: 'tx3',
         fee: 1000,
-      } as TransactionSimple,
+      } as TransactionSimplePlus,
     ];
 
     const result = await DigitalArtifactAnalyserService.analyseTransactions(transactions);
@@ -272,7 +272,7 @@ describe('DigitalArtifactAnalyserService.analyseTransactions - Advanced Test Cas
       {
         txid: 'tx1',
         fee: 1000,
-      } as TransactionSimple,
+      } as TransactionSimplePlus,
     ];
 
     const result = await DigitalArtifactAnalyserService.analyseTransactions(transactions);
@@ -287,7 +287,7 @@ describe('DigitalArtifactAnalyserService.analyseTransactions - Advanced Test Cas
       {
         txid: 'tx1',
         fee: 1000,
-      } as TransactionSimple,
+      } as TransactionSimplePlus,
     ];
 
     const result = await DigitalArtifactAnalyserService.analyseTransactions(transactions);
@@ -319,12 +319,12 @@ describe('DigitalArtifactAnalyserService.analyseTransactions - Advanced Test Cas
     const uniqueTransaction1 = {
       txid: 'unique_tx1',
       fee: 500,
-    } as TransactionSimple;
+    } as TransactionSimplePlus;
 
     const uniqueTransaction2 = {
       txid: 'unique_tx2',
       fee: 800,
-    } as TransactionSimple;
+    } as TransactionSimplePlus;
 
     const brc20Mint1: ParsedInscription = {
       type: DigitalArtifactType.Inscription,
@@ -376,7 +376,7 @@ describe('DigitalArtifactAnalyserService.analyseTransactions - Advanced Test Cas
     const largeTransaction = {
       txid: 'large_tx',
       fee: 1000,
-    } as TransactionSimple;
+    } as TransactionSimplePlus;
 
     const result = await DigitalArtifactAnalyserService.analyseTransactions([largeTransaction]);
     expect(result.amounts.inscriptionMint).toBe(1000); // Should count all 1000 inscriptions

@@ -2,7 +2,7 @@ import { RuneEtchingSpec } from "./rune/src/etching";
 import { Brc20DeployAttempt, Src20DeployAttempt, MintActivities, RuneEtchAttempt, Cat21Mint } from "./types/ordpool-stats";
 import { OrdpoolTransactionFlag } from "./types/ordpool-transaction-flags";
 import { CatTraits, ParsedCat21 } from "./types/parsed-cat21";
-import { TransactionSimple } from "./types/transaction-simple";
+import { TransactionSimplePlus } from "./types/transaction-simple";
 
 /**
  * Checks if a specific flag is set on the provided flags number.
@@ -330,12 +330,25 @@ export function compactColorsToTraits(
   };
 }
 
+/**
+ * Constructs a `Cat21Mint` object from a parsed CAT-21 object and its associated transaction details.
+ *
+ * @param cat - The parsed CAT-21 object containing the traits of the CAT-21 mint.
+ * @param txIndex - The index of the transaction within the block.
+ * @param tx - The detailed transaction object containing status, outputs, and other metadata.
+ * @returns A `Cat21Mint` object if traits are present; otherwise, `null`.
+ *
+ * @remarks
+ * - The `number` field will be populated later based on the ordering of transactions.
+ * - The `sat` field requires an external query to determine the number of the first satoshi in the transaction.
+ * - Uses 'ERROR' as a fallback for missing or invalid `blockId` and `firstOwner`. These cases should never happen in practice.
+ * - Returns `null` if the CAT-21 traits are unavailable (should never happen in practice).
+ */
 export function constructCat21Mint(
   cat: ParsedCat21,
-  blockHeight: number,
   txIndex: number,
-  tx: TransactionSimple): Cat21Mint | null {
-   {
+  tx: TransactionSimplePlus): Cat21Mint | null {
+
     const traits = cat.getTraits();
 
     if (!traits) {
@@ -343,19 +356,20 @@ export function constructCat21Mint(
     }
 
     const catMint: Cat21Mint = {
-      txId: tx.txid,
-      hash: 'ADD LATER', // block hash must be added later!
+      transactionId: tx.txid,
+      blockId: tx.status.block_hash || 'ERROR', // 'ERROR' should never happen
       txIndex,
       number: undefined, // Numbering will be done later
       feeRate: tx.fee / (tx.weight / 4),
+      blockHeight: tx.status.block_height || -1, // -1 should never happen
+      blockTime: tx.status.block_time || -1, // -1 should never happen
       fee: tx.fee,
       size: tx.size,
       weight: tx.weight,
-      value: tx.outputs[0]?.value ?? 0,
+      value: tx.vout[0]?.value ?? -1, // -1 should never happen
       sat: undefined, // must be added later -- requires external query for sat number
-      firstOwner: tx.outputs[0]?.address ?? '', // First output recipient
+      firstOwner: tx.vout[0]?.scriptpubkey_address ?? 'ERROR', // 'ERROR' should never happen
       traits,
-      height: blockHeight,
     };
 
     return catMint;

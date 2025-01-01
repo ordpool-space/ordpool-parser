@@ -84,10 +84,9 @@ export class DigitalArtifactAnalyserService {
    * (this one calls the method only with a list of one transaction, which is the coinbase txn)
    *
    * @param transactions - The array of transactions to analyze.
-   * @param blockHeight - Default to -1 for mempool transactions.
    * @returns The OrdpoolStats object with counted amounts for each artifact type.
    */
-  static async analyseTransactions(transactions: TransactionSimplePlus[], blockHeight: number = -1): Promise<OrdpoolStats> {
+  static async analyseTransactions(transactions: TransactionSimplePlus[]): Promise<OrdpoolStats> {
 
     const artifactTypeMap = getArtifactTypeMap();
 
@@ -306,7 +305,7 @@ export class DigitalArtifactAnalyserService {
         // ** Rune Etch Attempts
         if ((flags & OrdpoolTransactionFlags.ordpool_rune_etch) === OrdpoolTransactionFlags.ordpool_rune_etch) {
           const runestone = artifact as ParsedRunestone;
-          const runeEtchAttempt = contructRuneEtchAttempt(tx.txid, blockHeight, txIndex, runestone.runestone?.etching)
+          const runeEtchAttempt = contructRuneEtchAttempt(tx.txid, tx.status.block_height ?? -1, txIndex, runestone.runestone?.etching)
 
           if (runeEtchAttempt) {
             runeEtchAttempts.push(runeEtchAttempt);
