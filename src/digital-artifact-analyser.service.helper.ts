@@ -1,6 +1,8 @@
 import { RuneEtchingSpec } from "./rune/src/etching";
-import { Brc20DeployAttempt, Src20DeployAttempt, MintActivities, RuneEtchAttempt } from "./types/ordpool-stats";
+import { Brc20DeployAttempt, Src20DeployAttempt, MintActivities, RuneEtchAttempt, Cat21Mint } from "./types/ordpool-stats";
 import { OrdpoolTransactionFlag } from "./types/ordpool-transaction-flags";
+import { CatTraits, ParsedCat21 } from "./types/parsed-cat21";
+import { TransactionSimple } from "./types/transaction-simple";
 
 /**
  * Checks if a specific flag is set on the provided flags number.
@@ -115,7 +117,7 @@ export function compactToMintActivity(data: string): MintActivities {
  * @param etchingSpec - The complete specification of the rune etching.
  * @returns A flat RuneEtchAttempt object or null if the etchingSpec is undefined.
  */
-export function createRuneEtchAttempt(
+export function contructRuneEtchAttempt(
   txId: string,
   blockHeight: number,
   txIndex: number,
@@ -226,66 +228,135 @@ export function compactToRuneEtchAttempts(data: string): RuneEtchAttempt[] {
  * @returns A comma-separated string where each attempt is represented as `txId|ticker|maxSupply|mintLimit|decimals`.
  */
 export function brc20DeployAttemptsToCompact(data: Brc20DeployAttempt[]): string {
-    return data
-      .map(a => `${a.txId}|${a.ticker}|${a.maxSupply}|${a.mintLimit ?? ''}|${a.decimals ?? ''}`)
-      .join(',');
+  return data
+    .map(a => `${a.txId}|${a.ticker}|${a.maxSupply}|${a.mintLimit ?? ''}|${a.decimals ?? ''}`)
+    .join(',');
+}
+
+/**
+ * Converts a compact comma-separated string of BRC-20 deploy attempts into an array of BRC-20 deploy attempts.
+ *
+ * @param data - A comma-separated string where each attempt is represented as `txId|ticker|maxSupply|mintLimit|decimals`.
+ * @returns An array of BRC-20 deploy attempts.
+ */
+export function compactToBrc20DeployAttempts(data: string): Brc20DeployAttempt[] {
+  if (!data) {
+    return [];
   }
 
-  /**
-   * Converts a compact comma-separated string of BRC-20 deploy attempts into an array of BRC-20 deploy attempts.
-   *
-   * @param data - A comma-separated string where each attempt is represented as `txId|ticker|maxSupply|mintLimit|decimals`.
-   * @returns An array of BRC-20 deploy attempts.
-   */
-  export function compactToBrc20DeployAttempts(data: string): Brc20DeployAttempt[] {
-    if (!data) {
-      return [];
+  return data.split(',').map((entry) => {
+    const [txId, ticker, maxSupply, mintLimit, decimals] = entry.split('|', 5);
+    return {
+      txId,
+      ticker,
+      maxSupply,
+      mintLimit: mintLimit || undefined,
+      decimals: decimals || undefined
+    };
+  });
+}
+
+/**
+ * Converts an array of SRC-20 deploy attempts into a compact comma-separated string format.
+ * Each attempt's values are separated by pipes (|).
+ *
+ * @param data - The array of SRC-20 deploy attempts to compact.
+ * @returns A comma-separated string where each attempt is represented as `txId|ticker|maxSupply|mintLimit|decimals`.
+ */
+export function src20DeployAttemptsToCompact(data: Src20DeployAttempt[]): string {
+  return data
+    .map(a => `${a.txId}|${a.ticker}|${a.maxSupply}|${a.mintLimit}|${a.decimals ?? ''}`)
+    .join(',');
+}
+
+/**
+ * Converts a compact comma-separated string of SRC-20 deploy attempts into an array of SRC-20 deploy attempts.
+ *
+ * @param data - A comma-separated string where each attempt is represented as `txId|ticker|maxSupply|mintLimit|decimals`.
+ * @returns An array of SRC-20 deploy attempts.
+ */
+export function compactToSrc20DeployAttempts(data: string): Src20DeployAttempt[] {
+  if (!data) {
+    return [];
+  }
+
+  return data.split(',').map((entry) => {
+    const [txId, ticker, maxSupply, mintLimit, decimals] = entry.split('|', 5);
+    return {
+      txId,
+      ticker,
+      maxSupply,
+      mintLimit,
+      decimals: decimals || undefined
+    };
+  });
+}
+
+/**
+ * Converts CatTraits into a compact format with all colors suitable for storage in the database.
+ *
+ * @param traits The CatTraits object to convert.
+ * @returns Compact representation of the cat colors.
+ */
+export function traitsToCompactColors(traits: CatTraits): {
+  catColors: string;
+  backgroundColors: string;
+  glassesColors: string;
+} {
+  return {
+    catColors: traits.catColors.join(',').replace(/#/g, ''),
+    backgroundColors: traits.backgroundColors.join(',').replace(/#/g, ''),
+    glassesColors: traits.glassesColors.join(',').replace(/#/g, ''),
+  };
+}
+
+/**
+ * Converts compact database fields back into a CatTraits object.
+ *
+ * @param catColors Compact cat colors.
+ * @param backgroundColors Compact background colors.
+ * @param glassesColors Compact glasses colors.
+ * @returns The full CatTraits object.
+ */
+export function compactColorsToTraits(
+  catColors: string,
+  backgroundColors: string,
+  glassesColors: string
+): Partial<CatTraits> {
+  return {
+    catColors: catColors.split(',').map(color => `#${color}`),
+    backgroundColors: backgroundColors.split(',').map(color => `#${color}`),
+    glassesColors: glassesColors.split(',').map(color => `#${color}`)
+  };
+}
+
+export function constructCat21Mint(
+  cat: ParsedCat21,
+  blockHeight: number,
+  txIndex: number,
+  tx: TransactionSimple): Cat21Mint | null {
+   {
+    const traits = cat.getTraits();
+
+    if (!traits) {
+      return null;
     }
 
-    return data.split(',').map((entry) => {
-      const [txId, ticker, maxSupply, mintLimit, decimals] = entry.split('|', 5);
-      return {
-        txId,
-        ticker,
-        maxSupply,
-        mintLimit: mintLimit || undefined,
-        decimals: decimals || undefined
-      };
-    });
-  }
+    const catMint: Cat21Mint = {
+      txId: tx.txid,
+      hash: 'ADD LATER', // block hash must be added later!
+      txIndex,
+      number: undefined, // Numbering will be done later
+      feeRate: tx.fee / (tx.weight / 4),
+      fee: tx.fee,
+      size: tx.size,
+      weight: tx.weight,
+      value: tx.outputs[0]?.value ?? 0,
+      sat: undefined, // must be added later -- requires external query for sat number
+      firstOwner: tx.outputs[0]?.address ?? '', // First output recipient
+      traits,
+      height: blockHeight,
+    };
 
-  /**
-   * Converts an array of SRC-20 deploy attempts into a compact comma-separated string format.
-   * Each attempt's values are separated by pipes (|).
-   *
-   * @param data - The array of SRC-20 deploy attempts to compact.
-   * @returns A comma-separated string where each attempt is represented as `txId|ticker|maxSupply|mintLimit|decimals`.
-   */
-  export function src20DeployAttemptsToCompact(data: Src20DeployAttempt[]): string {
-    return data
-      .map(a => `${a.txId}|${a.ticker}|${a.maxSupply}|${a.mintLimit}|${a.decimals ?? ''}`)
-      .join(',');
-  }
-
-  /**
-   * Converts a compact comma-separated string of SRC-20 deploy attempts into an array of SRC-20 deploy attempts.
-   *
-   * @param data - A comma-separated string where each attempt is represented as `txId|ticker|maxSupply|mintLimit|decimals`.
-   * @returns An array of SRC-20 deploy attempts.
-   */
-  export function compactToSrc20DeployAttempts(data: string): Src20DeployAttempt[] {
-    if (!data) {
-      return [];
-    }
-
-    return data.split(',').map((entry) => {
-      const [txId, ticker, maxSupply, mintLimit, decimals] = entry.split('|', 5);
-      return {
-        txId,
-        ticker,
-        maxSupply,
-        mintLimit,
-        decimals: decimals || undefined
-      };
-    });
-  }
+    return catMint;
+}

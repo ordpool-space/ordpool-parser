@@ -1,4 +1,5 @@
 import { OrdpoolTransactionFlag, OrdpoolTransactionFlags } from "./ordpool-transaction-flags";
+import { CatTraits } from "./parsed-cat21";
 
 export type MintActivity = [string, number];
 export type MintActivities = MintActivity[]; // Each item is [identifier, count]
@@ -35,6 +36,71 @@ export interface Src20DeployAttempt {
   mintLimit: string; // Required for SRC-20
   decimals?: string; // Default to 18 if not specified
 }
+
+export interface Cat21Mint {
+  /**
+   * The transactionId (hash in hex format) where the CAT-21 ordinal was created / minted
+   */
+  txId: string;
+  /**
+   * The blockId (hash in hex format) where the CAT-21 ordinal was created / minted
+   */
+  hash: string;
+  /**
+   * The index of the transaction in the block
+   */
+  txIndex: number;
+  /**
+   * The incremented number of the cat. Cat #0 is the first one. `undefined` if the number is not determined yet.
+   */
+  number?: number;
+  /**
+   * The paid fee rate that determines the color of the cat.
+   */
+  feeRate: number;
+
+  /**
+   * The block height where the CAT-21 ordinal was created / minted
+   */
+  height: number;
+
+  /**
+  /**
+   * Total fees paid to process the mint transaction (Unit: sats)
+   */
+  fee: number;
+
+  /**
+   * Total size of the mint transaction (Unit: bytes)
+   */
+  size: number;
+
+  /**
+   * Weight of the mint transaction, which is a measurement to compare the size of different transactions to each other in proportion to the block size limit (Unit: WU)
+   */
+  weight: number;
+
+  /**
+   * Value of the first output of the mint transaction (Unit: sats)
+   */
+  value: number;
+
+  /**
+   * The satoshi that is associated with the cat. `undefined` if the sat is not determined yet.
+   */
+  sat?: number;
+
+  /**
+   * The first cat owner (Address that received the first output of the mint transaction)
+   */
+  firstOwner: string;
+
+  /**
+   * All traits
+   */
+  traits: CatTraits;
+}
+
 
 export interface OrdpoolStats {
 

@@ -1,6 +1,7 @@
-import { brc20DeployAttemptsToCompact, compactToBrc20DeployAttempts, compactToMintActivity, compactToRuneEtchAttempts, compactToSrc20DeployAttempts, convertToActivities, createRuneEtchAttempt, isFlagSetOnTransaction, mintActivityToCompact, parseJsonObject, runeEtchAttemptsToCompact, src20DeployAttemptsToCompact } from "./digital-artifact-analyser.service.helper";
+import { brc20DeployAttemptsToCompact, compactColorsToTraits, compactToBrc20DeployAttempts, compactToMintActivity, compactToRuneEtchAttempts, compactToSrc20DeployAttempts, convertToActivities, contructRuneEtchAttempt, isFlagSetOnTransaction, mintActivityToCompact, parseJsonObject, runeEtchAttemptsToCompact, src20DeployAttemptsToCompact, traitsToCompactColors } from "./digital-artifact-analyser.service.helper";
 import { RuneEtchingSpec } from "./rune/src/etching";
 import { OrdpoolTransactionFlags } from "./types/ordpool-transaction-flags";
+import { CatTraits } from "./types/parsed-cat21";
 
 
 export const TransactionFlags = {
@@ -177,7 +178,7 @@ describe('Mint Activity Converter', () => {
   });
 });
 
-describe("createRuneEtchAttempt", () => {
+describe("contructRuneEtchAttempt", () => {
 
   const mockEtchingSpec: RuneEtchingSpec = {
     runeName: "EXAMPLE",
@@ -200,7 +201,7 @@ describe("createRuneEtchAttempt", () => {
   };
 
   it("should create a valid RuneEtchAttempt object", () => {
-    const result = createRuneEtchAttempt("abc123", 100, 1, mockEtchingSpec);
+    const result = contructRuneEtchAttempt("abc123", 100, 1, mockEtchingSpec);
 
     expect(result).toEqual({
       txId: "abc123",
@@ -224,7 +225,7 @@ describe("createRuneEtchAttempt", () => {
       runeName: "MINIMAL",
     };
 
-    const result = createRuneEtchAttempt("tx123", 200, 2, minimalSpec);
+    const result = contructRuneEtchAttempt("tx123", 200, 2, minimalSpec);
 
     expect(result).toEqual({
       txId: "tx123",
@@ -234,7 +235,7 @@ describe("createRuneEtchAttempt", () => {
   });
 
   it("should handle bigint fields correctly as strings", () => {
-    const result = createRuneEtchAttempt("tx456", 300, 3, {
+    const result = contructRuneEtchAttempt("tx456", 300, 3, {
       ...mockEtchingSpec,
       premine: BigInt(500),
       terms: {
@@ -348,5 +349,45 @@ describe('SRC-20 Deploy Attempts Converter', () => {
     const compact = 'tx1|STAMP|100000|100|18,tx2|TEST|50000|50|';
     const result = compactToSrc20DeployAttempts(compact);
     expect(result).toEqual(attempts);
+  });
+});
+
+describe('CatTraits Conversion Utilities', () => {
+  const sampleTraits = {
+    genesis: true,
+    catColors: ['#555555', '#d3d3d3'],
+    gender: 'Female',
+    designIndex: 42,
+    designPose: 'Sleeping',
+    designExpression: 'Grumpy',
+    designPattern: 'Eyepatch',
+    designFacing: 'Right',
+    laserEyes: 'Red',
+    background: 'Cyberpunk',
+    backgroundColors: ['#ff9900', '#ffffff'],
+    crown: 'Gold',
+    glasses: '3D',
+    glassesColors: ['#000000', '#ff00ff'],
+  } as CatTraits;
+
+  it('should correctly convert CatTraits to compact format', () => {
+    const result = traitsToCompactColors(sampleTraits);
+    expect(result).toEqual({
+      catColors: '555555,d3d3d3',
+      backgroundColors: 'ff9900,ffffff',
+      glassesColors: '000000,ff00ff',
+    });
+  });
+
+  it('should correctly convert compact format back to CatTraits', () => {
+    const compact = {
+      catColors: '555555,d3d3d3',
+      backgroundColors: 'ff9900,ffffff',
+      glassesColors: '000000,ff00ff',
+    };
+    const result = compactColorsToTraits(compact.catColors, compact.backgroundColors, compact.glassesColors);
+    expect(result.catColors).toEqual(['#555555', '#d3d3d3']);
+    expect(result.backgroundColors).toEqual(['#ff9900', '#ffffff']);
+    expect(result.glassesColors).toEqual(['#000000', '#ff00ff']);
   });
 });

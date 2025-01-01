@@ -1,6 +1,6 @@
 import { AtomicalParserService } from './atomical/atomical-parser.service';
 import { Cat21ParserService } from './cat21/cat21-parser.service';
-import { convertToActivities, createRuneEtchAttempt, isFlagSetOnTransaction, parseJsonObject } from './digital-artifact-analyser.service.helper';
+import { convertToActivities, contructRuneEtchAttempt, isFlagSetOnTransaction, parseJsonObject } from './digital-artifact-analyser.service.helper';
 import { DigitalArtifactsParserService } from './digital-artifacts-parser.service';
 import { InscriptionParserService } from './inscription/inscription-parser.service';
 import { RuneParserService } from './rune/rune-parser.service';
@@ -12,7 +12,7 @@ import { OrdpoolTransactionFlags } from './types/ordpool-transaction-flags';
 import { ParsedInscription } from './types/parsed-inscription';
 import { ParsedRunestone } from './types/parsed-runestone';
 import { ParsedSrc20 } from './types/parsed-src20';
-import { TransactionSimple } from './types/transaction-simple';
+import { TransactionSimple, TransactionSimplePlus } from './types/transaction-simple';
 
 
 /**
@@ -87,7 +87,7 @@ export class DigitalArtifactAnalyserService {
    * @param blockHeight - Default to -1 for mempool transactions.
    * @returns The OrdpoolStats object with counted amounts for each artifact type.
    */
-  static async analyseTransactions(transactions: TransactionSimple[], blockHeight: number = -1): Promise<OrdpoolStats> {
+  static async analyseTransactions(transactions: TransactionSimplePlus[], blockHeight: number = -1): Promise<OrdpoolStats> {
 
     const artifactTypeMap = getArtifactTypeMap();
 
@@ -306,7 +306,7 @@ export class DigitalArtifactAnalyserService {
         // ** Rune Etch Attempts
         if ((flags & OrdpoolTransactionFlags.ordpool_rune_etch) === OrdpoolTransactionFlags.ordpool_rune_etch) {
           const runestone = artifact as ParsedRunestone;
-          const runeEtchAttempt = createRuneEtchAttempt(tx.txid, blockHeight, txIndex, runestone.runestone?.etching)
+          const runeEtchAttempt = contructRuneEtchAttempt(tx.txid, blockHeight, txIndex, runestone.runestone?.etching)
 
           if (runeEtchAttempt) {
             runeEtchAttempts.push(runeEtchAttempt);
