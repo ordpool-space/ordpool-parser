@@ -5,6 +5,7 @@ import { DigitalArtifactType } from './types/digital-artifact';
 import { ParsedInscription } from './types/parsed-inscription';
 import { ParsedRunestone } from './types/parsed-runestone';
 import { ParsedSrc20 } from './types/parsed-src20';
+import { ParsedCat21 } from './types/parsed-cat21';
 
 jest.mock('./digital-artifacts-parser.service');
 
@@ -344,9 +345,12 @@ describe('DigitalArtifactAnalyserService.analyseTransactions - Advanced Test Cas
       getContent: () => Promise.resolve(JSON.stringify({ p: 'brc-20', op: 'mint', tick: 'BBB' })),
     } as ParsedInscription;
 
-    const cat21Mint: ParsedInscription = {
+    const cat21Mint: ParsedCat21 = {
       type: DigitalArtifactType.Cat21,
-    } as ParsedInscription;
+      getTraits: () => {
+
+      }
+    } as ParsedCat21;
 
     (DigitalArtifactsParserService.parse as jest.Mock)
       .mockReturnValueOnce([brc20Mint1, cat21Mint])

@@ -189,6 +189,10 @@ export interface OrdpoolStats {
     src20DeployAttempts: Src20DeployAttempt[];
   };
 
+  cat21: {
+    cat21MintActivity: Cat21Mint[];
+  }
+
   version: number;
 }
 
@@ -271,6 +275,10 @@ export function getEmptyStats(): OrdpoolStats {
       mostActiveMint: null,
       src20MintActivity: [],
       src20DeployAttempts: []
+    },
+
+    cat21: {
+      cat21MintActivity: []
     },
 
     version: 0

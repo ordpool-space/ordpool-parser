@@ -66,10 +66,18 @@ describe('DigitalArtifacts Parser', () => {
     expect(ordpoolStats.runes.runeEtchAttempts.length).toBe(755);
 
     const zzFEHU = ordpoolStats.runes.runeEtchAttempts[0];
-
     expect(zzFEHU.runeId).toBe('840000:1');
     expect(zzFEHU.runeName).toBe('Z•Z•Z•Z•Z•FEHU•Z•Z•Z•Z•Z');
     expect(zzFEHU.txId).toBe('2bb85f4b004be6da54f766c17c1e855187327112c231ef2ff35ebad0ea67c69e');
+
+    expect(ordpoolStats.cat21.cat21MintActivity.length).toBe(5);
+
+    const redBeauty = ordpoolStats.cat21.cat21MintActivity[0];
+    expect(redBeauty.transactionId).toBe('90b7a074efadb6f2be4ac784140d257d2871ff1d06f5320cba9f5ac5e1c1d27a');
+    expect(Math.round(redBeauty.feeRate)).toBe(251);
+    expect(redBeauty.firstOwner).toBe('bc1pse8ugn3ns6f2t2w0dls8at7fymdmtnnj0x0mcesfv7j8csm98mfs5tv8dr');
+    expect(redBeauty.fee).toBe(44250);
+    expect(redBeauty.traits.catColors[2]).toBe('#d61017');
   });
 
   /*

@@ -411,7 +411,7 @@ describe('constructCat21Mint', () => {
         crown: 'Gold',
         glasses: 'Cool',
         glassesColors: ['#000000'],
-      }),
+      })
     };
 
     const mockTransaction = {

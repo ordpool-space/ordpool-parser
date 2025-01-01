@@ -1,14 +1,15 @@
 import { AtomicalParserService } from './atomical/atomical-parser.service';
 import { Cat21ParserService } from './cat21/cat21-parser.service';
-import { convertToActivities, contructRuneEtchAttempt, isFlagSetOnTransaction, parseJsonObject } from './digital-artifact-analyser.service.helper';
+import { convertToActivities, contructRuneEtchAttempt, isFlagSetOnTransaction, parseJsonObject, constructCat21Mint } from './digital-artifact-analyser.service.helper';
 import { DigitalArtifactsParserService } from './digital-artifacts-parser.service';
 import { InscriptionParserService } from './inscription/inscription-parser.service';
 import { RuneParserService } from './rune/rune-parser.service';
 import { isUncommonGoodsMint } from './rune/rune-parser.service.helper';
 import { Src20ParserService } from './src20/src20-parser.service';
 import { DigitalArtifact, DigitalArtifactType } from './types/digital-artifact';
-import { Brc20DeployAttempt, getArtifactTypeMap, getEmptyStats, OrdpoolStats, RuneEtchAttempt, Src20DeployAttempt } from './types/ordpool-stats';
+import { Brc20DeployAttempt, Cat21Mint, getArtifactTypeMap, getEmptyStats, OrdpoolStats, RuneEtchAttempt, Src20DeployAttempt } from './types/ordpool-stats';
 import { OrdpoolTransactionFlags } from './types/ordpool-transaction-flags';
+import { ParsedCat21 } from './types/parsed-cat21';
 import { ParsedInscription } from './types/parsed-inscription';
 import { ParsedRunestone } from './types/parsed-runestone';
 import { ParsedSrc20 } from './types/parsed-src20';
@@ -119,6 +120,7 @@ export class DigitalArtifactAnalyserService {
     let mostActiveSrc20MintCount = 0;
 
     // Fees tracking for different artifact types
+    const cat21MintActivity: Cat21Mint[] = [];
     let totalCat21MintFees = 0;
     let totalAtomicalFees = 0;
     let totalInscriptionMintFees = 0;
@@ -254,6 +256,13 @@ export class DigitalArtifactAnalyserService {
         // ** CAT-21 Fees
         if ((flags & OrdpoolTransactionFlags.ordpool_cat21_mint) === OrdpoolTransactionFlags.ordpool_cat21_mint) {
 
+          const cat = artifact as ParsedCat21;
+          const cat21Mint = constructCat21Mint(cat, txIndex, tx);
+
+          if (cat21Mint) {
+            cat21MintActivity.push(cat21Mint);
+          }
+
           // not really necessary, because a transaction can only have one cat
           if (!cat21MintFeeAdded) {
             const txFee = tx.fee ?? 0;
@@ -385,6 +394,8 @@ export class DigitalArtifactAnalyserService {
     stats.runes.runeEtchAttempts = runeEtchAttempts;
     stats.brc20.brc20DeployAttempts = brc20DeployAttempts;
     stats.src20.src20DeployAttempts = src20DeployAttempts;
+
+    stats.cat21.cat21MintActivity = cat21MintActivity;
 
     return stats;
   }
