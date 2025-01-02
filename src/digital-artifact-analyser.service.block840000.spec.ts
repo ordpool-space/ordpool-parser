@@ -26,7 +26,7 @@ describe('DigitalArtifacts Parser', () => {
     const start = performance.now();
     var ordpoolStats = await DigitalArtifactAnalyserService.analyseTransactions(transactions);
     const end = performance.now();
-    warn(`Block 840,000 txns – Execution time: ${(end - start) / 100} ms`);
+    warn(`Block 840,000 txns (analyseTransactions) – Execution time: ${(end - start) / 100} ms`);
 
     // 878 inscriptions according ordinals.com
     expect(ordpoolStats.amounts.inscription).toBe(878);

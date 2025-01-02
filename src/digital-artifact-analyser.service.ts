@@ -387,9 +387,9 @@ export class DigitalArtifactAnalyserService {
     stats.inscriptions.averageContentSize = inscriptionCount ? totalContentSize / inscriptionCount : 0;
 
     // Store mint activity with counts
-    stats.runes.runeMintActivity = convertToActivities(runeMintActivity);
-    stats.brc20.brc20MintActivity = convertToActivities(brc20MintActivity);
-    stats.src20.src20MintActivity = convertToActivities(src20MintActivity);
+    stats.runes.runeMintActivity = convertToActivities(runeMintActivity).sort((a, b) => b[1] - a[1]);
+    stats.brc20.brc20MintActivity = convertToActivities(brc20MintActivity).sort((a, b) => b[1] - a[1]);
+    stats.src20.src20MintActivity = convertToActivities(src20MintActivity).sort((a, b) => b[1] - a[1]);
 
     stats.runes.runeEtchAttempts = runeEtchAttempts;
     stats.brc20.brc20DeployAttempts = brc20DeployAttempts;

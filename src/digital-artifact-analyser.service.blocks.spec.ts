@@ -13,7 +13,7 @@ describe('DigitalArtifacts Parser', () => {
     const start = performance.now();
     var ordpoolStats = await DigitalArtifactAnalyserService.analyseTransactions(transactions);
     const end = performance.now();
-    warn(`Block 832,947 txns – Execution time: ${(end - start) / 1000 }s`);
+    warn(`Block 832,947 txns (analyseTransactions) – Execution time: ${(end - start) / 1000 }s`);
 
     expect(ordpoolStats.amounts.inscription).toBe(1);
     expect(ordpoolStats.amounts.inscriptionMint).toBe(1);
@@ -26,7 +26,7 @@ describe('DigitalArtifacts Parser', () => {
     const start = performance.now();
     var ordpoolStats = await DigitalArtifactAnalyserService.analyseTransactions(transactions);
     const end = performance.now();
-    warn(`Block 831,802 txns – Execution time: ${(end - start) / 1000 }s`);
+    warn(`Block 831,802 txns (analyseTransactions) – Execution time: ${(end - start) / 1000 }s`);
 
     expect(ordpoolStats.amounts.brc20).toBe(2100);
     expect(ordpoolStats.amounts.brc20Mint).toBe(2100);
