@@ -10,23 +10,14 @@ import { Network } from './rune/src/network';
 import { DigitalArtifact, DigitalArtifactType } from './types/digital-artifact';
 import { IEsploraApi } from './types/mempool';
 import { ParsedRunestone } from './types/parsed-runestone';
+import { OrdpoolStats } from './types/ordpool-stats';
+import { getRawBlock840000 } from '../testdata/block_84000_from_rpc';
+import { convertVerboseBlockToSimplePlus } from './lib/bitcoin-rpc';
 
 describe('DigitalArtifacts Parser', () => {
 
-  /*
-   * This test uses all transactions of the halving block 840000, which has a lot of runes activity
-   * The data is a snapshot of the data that Blocks.$getBlockExtended receives from Blocks.$updateBlocks()
-   *
-   * see https://ordinals.com/block/840000
-   */
-  it('should count all artifacts in block 840,000, provided by the mempool backend (esplora API)', async () => {
-
-    var transactions = getBlock840000Txns();
-
-    const start = performance.now();
-    var ordpoolStats = await DigitalArtifactAnalyserService.analyseTransactions(transactions);
-    const end = performance.now();
-    warn(`Block 840,000 txns (analyseTransactions) – Execution time: ${(end - start) / 100} ms`);
+  // Helper to perform assertions on ordpoolStats
+  const assertOrdpoolStats = (ordpoolStats: OrdpoolStats) => {
 
     // 878 inscriptions according ordinals.com
     expect(ordpoolStats.amounts.inscription).toBe(878);
@@ -78,6 +69,38 @@ describe('DigitalArtifacts Parser', () => {
     expect(redBeauty?.firstOwner).toBe('bc1pse8ugn3ns6f2t2w0dls8at7fymdmtnnj0x0mcesfv7j8csm98mfs5tv8dr');
     expect(redBeauty?.fee).toBe(44250);
     expect(redBeauty?.traits.catColors[2]).toBe('#d61017');
+
+  }
+
+  /*
+   * This test uses all transactions of the halving block 840000, which has a lot of runes activity
+   * The data is a snapshot of the data that Blocks.$getBlockExtended receives from Blocks.$updateBlocks()
+   *
+   * see https://ordinals.com/block/840000
+   */
+  it('should count all artifacts in block 840,000, provided by the mempool backend (esplora API)', async () => {
+
+    var transactions = getBlock840000Txns();
+
+    const start = performance.now();
+    var ordpoolStats = await DigitalArtifactAnalyserService.analyseTransactions(transactions);
+    const end = performance.now();
+    warn(`Block 840,000 txns (analyseTransactions with esplora data) – Execution time: ${(end - start) / 100} ms`);
+
+    assertOrdpoolStats(ordpoolStats);
+  });
+
+  it('should count all artifacts in block 840,000, provided by the Bitcoin RPC (verboseBlock)', async () => {
+
+    const verboseBlock = getRawBlock840000();
+    const transactions = convertVerboseBlockToSimplePlus(verboseBlock);
+
+    const start = performance.now();
+    var ordpoolStats = await DigitalArtifactAnalyserService.analyseTransactions(transactions);
+    const end = performance.now();
+    warn(`Block 840,000 txns (analyseTransactions with RPC data) – Execution time: ${(end - start) / 100} ms`);
+
+    assertOrdpoolStats(ordpoolStats);
   });
 
   /*
