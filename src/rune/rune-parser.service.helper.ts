@@ -1,5 +1,7 @@
 import { RunestoneSpec } from '.';
+import { RuneEtchingSpec } from './src/etching';
 import { u128 } from './src/integer';
+import { U128_MAX_BIGINT } from './src/integer/u128';
 import { Network } from './src/network';
 import { Rune } from './src/rune';
 
@@ -19,12 +21,14 @@ export function removeSpacers(runeName: string): string {
  * Enum to represent possible flaws when validating a rune
  */
 export enum RuneFlaw {
+  NO_RUNE_ETCHING_PROVIDED = 'NoRuneEtchingProvided',
+  INVALID_RUNE_ETCHING_SPEC = 'InvalidRuneEtchingSpec',
   INVALID_RUNE_NAME = 'InvalidRuneName',
   RESERVED_RUNE_NAME = 'ReservedRuneName',
   RUNE_NOT_UNLOCKED = 'RuneNotUnlocked',
   COMMITMENT_NOT_FOUND = 'CommitmentNotFound',
   INPUT_NOT_TAPROOT = 'InputNotTaproot',
-  COMMITMENT_TOO_RECENT = 'CommitmentTooRecent',
+  COMMITMENT_TOO_RECENT = 'CommitmentTooRecent'
 }
 
 /**
@@ -149,3 +153,85 @@ export function commitmentHasAtLeast6Confirmations(transactionBlockHeight: numbe
 export function isUncommonGoodsMint(runestone: RunestoneSpec) {
   return runestone?.mint?.block === 1n && runestone?.mint?.tx === 0;
 }
+
+/**
+ * Validates a RuneEtchingSpec object to ensure its properties are within the allowed ranges.
+ * The validation is based on the Rust data types provided for Runestones:
+ *
+ * struct Etching {
+ *   divisibility: Option<u8>,
+ *   premine: Option<u128>,
+ *   rune: Option<Rune>,
+ *   spacers: Option<u32>,
+ *   symbol: Option<char>,
+ *   terms: Option<Terms>,
+ * }
+ *
+ * Which may contain mint terms:
+ *
+ * struct Terms {
+ *   amount: Option<u128>,
+ *   cap: Option<u128>,
+ *   height: (Option<u64>, Option<u64>),
+ *   offset: (Option<u64>, Option<u64>),
+ * }
+ *
+ * Note: This check might be not required at all.
+ *
+ * @param spec - The RuneEtchingSpec object to validate.
+ * @returns An object containing a `valid` flag and an array of validation error messages.
+ */
+export function validateRuneEtchingSpec(spec: RuneEtchingSpec): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+
+  // Validate premine (u128: 0-340282366920938463463374607431768211455n)
+  if (spec.premine !== undefined) {
+    if (typeof spec.premine !== 'bigint' || spec.premine < 0n || spec.premine > U128_MAX_BIGINT) {
+      errors.push(`Invalid premine: Must be a bigint between 0 and ${U128_MAX_BIGINT}.`);
+    }
+  }
+
+  // Validate divisibility (u8: 0-255)
+  if (spec.divisibility !== undefined) {
+    if (!Number.isInteger(spec.divisibility) || spec.divisibility < 0 || spec.divisibility > 255) {
+      errors.push('Invalid divisibility: Must be an integer between 0 and 255.');
+    }
+  }
+
+  // Validate terms
+  if (spec.terms) {
+    const { cap, amount, offset, height } = spec.terms;
+
+    if (cap !== undefined && (typeof cap !== 'bigint' || cap < 0n || cap > U128_MAX_BIGINT)) {
+      errors.push(`Invalid cap: Must be a bigint between 0 and ${U128_MAX_BIGINT}.`);
+    }
+
+    if (amount !== undefined && (typeof amount !== 'bigint' || amount < 0n || amount > U128_MAX_BIGINT)) {
+      errors.push(`Invalid amount: Must be a bigint between 0 and ${U128_MAX_BIGINT}.`);
+    }
+
+    if (offset) {
+      const { start, end } = offset;
+      if (start !== undefined && (typeof start !== 'bigint' || start < 0n || start > U128_MAX_BIGINT)) {
+        errors.push(`Invalid offset.start: Must be a bigint between 0 and ${U128_MAX_BIGINT}.`);
+      }
+      if (end !== undefined && (typeof end !== 'bigint' || end < 0n || end > U128_MAX_BIGINT)) {
+        errors.push(`Invalid offset.end: Must be a bigint between 0 and ${U128_MAX_BIGINT}.`);
+      }
+    }
+
+    if (height) {
+      const { start, end } = height;
+      if (start !== undefined && (typeof start !== 'bigint' || start < 0n || start > U128_MAX_BIGINT)) {
+        errors.push(`Invalid height.start: Must be a bigint between 0 and ${U128_MAX_BIGINT}.`);
+      }
+      if (end !== undefined && (typeof end !== 'bigint' || end < 0n || end > U128_MAX_BIGINT)) {
+        errors.push(`Invalid height.end: Must be a bigint between 0 and ${U128_MAX_BIGINT}.`);
+      }
+    }
+  }
+
+  return { valid: errors.length === 0, errors };
+}
+
+

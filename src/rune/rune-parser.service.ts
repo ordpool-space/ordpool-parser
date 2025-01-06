@@ -9,8 +9,10 @@ import {
   isValidRuneName,
   removeSpacers,
   RuneFlaw,
+  validateRuneEtchingSpec,
 } from './rune-parser.service.helper';
 import { findCommitment } from './rune-parser.service.helper.findCommitment';
+import { RuneEtchingSpec } from './src/etching';
 import { Network } from './src/network';
 
 /**
@@ -98,12 +100,14 @@ export class RuneParserService {
   /**
    * Validates the rune according to the rules specified:
    *
-   * 1. The rune name is valid
-   * 2. The name is not reserved (equal or larger than AAAAAAAAAAAAAAAAAAAAAAAAAAA))
-   * 3. The rune name is already unlocked at the given block height
-   * 4. The transaction has a commitment
-   * 5. The input being spent was a Taproot output
-   * 6. The commitment has 6 confirmations (COMMIT_CONFIRMATIONS)
+   * 1. falsy data provided
+   * 2. One or more properties are out of range
+   * 3. The rune name is valid
+   * 4. The name is not reserved (equal or larger than AAAAAAAAAAAAAAAAAAAAAAAAAAA))
+   * 5. The rune name is already unlocked at the given block height
+   * 6. The transaction has a commitment
+   * 7. The input being spent was a Taproot output
+   * 8. The commitment has 6 confirmations (COMMIT_CONFIRMATIONS)
    *
    * @param transaction - The transaction to validate
    * @param vinTransactions - The transactions of the inputs
@@ -121,35 +125,47 @@ export class RuneParserService {
       status: IEsploraApi.Status
     }[],
     network: Network,
-    runeName: string
+    runeEtchingSpec: RuneEtchingSpec | undefined,
   ): RuneFlaw | null {
 
+    // 1. no etching provided??
+    if (!runeEtchingSpec) {
+      return RuneFlaw.NO_RUNE_ETCHING_PROVIDED;
+    }
+
+    // 2. Someone sneaked in too large data
+    const hasValidSpec = validateRuneEtchingSpec(runeEtchingSpec);
+    if (!hasValidSpec.valid) {
+      return RuneFlaw.INVALID_RUNE_ETCHING_SPEC;
+    }
+
+    const runeName = runeEtchingSpec.runeName || '';
     const cleanedRuneName = removeSpacers(runeName);
 
-    // 1. Check if the rune name is valid
+    // 3. Check if the rune name is valid
     if (!isValidRuneName(cleanedRuneName)) {
       return RuneFlaw.INVALID_RUNE_NAME;
     }
 
-    // 2. Check if rune name is reserved
+    // 4. Check if rune name is reserved
     if (isReservedRuneName(cleanedRuneName)) {
       return RuneFlaw.RESERVED_RUNE_NAME;
     }
 
     const txnBlockHeight = transaction.status.block_height;
 
-    // 3. Check if the rune name is unlocked at the current block height
+    // 5. Check if the rune name is unlocked at the current block height
     if (txnBlockHeight && !isRuneNameUnlocked(cleanedRuneName, txnBlockHeight, network)) {
       return RuneFlaw.RUNE_NOT_UNLOCKED;
     }
 
-    // 4. Check for a commitment
+    // 6. Check for a commitment
     const commitmentVin = findCommitment(transaction, runeName)
     if (!commitmentVin) {
       return RuneFlaw.COMMITMENT_NOT_FOUND;
     }
 
-    // 5. Check if the input being spent was a Taproot output
+    // 7. Check if the input being spent was a Taproot output
     const isTaprootOutput = commitmentVin.prevout?.scriptpubkey_type === 'v1_p2tr' ||
       commitmentVin.prevout?.scriptpubkey_type === 'unknown';
 
@@ -157,7 +173,7 @@ export class RuneParserService {
       return RuneFlaw.INPUT_NOT_TAPROOT;
     }
 
-    // 6. Check if the commitment has 6 confirmations
+    // 8. Check if the commitment has 6 confirmations
     const commitmentTransaction = vinTransactions.find(x => x.txid === commitmentVin.txid);
     const commitmentBlockHeight = commitmentTransaction?.status?.block_height;
     if (!commitmentHasAtLeast6Confirmations(txnBlockHeight, commitmentBlockHeight)) {

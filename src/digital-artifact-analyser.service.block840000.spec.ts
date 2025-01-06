@@ -913,7 +913,7 @@ describe('DigitalArtifacts Parser', () => {
         vinTxns.push(transaction);
       }
 
-      const validationResult = RuneParserService.validateRune(myTxn, vinTxns, Network.MAINNET, runeName);
+      const validationResult = RuneParserService.validateRune(myTxn, vinTxns, Network.MAINNET, runestone?.runestone?.etching);
 
       if (validationResult) {
         invalidRunestones.push({ reason: validationResult, runestone });

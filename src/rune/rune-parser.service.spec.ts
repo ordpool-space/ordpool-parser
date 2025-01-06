@@ -289,9 +289,7 @@ describe('Rune parser', () => {
 
     const txn = readTransaction('d60988aec4c37d3a142e263c1f9020adcfd08890f5a0cdd2d694580a4d568af8');
     const runestone = RuneParserService.parse(txn);
-
-    const runeName = runestone?.runestone?.etching?.runeName || '';
-    const result = RuneParserService.validateRune(txn, [], Network.MAINNET, runeName);
+    const result = RuneParserService.validateRune(txn, [], Network.MAINNET, runestone?.runestone?.etching);
 
     expect(result).toBe(RuneFlaw.RESERVED_RUNE_NAME);
   });
@@ -306,9 +304,7 @@ describe('Rune parser', () => {
 
     const txn = readTransaction('1d4a587afd527a6e1bb4b1ef8015830ca6cee312313b5e415184a31626bec752');
     const runestone = RuneParserService.parse(txn);
-
-    const runeName = runestone?.runestone?.etching?.runeName || '';
-    const result = RuneParserService.validateRune(txn, [], Network.MAINNET, runeName);
+    const result = RuneParserService.validateRune(txn, [], Network.MAINNET, runestone?.runestone?.etching);
 
     expect(result).toBe(null);
   });
@@ -352,15 +348,42 @@ describe('Rune parser', () => {
     expect(reservedRuneName).toBe(true);
   });
 
+  /*
+   * This rune was never etched because it was too early (block 839_999) but otherwise it's fine
+   * https://ordinals.com/tx/86c88168e0b6aab714594312b389d59f7193a55c88e5dfcd60ac6e22246a824f
+   *
+   *  {
+   *    divisibility: 18,
+   *    premine: 1000000000000000000000000000n,
+   *    runeName: "ZZZZZZZZZZZZZZZZZZZZZZZZZZ",
+   *    symbol: "ⓩ",
+   *    terms: {
+   *      amount: 20000000000000000000000n,
+   *      cap: 1000000n,
+   *    },
+   *    turbo: true,
+   */
+  it('should validate the ZZZZZZZZZZZZZZZZZZZZZZZZZZ runestone etching that was just too early', () => {
+
+    const txn = readTransaction('86c88168e0b6aab714594312b389d59f7193a55c88e5dfcd60ac6e22246a824f');
+
+    expect(txn.status.block_height).toBe(839_999);
+    // we know it's too early, but lets assume it was confirmed in the halving block
+    txn.status.block_height = 840_000;
+
+    const runestone = RuneParserService.parse(txn);
+    const result = RuneParserService.validateRune(txn, [], Network.MAINNET, runestone?.runestone?.etching);
+
+    expect(result).toBe(null);
+  });
+
   it('should validate the Z•Z•Z•Z•Z•FEHU•Z•Z•Z•Z•Z runestone etching that was accepted by ord', () => {
 
     const txn = readTransaction('2bb85f4b004be6da54f766c17c1e855187327112c231ef2ff35ebad0ea67c69e');
     const txnVin = readTransaction('ec40eb2a00eb3ead495d8f12a95432ec292d4d56839733af3acaa01a94ccb97f');
 
     const runestone = RuneParserService.parse(txn);
-
-    const runeName = runestone?.runestone?.etching?.runeName || '';
-    const result = RuneParserService.validateRune(txn, [txnVin], Network.MAINNET, runeName);
+    const result = RuneParserService.validateRune(txn, [txnVin], Network.MAINNET, runestone?.runestone?.etching);
 
     expect(result).toBe(null);
   });

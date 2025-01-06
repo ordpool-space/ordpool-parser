@@ -1,4 +1,5 @@
-import { getUnlockedRuneNameRange, isReservedRuneName, isRuneNameUnlocked, isValidRuneName, removeSpacers } from "./rune-parser.service.helper";
+import { getUnlockedRuneNameRange, isReservedRuneName, isRuneNameUnlocked, isValidRuneName, removeSpacers, validateRuneEtchingSpec } from "./rune-parser.service.helper";
+import { U128_MAX_BIGINT } from "./src/integer/u128";
 import { Network } from "./src/network";
 
 describe('removeSpacers', () => {
@@ -274,4 +275,63 @@ describe('getUnlockedRuneNameRange', () => {
     expect(range.to).toBeNull();
   });
 
+});
+
+describe('validateRuneEtchingSpec', () => {
+  it('should accept a valid premine within the u128 range', () => {
+    const validSpec = { premine: 1000000000000000000000000000n };
+    const result = validateRuneEtchingSpec(validSpec);
+    expect(result.valid).toBe(true);
+    expect(result.errors).toEqual([]);
+  });
+
+  it('should reject a premine value exceeding u128 max value', () => {
+    const invalidSpec = { premine: U128_MAX_BIGINT + 1n };
+    const result = validateRuneEtchingSpec(invalidSpec);
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain(`Invalid premine: Must be a bigint between 0 and ${U128_MAX_BIGINT}.`);
+  });
+
+  it('should reject a negative premine', () => {
+    const invalidSpec = { premine: -1n };
+    const result = validateRuneEtchingSpec(invalidSpec);
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain(`Invalid premine: Must be a bigint between 0 and ${U128_MAX_BIGINT}.`);
+  });
+
+  it('should accept valid terms within u128 range', () => {
+    const validSpec = {
+      terms: {
+        cap: 12345678901234567890n,
+        amount: 1000000000000000000000000000n,
+        offset: { start: 0n, end: U128_MAX_BIGINT },
+        height: { start: 0n, end: U128_MAX_BIGINT },
+      },
+    };
+    const result = validateRuneEtchingSpec(validSpec);
+    expect(result.valid).toBe(true);
+    expect(result.errors).toEqual([]);
+  });
+
+  it('should reject terms with invalid cap', () => {
+    const invalidSpec = { terms: { cap: U128_MAX_BIGINT + 1n } };
+    const result = validateRuneEtchingSpec(invalidSpec);
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain(`Invalid cap: Must be a bigint between 0 and ${U128_MAX_BIGINT}.`);
+  });
+
+  it('should reject divisibility outside valid u8 range', () => {
+    const invalidSpec1 = { divisibility: 256 }; // Too high
+    const invalidSpec2 = { divisibility: -1 }; // Negative
+
+    expect(validateRuneEtchingSpec(invalidSpec1).errors).toContain('Invalid divisibility: Must be an integer between 0 and 255.');
+    expect(validateRuneEtchingSpec(invalidSpec2).errors).toContain('Invalid divisibility: Must be an integer between 0 and 255.');
+  });
+
+  it('should handle multi-byte Unicode symbols for `symbol` correctly', () => {
+    const validSpec = { symbol: '🔶' }; // Multi-byte Unicode
+    const result = validateRuneEtchingSpec(validSpec);
+    expect(result.valid).toBe(true);
+    expect(result.errors).toEqual([]);
+  });
 });
