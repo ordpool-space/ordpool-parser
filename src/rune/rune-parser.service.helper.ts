@@ -2,6 +2,7 @@ import { RunestoneSpec } from '.';
 import { RuneEtchingSpec } from './src/etching';
 import { u128 } from './src/integer';
 import { U128_MAX_BIGINT } from './src/integer/u128';
+import { U64_MAX_BIGINT } from './src/integer/u64';
 import { Network } from './src/network';
 import { Rune } from './src/rune';
 
@@ -212,22 +213,29 @@ export function validateRuneEtchingSpec(spec: RuneEtchingSpec): { valid: boolean
 
     if (offset) {
       const { start, end } = offset;
-      if (start !== undefined && (typeof start !== 'bigint' || start < 0n || start > U128_MAX_BIGINT)) {
-        errors.push(`Invalid offset.start: Must be a bigint between 0 and ${U128_MAX_BIGINT}.`);
+      if (start !== undefined && (typeof start !== 'bigint' || start < 0n || start > U64_MAX_BIGINT)) {
+        errors.push(`Invalid offset.start: Must be a bigint between 0 and ${U64_MAX_BIGINT}.`);
       }
-      if (end !== undefined && (typeof end !== 'bigint' || end < 0n || end > U128_MAX_BIGINT)) {
-        errors.push(`Invalid offset.end: Must be a bigint between 0 and ${U128_MAX_BIGINT}.`);
+      if (end !== undefined && (typeof end !== 'bigint' || end < 0n || end > U64_MAX_BIGINT)) {
+        errors.push(`Invalid offset.end: Must be a bigint between 0 and ${U64_MAX_BIGINT}.`);
       }
     }
 
     if (height) {
       const { start, end } = height;
-      if (start !== undefined && (typeof start !== 'bigint' || start < 0n || start > U128_MAX_BIGINT)) {
-        errors.push(`Invalid height.start: Must be a bigint between 0 and ${U128_MAX_BIGINT}.`);
+      if (start !== undefined && (typeof start !== 'bigint' || start < 0n || start > U64_MAX_BIGINT)) {
+        errors.push(`Invalid height.start: Must be a bigint between 0 and ${U64_MAX_BIGINT}.`);
       }
-      if (end !== undefined && (typeof end !== 'bigint' || end < 0n || end > U128_MAX_BIGINT)) {
-        errors.push(`Invalid height.end: Must be a bigint between 0 and ${U128_MAX_BIGINT}.`);
+      if (end !== undefined && (typeof end !== 'bigint' || end < 0n || end > U64_MAX_BIGINT)) {
+        errors.push(`Invalid height.end: Must be a bigint between 0 and ${U64_MAX_BIGINT}.`);
       }
+    }
+  }
+
+  // Validate symbol (must be a valid single Unicode character)
+  if (spec.symbol !== undefined) {
+    if (typeof spec.symbol !== 'string' || [...spec.symbol].length !== 1) {
+      errors.push('Invalid symbol: Must be a single Unicode character.');
     }
   }
 
