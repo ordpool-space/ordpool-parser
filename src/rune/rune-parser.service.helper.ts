@@ -3,6 +3,7 @@ import { RuneEtchingSpec } from './src/etching';
 import { u128 } from './src/integer';
 import { U128_MAX_BIGINT } from './src/integer/u128';
 import { U64_MAX_BIGINT } from './src/integer/u64';
+import { U8_MAX_BIGINT } from './src/integer/u8';
 import { Network } from './src/network';
 import { Rune } from './src/rune';
 
@@ -242,4 +243,48 @@ export function validateRuneEtchingSpec(spec: RuneEtchingSpec): { valid: boolean
   return { valid: errors.length === 0, errors };
 }
 
+/**
+ * Sanitizes a value to ensure it falls within the range of an unsigned 8-bit integer (0 to 255).
+ * Returns `null` if the value is invalid or out of range.
+ *
+ * @param value - The input value to sanitize.
+ * @returns A number between 0 and 255 or `null` if invalid.
+ */
+export function sanitizeU8(value: number): number | null {
+  if (!Number.isInteger(value) || value < 0 || value > Number(U8_MAX_BIGINT)) return null;
+  return value;
+}
 
+/**
+ * Sanitizes a value to ensure it falls within the range of an unsigned 64-bit integer (0 to 2^64 - 1).
+ * Returns `null` if the value is invalid or out of range.
+ *
+ * @param value - The input value to sanitize (number or bigint).
+ * @returns A bigint between 0n and 2^64 - 1 or `null` if invalid.
+ */
+export function sanitizeU64(value: number | bigint): bigint | null {
+  try {
+    const bigValue = BigInt(value);
+    if (bigValue < 0n || bigValue > U64_MAX_BIGINT) return null;
+    return bigValue;
+  } catch {
+    return null; // Non-convertible values are invalid
+  }
+}
+
+/**
+ * Sanitizes a value to ensure it falls within the range of an unsigned 128-bit integer (0 to 2^128 - 1).
+ * Returns `null` if the value is invalid or out of range.
+ *
+ * @param value - The input value to sanitize (number or bigint).
+ * @returns A bigint between 0n and 2^128 - 1 or `null` if invalid.
+ */
+export function sanitizeU128(value: number | bigint): bigint | null {
+  try {
+    const bigValue = BigInt(value);
+    if (bigValue < 0n || bigValue > U128_MAX_BIGINT) return null;
+    return bigValue;
+  } catch {
+    return null; // Non-convertible values are invalid
+  }
+}

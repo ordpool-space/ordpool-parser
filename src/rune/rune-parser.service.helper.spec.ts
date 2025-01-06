@@ -1,4 +1,4 @@
-import { getUnlockedRuneNameRange, isReservedRuneName, isRuneNameUnlocked, isValidRuneName, removeSpacers, validateRuneEtchingSpec } from "./rune-parser.service.helper";
+import { getUnlockedRuneNameRange, isReservedRuneName, isRuneNameUnlocked, isValidRuneName, removeSpacers, sanitizeU128, sanitizeU64, sanitizeU8, validateRuneEtchingSpec } from "./rune-parser.service.helper";
 import { U128_MAX_BIGINT } from "./src/integer/u128";
 import { U64_MAX_BIGINT } from "./src/integer/u64";
 import { Network } from "./src/network";
@@ -343,5 +343,72 @@ describe('validateRuneEtchingSpec', () => {
     const result = validateRuneEtchingSpec(invalidSpec);
     expect(result.valid).toBe(false);
     expect(result.errors).toContain('Invalid symbol: Must be a single Unicode character.');
+  });
+});
+
+describe('Sanitize Helpers', () => {
+  describe('sanitizeU8', () => {
+    it('returns null for values below 0', () => {
+      expect(sanitizeU8(-1)).toBeNull();
+    });
+
+    it('returns null for values above 255', () => {
+      expect(sanitizeU8(256)).toBeNull();
+    });
+
+    it('returns null for fractional values', () => {
+      expect(sanitizeU8(128.5)).toBeNull();
+    });
+
+    it('returns the same value for valid inputs', () => {
+      expect(sanitizeU8(0)).toBe(0);
+      expect(sanitizeU8(255)).toBe(255);
+    });
+  });
+
+  describe('sanitizeU64', () => {
+    it('returns null for values below 0', () => {
+      expect(sanitizeU64(-1)).toBeNull();
+    });
+
+    it('returns null for values above 2^64 - 1', () => {
+      expect(sanitizeU64(U64_MAX_BIGINT + 1n)).toBeNull();
+    });
+
+    it('returns null for non-integer numbers', () => {
+      expect(sanitizeU64(123.45)).toBeNull();
+    });
+
+    it('returns the same value for valid inputs', () => {
+      expect(sanitizeU64(0)).toBe(0n);
+      expect(sanitizeU64(U64_MAX_BIGINT)).toBe(U64_MAX_BIGINT);
+    });
+
+    it('handles numeric inputs by converting to bigint', () => {
+      expect(sanitizeU64(123)).toBe(123n);
+    });
+  });
+
+  describe('sanitizeU128', () => {
+    it('returns null for values below 0', () => {
+      expect(sanitizeU128(-1)).toBeNull();
+    });
+
+    it('returns null for values above 2^128 - 1', () => {
+      expect(sanitizeU128(U128_MAX_BIGINT + 1n)).toBeNull();
+    });
+
+    it('returns null for non-integer numbers', () => {
+      expect(sanitizeU128(123.45)).toBeNull();
+    });
+
+    it('returns the same value for valid inputs', () => {
+      expect(sanitizeU128(0)).toBe(0n);
+      expect(sanitizeU128(U128_MAX_BIGINT)).toBe(U128_MAX_BIGINT);
+    });
+
+    it('handles numeric inputs by converting to bigint', () => {
+      expect(sanitizeU128(456)).toBe(456n);
+    });
   });
 });
