@@ -245,24 +245,29 @@ export function validateRuneEtchingSpec(spec: RuneEtchingSpec): { valid: boolean
 
 /**
  * Sanitizes a value to ensure it falls within the range of an unsigned 8-bit integer (0 to 255).
- * Returns `null` if the value is invalid or out of range.
+ * Returns `null` for invalid, out-of-range, or `undefined` values.
  *
  * @param value - The input value to sanitize.
- * @returns A number between 0 and 255 or `null` if invalid.
+ * @returns A number between 0 and 255, or `null` for invalid, out-of-range, or `undefined` values.
  */
-export function sanitizeU8(value: number): number | null {
-  if (!Number.isInteger(value) || value < 0 || value > Number(U8_MAX_BIGINT)) return null;
+export function sanitizeU8(value: number | undefined): number | null {
+  if (value === undefined || !Number.isInteger(value) || value < 0 || value > Number(U8_MAX_BIGINT)) {
+    return null;
+  }
   return value;
 }
 
 /**
  * Sanitizes a value to ensure it falls within the range of an unsigned 64-bit integer (0 to 2^64 - 1).
- * Returns `null` if the value is invalid or out of range.
+ * Returns `null` for invalid, out-of-range, or `undefined` values.
  *
  * @param value - The input value to sanitize (number or bigint).
- * @returns A bigint between 0n and 2^64 - 1 or `null` if invalid.
+ * @returns A bigint between 0n and 2^64 - 1, or `null` for invalid, out-of-range, or `undefined` values.
  */
-export function sanitizeU64(value: number | bigint): bigint | null {
+export function sanitizeU64(value: number | bigint | undefined): bigint | null {
+  if (value === undefined) {
+    return null;
+  }
   try {
     const bigValue = BigInt(value);
     if (bigValue < 0n || bigValue > U64_MAX_BIGINT) return null;
@@ -274,12 +279,15 @@ export function sanitizeU64(value: number | bigint): bigint | null {
 
 /**
  * Sanitizes a value to ensure it falls within the range of an unsigned 128-bit integer (0 to 2^128 - 1).
- * Returns `null` if the value is invalid or out of range.
+ * Returns `null` for invalid, out-of-range, or `undefined` values.
  *
  * @param value - The input value to sanitize (number or bigint).
- * @returns A bigint between 0n and 2^128 - 1 or `null` if invalid.
+ * @returns A bigint between 0n and 2^128 - 1, or `null` for invalid, out-of-range, or `undefined` values.
  */
-export function sanitizeU128(value: number | bigint): bigint | null {
+export function sanitizeU128(value: number | bigint | undefined): bigint | null {
+  if (value === undefined) {
+    return null;
+  }
   try {
     const bigValue = BigInt(value);
     if (bigValue < 0n || bigValue > U128_MAX_BIGINT) return null;
@@ -288,3 +296,4 @@ export function sanitizeU128(value: number | bigint): bigint | null {
     return null; // Non-convertible values are invalid
   }
 }
+

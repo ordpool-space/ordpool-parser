@@ -348,6 +348,10 @@ describe('validateRuneEtchingSpec', () => {
 
 describe('Sanitize Helpers', () => {
   describe('sanitizeU8', () => {
+    it('returns null for undefined input', () => {
+      expect(sanitizeU8(undefined)).toBeNull();
+    });
+
     it('returns null for values below 0', () => {
       expect(sanitizeU8(-1)).toBeNull();
     });
@@ -367,6 +371,10 @@ describe('Sanitize Helpers', () => {
   });
 
   describe('sanitizeU64', () => {
+    it('returns null for undefined input', () => {
+      expect(sanitizeU64(undefined)).toBeNull();
+    });
+
     it('returns null for values below 0', () => {
       expect(sanitizeU64(-1)).toBeNull();
     });
@@ -390,6 +398,10 @@ describe('Sanitize Helpers', () => {
   });
 
   describe('sanitizeU128', () => {
+    it('returns null for undefined input', () => {
+      expect(sanitizeU128(undefined)).toBeNull();
+    });
+
     it('returns null for values below 0', () => {
       expect(sanitizeU128(-1)).toBeNull();
     });
