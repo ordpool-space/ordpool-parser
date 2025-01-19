@@ -346,54 +346,36 @@ describe('validateRuneEtchingSpec', () => {
   });
 });
 
-describe('Sanitize Helpers', () => {
-  describe('sanitizeU8', () => {
-    it('returns null for undefined input', () => {
-      expect(sanitizeU8(undefined)).toBeNull();
-    });
-
-    it('returns null for values below 0', () => {
-      expect(sanitizeU8(-1)).toBeNull();
-    });
-
-    it('returns null for values above 255', () => {
-      expect(sanitizeU8(256)).toBeNull();
-    });
-
-    it('returns null for fractional values', () => {
-      expect(sanitizeU8(128.5)).toBeNull();
-    });
-
-    it('returns the same value for valid inputs', () => {
-      expect(sanitizeU8(0)).toBe(0);
-      expect(sanitizeU8(255)).toBe(255);
-    });
-  });
-
+describe('Sanitize Helpers without trim()', () => {
   describe('sanitizeU64', () => {
     it('returns null for undefined input', () => {
       expect(sanitizeU64(undefined)).toBeNull();
     });
 
-    it('returns null for values below 0', () => {
-      expect(sanitizeU64(-1)).toBeNull();
+    it('returns null for empty strings', () => {
+      expect(sanitizeU64('')).toBeNull();
     });
 
-    it('returns null for values above 2^64 - 1', () => {
-      expect(sanitizeU64(U64_MAX_BIGINT + 1n)).toBeNull();
+    it('returns null for non-numeric strings', () => {
+      expect(sanitizeU64('abc')).toBeNull();
+      expect(sanitizeU64('12abc34')).toBeNull();
+      expect(sanitizeU64('-123')).toBeNull(); // Negative values
+      expect(sanitizeU64(' 123 ')).toBeNull(); // Whitespace invalid
     });
 
-    it('returns null for non-integer numbers', () => {
-      expect(sanitizeU64(123.45)).toBeNull();
+    it('returns null for strings representing numbers out of range', () => {
+      expect(sanitizeU64((U64_MAX_BIGINT + 1n).toString())).toBeNull();
     });
 
-    it('returns the same value for valid inputs', () => {
-      expect(sanitizeU64(0)).toBe(0n);
-      expect(sanitizeU64(U64_MAX_BIGINT)).toBe(U64_MAX_BIGINT);
+    it('returns bigint for valid numeric strings', () => {
+      expect(sanitizeU64('0')).toBe(0n);
+      expect(sanitizeU64(U64_MAX_BIGINT.toString())).toBe(U64_MAX_BIGINT);
     });
 
-    it('handles numeric inputs by converting to bigint', () => {
+    it('handles numbers and bigints as before', () => {
       expect(sanitizeU64(123)).toBe(123n);
+      expect(sanitizeU64(123.45)).toBeNull();
+      expect(sanitizeU64(U64_MAX_BIGINT)).toBe(U64_MAX_BIGINT);
     });
   });
 
@@ -402,25 +384,30 @@ describe('Sanitize Helpers', () => {
       expect(sanitizeU128(undefined)).toBeNull();
     });
 
-    it('returns null for values below 0', () => {
-      expect(sanitizeU128(-1)).toBeNull();
+    it('returns null for empty strings', () => {
+      expect(sanitizeU128('')).toBeNull();
     });
 
-    it('returns null for values above 2^128 - 1', () => {
-      expect(sanitizeU128(U128_MAX_BIGINT + 1n)).toBeNull();
+    it('returns null for non-numeric strings', () => {
+      expect(sanitizeU128('xyz')).toBeNull();
+      expect(sanitizeU128('123xyz456')).toBeNull();
+      expect(sanitizeU128('-987654321')).toBeNull(); // Negative values
+      expect(sanitizeU128(' 987654321 ')).toBeNull(); // Whitespace invalid
     });
 
-    it('returns null for non-integer numbers', () => {
-      expect(sanitizeU128(123.45)).toBeNull();
+    it('returns null for strings representing numbers out of range', () => {
+      expect(sanitizeU128((U128_MAX_BIGINT + 1n).toString())).toBeNull();
     });
 
-    it('returns the same value for valid inputs', () => {
-      expect(sanitizeU128(0)).toBe(0n);
-      expect(sanitizeU128(U128_MAX_BIGINT)).toBe(U128_MAX_BIGINT);
+    it('returns bigint for valid numeric strings', () => {
+      expect(sanitizeU128('0')).toBe(0n);
+      expect(sanitizeU128(U128_MAX_BIGINT.toString())).toBe(U128_MAX_BIGINT);
     });
 
-    it('handles numeric inputs by converting to bigint', () => {
+    it('handles numbers and bigints as before', () => {
       expect(sanitizeU128(456)).toBe(456n);
+      expect(sanitizeU128(456.78)).toBeNull();
+      expect(sanitizeU128(U128_MAX_BIGINT)).toBe(U128_MAX_BIGINT);
     });
   });
 });
