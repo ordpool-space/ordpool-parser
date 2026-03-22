@@ -21,8 +21,8 @@ export function hasAtomical(witness: string[]): boolean {
  * Only types with verified mainnet test data are listed here.
  * 'unknown' is returned for any unrecognized operation string.
  *
- * Verified: 'dft' (tx 1d2f39f5...)
- * Unverified but known to exist: 'nft', 'ft', 'mod', 'evt', 'dat', 'sl'
+ * Verified: 'dft' (tx 1d2f39f5...), 'nft' (tx d8c96e39...)
+ * Unverified but known to exist: 'ft', 'mod', 'evt', 'dat', 'sl'
  * Add types here ONLY after adding a real mainnet transaction to testdata/.
  */
 export type AtomicalOperation = 'dft' | 'nft' | 'ft' | 'mod' | 'evt' | 'dat' | 'sl' | 'unknown';

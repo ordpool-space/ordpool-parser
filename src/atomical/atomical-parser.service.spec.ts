@@ -9,6 +9,10 @@ import { extractAtomicalOperation, extractAtomicalOperationFromWitness } from '.
 // Atomic ID: 56a8702bab3d2405eb9a356fd0725ca112a93a8efd1ecca06c6085e7278f0341i0 (commit txn, first output)
 const ATOMICAL_DFT_TXID = '1d2f39f54320631d0432fa495a45a4f298a2ca1b18adef8e4356e327d003a694';
 
+// Real mainnet atomical: realm "terafab" (#229861) — uses NFT operation
+// Found via atomicalmarket.com explorer
+const ATOMICAL_NFT_TXID = 'd8c96e3920f15dfbca4bcb3a3b2fce214484cb913fdca3055dd0f7069387edd3';
+
 // Real mainnet non-atomical transactions
 const CAT21_GENESIS_TXID = '98316dcb21daaa221865208fe0323616ee6dd84e6020b78bc6908e914ac03892';
 const INSCRIPTION_TXID = '2740d27e3017da44ee439792f6f60449e43992fddffd9387685b14d21b725ff0';
@@ -41,6 +45,16 @@ describe('AtomicalParserService', () => {
       expect(result!.type).toBe(DigitalArtifactType.Atomical);
       expect(result!.transactionId).toBe(ATOMICAL_DFT_TXID);
       expect(result!.operation).toBe('dft');
+    });
+
+    it('should parse a real NFT atomical (realm) and extract operation type', () => {
+      const txn = readTransaction(ATOMICAL_NFT_TXID);
+      const result = AtomicalParserService.parse(txn);
+
+      expect(result).not.toBeNull();
+      expect(result!.type).toBe(DigitalArtifactType.Atomical);
+      expect(result!.transactionId).toBe(ATOMICAL_NFT_TXID);
+      expect(result!.operation).toBe('nft');
     });
 
     it('should return null for a non-atomical transaction', () => {
