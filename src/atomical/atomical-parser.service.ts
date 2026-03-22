@@ -1,5 +1,6 @@
 import { DigitalArtifactType } from "../types/digital-artifact";
 import { ParsedAtomical } from "../types/parsed-atomical";
+import { OnParseError } from '../types/parser-options';
 import { hasAtomical } from "./atomical-parser.service.helper";
 
 /**
@@ -13,18 +14,23 @@ export class AtomicalParserService {
   static parse(transaction: {
     txid: string,
     vin: { witness?: string[] }[]
-  }): ParsedAtomical | null {
+  }, onError?: OnParseError): ParsedAtomical | null {
 
-    // early exit by checking against known key burn addresses
-    if (!AtomicalParserService.hasAtomical(transaction)) {
+    try {
+      // early exit by checking against known key burn addresses
+      if (!AtomicalParserService.hasAtomical(transaction)) {
+        return null;
+      }
+
+      return {
+        type: DigitalArtifactType.Atomical,
+        uniqueId: `${DigitalArtifactType.Atomical}-${transaction.txid}`,
+        transactionId: transaction.txid
+      };
+    } catch (ex) {
+      onError?.(ex);
       return null;
     }
-
-    return {
-      type: DigitalArtifactType.Atomical,
-      uniqueId: `${DigitalArtifactType.Atomical}-${transaction.txid}`,
-      transactionId: transaction.txid
-    };
   }
 
   /**

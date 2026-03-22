@@ -3,6 +3,7 @@ import { bigEndianBytesToNumber, hexToBytes, unicodeStringToBytes } from "../lib
 import { bytesToUnicodeString } from '../lib/conversions';
 import { extractPubkeys, hasKeyBurn, knownKeyBurnAddresses } from './src20-parser.service.helper';
 import { DigitalArtifactType } from "../types/digital-artifact";
+import { OnParseError } from '../types/parser-options';
 import { ParsedSrc20 } from "../types/parsed-src20";
 
 /**
@@ -42,14 +43,19 @@ export class Src20ParserService {
       scriptpubkey: string,
       scriptpubkey_type: string
     }[];
-  }): ParsedSrc20 | null {
+  }, onError?: OnParseError): ParsedSrc20 | null {
 
-    // early exit by checking against known key burn addresses
-    if (!hasKeyBurn(transaction)) {
+    try {
+      // early exit by checking against known key burn addresses
+      if (!hasKeyBurn(transaction)) {
+        return null;
+      }
+
+      return Src20ParserService.decodeSrc20Transaction(transaction)
+    } catch (ex) {
+      onError?.(ex);
       return null;
     }
-
-    return Src20ParserService.decodeSrc20Transaction(transaction)
   }
 
   /**

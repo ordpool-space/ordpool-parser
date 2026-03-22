@@ -10,6 +10,7 @@ import { OP_0, OP_ENDIF } from '../lib/op-codes';
 import { readPushdata } from '../lib/reader';
 import { DigitalArtifactType } from '../types/digital-artifact';
 import { ParsedInscription } from '../types/parsed-inscription';
+import { OnParseError } from '../types/parser-options';
 import {
   extractInscriptionId,
   extractPointer,
@@ -33,7 +34,7 @@ export class InscriptionParserService {
   static parse(transaction: {
     txid: string;
     vin: { witness?: string[] }[]
-  }): ParsedInscription[] {
+  }, onError?: OnParseError): ParsedInscription[] {
 
     try {
 
@@ -67,7 +68,7 @@ export class InscriptionParserService {
       return inscriptions;
 
     } catch (ex) {
-      // console.error(ex);
+      onError?.(ex);
       return [];
     }
   }

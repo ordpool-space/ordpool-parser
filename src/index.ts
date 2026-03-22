@@ -35,4 +35,5 @@ export * from './types/parsed-cat21';
 export * from './types/parsed-inscription';
 export * from './types/parsed-runestone';
 export * from './types/parsed-src20';
+export * from './types/parser-options';
 export * from './types/transaction-simple';

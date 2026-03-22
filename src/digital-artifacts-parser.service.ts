@@ -4,6 +4,7 @@ import { InscriptionParserService } from './inscription/inscription-parser.servi
 import { RuneParserService } from './rune/rune-parser.service';
 import { Src20ParserService } from './src20/src20-parser.service';
 import { DigitalArtifact } from './types/digital-artifact';
+import { OnParseError } from './types/parser-options';
 import { TransactionSimple } from './types/transaction-simple';
 
 /**
@@ -15,16 +16,17 @@ export class DigitalArtifactsParserService {
    * Parses a transaction and extracts all supported digital artifacts.
    *
    * @param transaction - The transaction to parse.
+   * @param onError - Optional callback for parser errors. By default, errors are silently suppressed.
    * @returns The parsed digital artifacts or an empty array
    */
-  static parse(transaction: TransactionSimple): DigitalArtifact[] {
+  static parse(transaction: TransactionSimple, onError?: OnParseError): DigitalArtifact[] {
 
     const artifacts: DigitalArtifact[] = [];
-    const parsedCat = Cat21ParserService.parse(transaction);
-    const parsedRune = RuneParserService.parse(transaction);
-    const parsedInscriptions = InscriptionParserService.parse(transaction);
-    const parsedAtomical = AtomicalParserService.parse(transaction);
-    const parsedSrc20 = Src20ParserService.parse(transaction);
+    const parsedCat = Cat21ParserService.parse(transaction, onError);
+    const parsedRune = RuneParserService.parse(transaction, onError);
+    const parsedInscriptions = InscriptionParserService.parse(transaction, onError);
+    const parsedAtomical = AtomicalParserService.parse(transaction, onError);
+    const parsedSrc20 = Src20ParserService.parse(transaction, onError);
 
 
     // cats are always first! 😺

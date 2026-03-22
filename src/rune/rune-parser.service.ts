@@ -11,6 +11,7 @@ import {
   RuneFlaw,
   validateRuneEtchingSpec,
 } from './rune-parser.service.helper';
+import { OnParseError } from '../types/parser-options';
 import { findCommitment } from './rune-parser.service.helper.findCommitment';
 import { RuneEtchingSpec } from './src/etching';
 import { Network } from './src/network';
@@ -30,7 +31,7 @@ export class RuneParserService {
       scriptpubkey: string,
       scriptpubkey_type: string
     }[];
-  }): ParsedRunestone | null {
+  }, onError?: OnParseError): ParsedRunestone | null {
 
     try {
 
@@ -74,7 +75,7 @@ export class RuneParserService {
       }
 
     } catch (ex) {
-      // console.error(ex);
+      onError?.(ex);
       return null;
     }
   }

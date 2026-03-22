@@ -6,6 +6,7 @@
 
 - **Zero runtime dependencies** — works in Node.js AND browsers
 - **Dual output**: ESM (`dist/`) and CommonJS (`dist-commonjs/`)
+- **Version 2.x** is the version for the ordpool-v2 ecosystem rewrite. There are no external consumers — the only users are ordpool.space and cat21.space. No CHANGELOG needed.
 
 ## Commands
 
