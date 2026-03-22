@@ -1,15 +1,18 @@
 import { DigitalArtifactType } from "../types/digital-artifact";
 import { ParsedAtomical } from "../types/parsed-atomical";
 import { OnParseError } from '../types/parser-options';
-import { hasAtomical } from "./atomical-parser.service.helper";
+import { AtomicalOperation, extractAtomicalOperationFromWitness, hasAtomical } from "./atomical-parser.service.helper";
 
 /**
- * Extracts all Atomicals from a Bitcoin transaction.
+ * Extracts Atomicals from a Bitcoin transaction.
+ * Detects the atomical envelope marker and extracts the operation type.
  */
 export class AtomicalParserService {
 
   /**
-   * TODO: implement parser
+   * Parses a transaction and returns a ParsedAtomical if an atomical envelope is found.
+   * Currently extracts the operation type (nft, ft, dft, mod, evt, dat, sl).
+   * CBOR payload decoding is not yet implemented.
    */
   static parse(transaction: {
     txid: string,
@@ -17,15 +20,27 @@ export class AtomicalParserService {
   }, onError?: OnParseError): ParsedAtomical | null {
 
     try {
-      // early exit by checking against known key burn addresses
       if (!AtomicalParserService.hasAtomical(transaction)) {
         return null;
+      }
+
+      // Extract operation type from the first matching witness
+      let operation: AtomicalOperation = 'unknown';
+      for (const vin of transaction.vin) {
+        if (vin.witness) {
+          const op = extractAtomicalOperationFromWitness(vin.witness);
+          if (op !== null) {
+            operation = op;
+            break;
+          }
+        }
       }
 
       return {
         type: DigitalArtifactType.Atomical,
         uniqueId: `${DigitalArtifactType.Atomical}-${transaction.txid}`,
-        transactionId: transaction.txid
+        transactionId: transaction.txid,
+        operation,
       };
     } catch (ex) {
       onError?.(ex);

@@ -108,10 +108,24 @@ All `parse()` methods return `null` on error — silently. This is intentional:
 
 ## Testing
 
-- Tests use **real mainnet transaction data** from `testdata/` (not mocks)
+### GOLDEN RULE: All Tests Use Real Blockchain Data
+
+**Every test MUST assert against real transaction data downloaded from the Bitcoin blockchain. Zero exceptions.**
+
+- Test data lives in `testdata/` as JSON files (`tx_<txid>.json`)
+- Fetched via `npm run fetch-tx-testdata` from Esplora API
+- **NEVER use synthetic/fabricated transaction data** — always use a real txid
+- **NEVER mock the parser input** — use the actual Esplora API format
+- If you need test data for a new feature, find a real mainnet transaction that exercises it
+
+### Test Coverage Rule
+
+If the parser claims to detect a specific type or operation, there MUST be a real mainnet transaction in `testdata/` that exercises it. No exceptions. If you can't find a real transaction, don't claim support for that type.
+
+### Other Testing Rules
+
 - Both Node.js and browser (jsdom) environments tested
 - Some tests marked `xit()` as SLOW — these are stress tests, not needed for regular development
-- Test data is fetched via `npm run fetch-tx-testdata` from Esplora API
 
 ## Code Style
 
