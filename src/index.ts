@@ -31,6 +31,7 @@ export * from './types/mempool';
 export * from './types/ordpool-stats';
 export * from './types/ordpool-transaction-flags';
 export * from './types/parsed-atomical';
+export * from './types/parsed-brc20';
 export * from './types/parsed-cat21';
 export * from './types/parsed-inscription';
 export * from './types/parsed-runestone';

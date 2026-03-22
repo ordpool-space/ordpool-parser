@@ -12,6 +12,7 @@ import { OrdpoolTransactionFlags } from './types/ordpool-transaction-flags';
 import { ParsedCat21 } from './types/parsed-cat21';
 import { ParsedInscription } from './types/parsed-inscription';
 import { ParsedRunestone } from './types/parsed-runestone';
+import { parseBrc20Content } from './types/parsed-brc20';
 import { ParsedSrc20 } from './types/parsed-src20';
 import { TransactionSimple, TransactionSimplePlus } from './types/transaction-simple';
 
@@ -211,9 +212,9 @@ export class DigitalArtifactAnalyserService {
         if ((flags & OrdpoolTransactionFlags.ordpool_brc20_mint) === OrdpoolTransactionFlags.ordpool_brc20_mint) {
           if (!brc20MintFeeAdded) {
             const inscription = artifact as ParsedInscription;
-            const parsedContent = parseJsonObject(await inscription.getContent());
-            if (parsedContent && parsedContent.p === 'brc-20') {
-              const mintKey = parsedContent.tick ?? 'unknown'; // unknown should never happen
+            const brc20 = parseBrc20Content(await inscription.getContent());
+            if (brc20) {
+              const mintKey = brc20.tick ?? 'unknown'; // unknown should never happen
 
               // Track BRC-20 mint activity
               brc20MintActivity[mintKey] = (brc20MintActivity[mintKey] ?? 0) + 1;
@@ -324,15 +325,15 @@ export class DigitalArtifactAnalyserService {
         // ** BRC-20 Deployment Attempts
         if ((flags & OrdpoolTransactionFlags.ordpool_brc20_deploy) === OrdpoolTransactionFlags.ordpool_brc20_deploy) {
           const inscription = artifact as ParsedInscription;
-          const parsedContent = parseJsonObject(await inscription.getContent());
+          const brc20 = parseBrc20Content(await inscription.getContent());
 
-          if (parsedContent && parsedContent.p === 'brc-20' && parsedContent.op === 'deploy') {
+          if (brc20 && brc20.op === 'deploy') {
             brc20DeployAttempts.push({
               txId: tx.txid,
-              ticker: parsedContent.tick ?? 'ERROR', // Required
-              maxSupply: parsedContent.max ?? 'ERROR', // Required
-              mintLimit: parsedContent.lim, // Optional
-              decimals: parsedContent.dec, // Optional
+              ticker: brc20.tick ?? 'ERROR', // Required
+              maxSupply: brc20.max ?? 'ERROR', // Required
+              mintLimit: brc20.lim, // Optional
+              decimals: brc20.dec, // Optional
             });
           }
         }
@@ -432,17 +433,17 @@ export class DigitalArtifactAnalyserService {
           inscription.contentType?.startsWith('application/json')
         ) {
 
-          const parsedContent = parseJsonObject(await inscription.getContent());
-          if (parsedContent && parsedContent.p === 'brc-20') {
+          const brc20 = parseBrc20Content(await inscription.getContent());
+          if (brc20) {
 
             flags |= OrdpoolTransactionFlags.ordpool_brc20;
 
             // Check for specific BRC-20 operations
-            if (parsedContent.op === 'deploy') {
+            if (brc20.op === 'deploy') {
               flags |= OrdpoolTransactionFlags.ordpool_brc20_deploy;
-            } else if (parsedContent.op === 'mint') {
+            } else if (brc20.op === 'mint') {
               flags |= OrdpoolTransactionFlags.ordpool_brc20_mint;
-            } else if (parsedContent.op === 'transfer') {
+            } else if (brc20.op === 'transfer') {
               flags |= OrdpoolTransactionFlags.ordpool_brc20_transfer;
             }
           }
