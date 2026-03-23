@@ -51,6 +51,7 @@ The only safe changes to CAT-21 code:
 - **Never brag with arbitrary numbers.** Don't write "436 tests" or "39 test suites" or "63,000 cats" in documentation or comments — these numbers change constantly and get stale. Anyone can run `npm test` and see the actual count.
 - **Zero runtime dependencies is a hard requirement.** All algorithms must be inline (brotli, CBOR, RC4, etc.). Never add an npm dependency.
 - **Pure functions preferred.** No DI, no classes with state where avoidable. No ILogger abstractions.
+- **Keep explanatory comments.** This codebase parses Bitcoin script opcodes, CBOR binary formats, and protocol-specific envelope structures. These are genuinely complicated. Comments that explain the flow ("No more inscriptions found", "Parse the inscription at the current position", "Update startPosition for the next iteration") help humans navigate the logic. Do NOT remove them as "unnecessary WHAT comments" — they are useful here.
 
 ## Architecture
 

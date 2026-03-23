@@ -122,13 +122,15 @@ export class InscriptionParserService {
 
       while (true) {
         const pointer = getNextInscriptionMark(raw, startPosition);
-        if (pointer === -1) break;
+        if (pointer === -1) break; // No more inscriptions found
 
+        // Parse the inscription at the current position
         const inscription = InscriptionParserService.extractInscriptionData(raw, pointer);
         if (inscription) {
           inscriptions.push(inscription);
         }
 
+        // Update startPosition for the next iteration
         startPosition = pointer;
       }
     }
