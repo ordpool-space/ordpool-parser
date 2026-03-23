@@ -96,6 +96,14 @@ export interface ParsedInscription extends DigitalArtifact {
   getDelegates: () => string[];
 
   /**
+   * Get Rune commitment, from tag 13.
+   * Returns the raw commitment bytes (the rune's u128 value as little-endian
+   * bytes with trailing zeros stripped). This links the inscription to a rune
+   * etching — the etching transaction must spend this inscription's UTXO.
+   */
+  getRune: () => Uint8Array | undefined;
+
+  /**
    * Get Properties, from tag 17 (with optional decompression via tag 19)
    * Supports brotli ("br") and gzip ("gzip") compression.
    * Contains gallery items and structured attributes.

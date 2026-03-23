@@ -311,6 +311,10 @@ export class InscriptionParserService {
           return delegatesRaw.map(parentRaw => extractInscriptionId(parentRaw));
         },
 
+        getRune: (): Uint8Array | undefined => {
+          return getKnownFieldValue(fields, knownFields.rune);
+        },
+
         getProperties: async () => {
           return parseProperties(fields);
         },

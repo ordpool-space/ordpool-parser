@@ -30,8 +30,23 @@ export const knownFields = {
   // delegate, with a tag of 11, see delegate docs: https://docs.ordinals.com/inscriptions/delegate.html
   delegate: 0x0b,
 
-  // rune, with a tag of 13 — used by ord for rune etching commitments embedded in inscriptions.
-  // TODO: expose this field via ParsedInscription so consumers can link inscriptions to rune etchings.
+  // rune, with a tag of 13 — rune etching commitment.
+  //
+  // When etching a new rune, the rune name must be "committed to" in an inscription
+  // before the etching transaction. This prevents front-running (someone seeing your
+  // etching in the mempool and stealing the rune name).
+  //
+  // The commitment is the rune's u128 value encoded as little-endian bytes with trailing
+  // zeros stripped. For example, rune "UNCOMMON•GOODS" (u128 value) becomes a few bytes.
+  // This commitment is stored as tag 13 in the inscription envelope.
+  //
+  // The etching transaction then spends the inscription's UTXO as an input. ord's indexer
+  // verifies: (1) the commitment bytes match the rune being etched, (2) the committed
+  // inscription was in a taproot output, and (3) at least 6 blocks have passed since the
+  // commitment (COMMIT_CONFIRMATIONS = 6).
+  //
+  // Our rune parser already handles commitment validation — see findCommitment() in
+  // rune-parser.service.helper.findCommitment.ts and Rune.commitment in rune/src/rune.ts.
   rune: 0x0d,
 
   // properties, with a tag of 17 — CBOR-encoded gallery items + attributes (chunked like metadata)
