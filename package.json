@@ -1,7 +1,7 @@
 {
   "name": "ordpool-parser",
-  "version": "2.0.0-rc.1",
-  "description": "The parsing engine that detects Inscriptions, SRC-20 Stamps, CAT-21 Ordinals, and Runes in Bitcoin transactions.",
+  "version": "2.0.0",
+  "description": "Zero-dependency TypeScript parser for Bitcoin digital artifacts: Inscriptions, Runes, BRC-20, SRC-20, CAT-21, Atomicals, and Labitbu. Works in Node.js and browsers.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ordpool-space/ordpool-parser.git"

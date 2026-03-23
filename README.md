@@ -1,82 +1,110 @@
 # ordpool-parser
 
-The parsing engine that detects Inscriptions, Runes, BRC-20, SRC-20 Stamps, CAT-21, Atomicals, and Labitbu in Bitcoin transactions.
-The compiled code has zero dependencies and works in the Browser and in Node.js out of the box.
+Zero-dependency TypeScript parser for Bitcoin digital artifacts. Detects and extracts **Inscriptions**, **Runes**, **BRC-20**, **SRC-20 Stamps**, **CAT-21**, **Atomicals**, and **Labitbu** from raw transaction data.
 
-The latest version of this script is used by https://ordpool.space
-
-
-## 🚀 Usage
-
-This package has zero dependencies and should "just work". First, install it:
+Works in **Node.js** and **browsers** out of the box. Used by [ordpool.space](https://ordpool.space).
 
 ```
 npm install ordpool-parser
 ```
 
-Then, you can use the parser in your project.
-It expects a transaction in JSON format from an Esplora API.
-(This format is different from the JSON returned by a Bitcoin Node RPC.)
+## What does it parse?
 
-To avoid confusion, here are the different kinds of "Electrum" servers explained:
-- Electrum and ElectrumX are basic indexers for Bitcoin
-- romanz/electrs (Electrum Server in Rust) is re-implementation Electrum
-- "Esplora - Electrs backend API" is a fork by blockstream.info with a powerful REST API
+| Protocol | What it detects | Key data extracted |
+|----------|----------------|-------------------|
+| **Inscriptions** | `OP_FALSE OP_IF "ord"` envelope in witness | Content, content type, metadata, parents, delegates, **galleries** (tag 17 properties with items + traits) |
+| **Runes** | `OP_RETURN` runestone | Etching, mint, transfers, cenotaphs |
+| **BRC-20** | JSON inscriptions with `"p": "brc-20"` | Deploy, mint, transfer operations |
+| **SRC-20** | RC4-encrypted stamp data in multisig outputs | Deploy, mint, transfer operations |
+| **CAT-21** | Transactions with `nLockTime == 21` | Deterministic cat image (SVG) + traits |
+| **Atomicals** | `OP_FALSE OP_IF "atom"` envelope in witness | Operation type, CBOR payload, args, file attachments |
+| **Labitbu** | WebP image in Taproot control block (NUMS key) | 4096-byte WebP image |
 
-Esplora is the backend mempool.space uses, and is also what powers blockstream.info!
-The ordpool-parser was only tested with this API.
+## Quick start
 
+The parser expects transactions in Esplora API JSON format (used by mempool.space and blockstream.info).
 
+### Parse everything at once
 
 ```ts
-import axios from 'axios';
-import { InscriptionParserService } from 'ordpool-parser';
+import { DigitalArtifactsParserService } from 'ordpool-parser';
 
-async function getInscriptions(txId: string) {
+const response = await fetch(`https://mempool.space/api/tx/${txId}`);
+const tx = await response.json();
 
-  const response = await axios.get(`https://mempool.space/api/tx/${txId}`);
-  // OR 
-  // const response = await axios.get(`https://blockstream.info/api/tx/${txId}`);
-  const transaction = response.data;
-
-  return InscriptionParserService.parse(transaction);
-}
-
-const parsedInscriptions = await getInscriptions('f1997166547da9784a3e7419d2b248551565211811d4f5e705b685efa244451f');
-
-if (!parsedInscriptions.length) {
-  console.log('No inscriptions found!');
-} else {
-  // Output: text/html;charset=utf-8
-  console.log(parsedInscriptions[0].contentType);
-
-  // UTF-8 encoded string (not intended for binary content like images or videos)
-  // Output: <html><!--cubes.haushoppe.art--><body> [...]
-  console.log(await parsedInscriptions[0].getContent());
-
-  // Base64 encoded data URI that can be displayed in an iframe
-  // Output: data:text/html;charset=utf-8;base64,PGh0bWw+PCEtLWN1YmVzLmhhdXNob3BwZS5hcnQtLT48Ym9keT4 [...]
-  console.log(await parsedInscriptions[0].getDataUri());
-}
-
+// Returns all digital artifacts found in the transaction
+const artifacts = DigitalArtifactsParserService.parse(tx);
 ```
 
-This example uses `axios`, a popular HTTP client for both browser and Node.js environments. 
-You can install it via `npm install axios`. Of course, any other compatible HTTP client will also work.
+### Parse specific types
 
-**Note:** This is a simplified example! Make sure to handle errors when making HTTP requests, as network issues can occur.
+```ts
+import {
+  InscriptionParserService,
+  Cat21ParserService,
+  RuneParserService,
+  AtomicalParserService,
+  LabitbuParserService,
+  Src20ParserService,
+} from 'ordpool-parser';
 
+// Inscriptions (can return multiple — batch inscriptions)
+const inscriptions = InscriptionParserService.parse(tx);
+if (inscriptions.length) {
+  console.log(inscriptions[0].contentType);
+  console.log(await inscriptions[0].getContent());
 
-## 🧡 Contribute
+  // Galleries (tag 17 properties)
+  const properties = await inscriptions[0].getProperties();
+  if (properties) {
+    console.log(properties.gallery);  // Array of { inscriptionId, title?, traits? }
+  }
+}
+
+// CAT-21
+const cat = Cat21ParserService.parse(tx);
+if (cat) {
+  console.log(cat.getImage());   // SVG string
+  console.log(cat.getTraits());  // { genesis, gender, designIndex, ... }
+}
+
+// Runes
+const rune = RuneParserService.parse(tx);
+if (rune?.runestone?.etching) {
+  console.log(rune.runestone.etching.runeName);
+}
+
+// Atomicals
+const atomical = AtomicalParserService.parse(tx);
+if (atomical) {
+  console.log(atomical.operation);   // 'nft', 'dft', 'ft', 'mod', ...
+  console.log(atomical.getArgs());   // { request_ticker, mint_amount, ... }
+  console.log(atomical.getFiles()); // [{ name, contentType, data }]
+}
+
+// Labitbu
+const labitbu = LabitbuParserService.parse(tx);
+if (labitbu) {
+  console.log(labitbu.getDataRaw()); // 4096-byte WebP image
+}
+```
+
+### Analyze a full block
+
+```ts
+import { DigitalArtifactAnalyserService } from 'ordpool-parser';
+
+// Analyze all transactions in a block — returns per-type counts, fees, mint activity
+const stats = await DigitalArtifactAnalyserService.analyseTransactions(blockTxns);
+```
+
+## Contribute
 
 ### Prerequisites
 
-Node.js (Version 20 or later) to test & compile the TypeScript code to JavaScript.
+Node.js (version 20 or later).
 
-### Install
-
-First, install Node.js version 20. 
-Then, install the NPM dependencies and execute the tests with the following commands:
+### Install & test
 
 ```bash
 npm install
@@ -85,31 +113,23 @@ npm test
 
 ### How to add a feature
 
-Every feature must be tested in the browser and in the node environment! 
-Use a mainnet transaction to create a test scenario. 
-The goal of this parser is to parse byte-perfect inscriptions that are identical to [ord](https://github.com/ordinals/ord).
+Every feature must be tested in the browser and in the node environment!
+Use a mainnet transaction to create a test scenario.
 
-1. **Fetch Transaction Test Data**: Save the raw transaction JSON to the `testdata` folder.
+1. **Fetch transaction test data:**
     ```bash
     npm run fetch-tx-testdata
     ```
-    Enter the `transactionId` (e.g.`78fa9d6e9b2b49fbb9f4838e1792dba7c1ec836f22e3206561e2d52759708251`) and check the results.
 
-2. **Fetch Inscription Test Data**: Save the reference inscription as a file in the `testdata` folder.
-
+2. **Fetch inscription reference file** (for byte-for-byte comparison):
     ```bash
     npm run fetch-inscription-testdata
     ```
-    Enter the `inscriptionId`, which is the `transactionId` + `i` + the `index` (e.g.`78fa9d6e9b2b49fbb9f4838e1792dba7c1ec836f22e3206561e2d52759708251i0`), and check the results!
 
-3. **Contribute:** Add your new feature, include meaningful tests, and submit a pull request if all tests pass.
+3. Add your feature, include meaningful tests with real blockchain data, and submit a pull request.
 
-4. **Hint:** Debug the unit tests using VS Code. The `launch.json` file is already prepared for this purpose.
+4. **Hint:** Debug the unit tests using VS Code. The `launch.json` file is already prepared.
 
-### Build
+## License
 
-To publish a new version to NPM:
-
-```bash
-npm publish
-```
+MIT
