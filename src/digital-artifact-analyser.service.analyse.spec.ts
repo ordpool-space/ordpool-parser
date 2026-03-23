@@ -11,7 +11,7 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
 
   it('should return correct flags for Cat21', async () => {
     const cat21Artifact = { type: DigitalArtifactType.Cat21 } as ParsedCat21;
-    const flags = await DigitalArtifactAnalyserService.analyse(cat21Artifact);
+    const { flags } = await DigitalArtifactAnalyserService.analyse(cat21Artifact);
     expect(flags).toBe(
       OrdpoolTransactionFlags.ordpool_cat21 |
       OrdpoolTransactionFlags.ordpool_cat21_mint
@@ -20,7 +20,7 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
 
   it('should return correct flags for Atomical', async () => {
     const atomicalArtifact = { type: DigitalArtifactType.Atomical } as any;
-    const flags = await DigitalArtifactAnalyserService.analyse(atomicalArtifact);
+    const { flags } = await DigitalArtifactAnalyserService.analyse(atomicalArtifact);
     expect(flags).toBe(
       OrdpoolTransactionFlags.ordpool_atomical
     );
@@ -28,7 +28,7 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
 
   it('should return correct flags for Labitbu', async () => {
     const labitbuArtifact = { type: DigitalArtifactType.Labitbu } as any;
-    const flags = await DigitalArtifactAnalyserService.analyse(labitbuArtifact);
+    const { flags } = await DigitalArtifactAnalyserService.analyse(labitbuArtifact);
     expect(flags).toBe(
       OrdpoolTransactionFlags.ordpool_labitbu
     );
@@ -40,7 +40,7 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
       contentType: 'application/json',
       getContent: () => Promise.resolve(JSON.stringify({ p: 'brc-20', op: 'deploy' })),
     } as ParsedInscription;
-    const flags = await DigitalArtifactAnalyserService.analyse(inscriptionArtifact);
+    const { flags } = await DigitalArtifactAnalyserService.analyse(inscriptionArtifact);
     expect(flags).toBe(
       OrdpoolTransactionFlags.ordpool_inscription |
       OrdpoolTransactionFlags.ordpool_inscription_mint |
@@ -55,7 +55,7 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
       contentType: 'application/json',
       getContent: () => Promise.resolve(JSON.stringify({ p: 'brc-20', op: 'mint' })),
     } as ParsedInscription;
-    const flags = await DigitalArtifactAnalyserService.analyse(inscriptionArtifact);
+    const { flags } = await DigitalArtifactAnalyserService.analyse(inscriptionArtifact);
     expect(flags).toBe(
       OrdpoolTransactionFlags.ordpool_inscription |
       OrdpoolTransactionFlags.ordpool_inscription_mint |
@@ -70,7 +70,7 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
       contentType: 'application/json',
       getContent: () => Promise.resolve(JSON.stringify({ p: 'brc-20', op: 'transfer' })),
     } as ParsedInscription;
-    const flags = await DigitalArtifactAnalyserService.analyse(inscriptionArtifact);
+    const { flags } = await DigitalArtifactAnalyserService.analyse(inscriptionArtifact);
     expect(flags).toBe(
       OrdpoolTransactionFlags.ordpool_inscription |
       OrdpoolTransactionFlags.ordpool_inscription_mint |
@@ -85,7 +85,7 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
       contentType: 'application/json',
       getContent: () => Promise.resolve(JSON.stringify({ p: 'unsupported', op: 'deploy' })),
     } as ParsedInscription;
-    const flags = await DigitalArtifactAnalyserService.analyse(inscriptionArtifact);
+    const { flags } = await DigitalArtifactAnalyserService.analyse(inscriptionArtifact);
     expect(flags).toBe(
       OrdpoolTransactionFlags.ordpool_inscription |
       OrdpoolTransactionFlags.ordpool_inscription_mint
@@ -101,7 +101,7 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
         }
       },
     } as ParsedRunestone;
-    const flags = await DigitalArtifactAnalyserService.analyse(runestoneArtifact);
+    const { flags } = await DigitalArtifactAnalyserService.analyse(runestoneArtifact);
     expect(flags).toBe(
       OrdpoolTransactionFlags.ordpool_rune |
       OrdpoolTransactionFlags.ordpool_rune_etch
@@ -117,7 +117,7 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
         }
       },
     } as ParsedRunestone;
-    const flags = await DigitalArtifactAnalyserService.analyse(runestoneArtifact);
+    const { flags } = await DigitalArtifactAnalyserService.analyse(runestoneArtifact);
     expect(flags).toBe(
       OrdpoolTransactionFlags.ordpool_rune |
       OrdpoolTransactionFlags.ordpool_rune_mint
@@ -133,7 +133,7 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
         }
       },
     } as ParsedRunestone;
-    const flags = await DigitalArtifactAnalyserService.analyse(cenotaphArtifact);
+    const { flags } = await DigitalArtifactAnalyserService.analyse(cenotaphArtifact);
     expect(flags).toBe(
       OrdpoolTransactionFlags.ordpool_rune |
       OrdpoolTransactionFlags.ordpool_rune_cenotaph
@@ -149,7 +149,7 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
         }
       },
     } as ParsedRunestone;
-    const flags = await DigitalArtifactAnalyserService.analyse(cenotaphArtifact);
+    const { flags } = await DigitalArtifactAnalyserService.analyse(cenotaphArtifact);
     expect(flags).toBe(
       OrdpoolTransactionFlags.ordpool_rune |
       OrdpoolTransactionFlags.ordpool_rune_cenotaph
@@ -161,7 +161,7 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
       type: DigitalArtifactType.Src20,
       getContent: () => JSON.stringify({ p: 'src-20', op: 'deploy' }),
     } as ParsedSrc20;
-    const flags = await DigitalArtifactAnalyserService.analyse(src20Artifact);
+    const { flags } = await DigitalArtifactAnalyserService.analyse(src20Artifact);
     expect(flags).toBe(
       OrdpoolTransactionFlags.ordpool_src20 |
       OrdpoolTransactionFlags.ordpool_src20_deploy
@@ -173,7 +173,7 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
       type: DigitalArtifactType.Src20,
       getContent: () => JSON.stringify({ p: 'src-20', op: 'mint' }),
     } as ParsedSrc20;
-    const flags = await DigitalArtifactAnalyserService.analyse(src20Artifact);
+    const { flags } = await DigitalArtifactAnalyserService.analyse(src20Artifact);
     expect(flags).toBe(
       OrdpoolTransactionFlags.ordpool_src20 |
       OrdpoolTransactionFlags.ordpool_src20_mint
@@ -185,7 +185,7 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
       type: DigitalArtifactType.Src20,
       getContent: () => JSON.stringify({ p: 'src-20', op: 'transfer' }),
     } as ParsedSrc20;
-    const flags = await DigitalArtifactAnalyserService.analyse(src20Artifact);
+    const { flags } = await DigitalArtifactAnalyserService.analyse(src20Artifact);
     expect(flags).toBe(
       OrdpoolTransactionFlags.ordpool_src20 |
       OrdpoolTransactionFlags.ordpool_src20_transfer
@@ -197,7 +197,7 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
       type: DigitalArtifactType.Src20,
       getContent: () => JSON.stringify({ p: 'unsupported', op: 'transfer' }),
     } as ParsedSrc20;
-    const flags = await DigitalArtifactAnalyserService.analyse(src20Artifact);
+    const { flags } = await DigitalArtifactAnalyserService.analyse(src20Artifact);
     expect(flags).toBe(0n);
   });
 });

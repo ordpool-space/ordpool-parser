@@ -13,7 +13,7 @@ import { OrdpoolTransactionFlags } from './types/ordpool-transaction-flags';
 import { ParsedCat21 } from './types/parsed-cat21';
 import { ParsedInscription } from './types/parsed-inscription';
 import { ParsedRunestone } from './types/parsed-runestone';
-import { parseBrc20Content } from './types/parsed-brc20';
+import { BrC20Parsed, parseBrc20Content } from './types/parsed-brc20';
 import { ParsedSrc20 } from './types/parsed-src20';
 import { TransactionSimple, TransactionSimplePlus } from './types/transaction-simple';
 
@@ -68,6 +68,16 @@ import { TransactionSimple, TransactionSimplePlus } from './types/transaction-si
  * - ordpool_rune_transfer (requires tracking of runes)
  * - ordpool_rune_burn (requires tracking of runes) - we can only recognize burning via Cenotaphs, but this number would be misleading
  */
+/**
+ * Result of analysing a single artifact. Carries both the flags and any
+ * parsed intermediate data (BRC-20, SRC-20) so callers don't re-parse.
+ */
+export interface AnalyseResult {
+  flags: bigint;
+  brc20?: BrC20Parsed;
+  src20Content?: any;
+}
+
 export class DigitalArtifactAnalyserService {
 
   static readonly version = 1;
@@ -159,15 +169,17 @@ export class DigitalArtifactAnalyserService {
       let inscriptionMintFeeAdded = false;
 
       for (const artifact of artifacts) {
-        const flags = await DigitalArtifactAnalyserService.analyse(artifact);
+        // Analyse once — returns flags + any parsed intermediate data
+        const { flags, brc20, src20Content } = await DigitalArtifactAnalyserService.analyse(artifact);
 
         // ** Amounts: Iterate over each flag by checking each bit in the flag set
         for (const [flag, statKey] of artifactTypeMap.entries()) {
-          // Check if the flag is set using bitwise AND
           if ((flags & flag) === flag) {
             stats.amounts[statKey] = (stats.amounts[statKey] ?? 0) + 1;
           }
         }
+
+        const txFee = tx.fee ?? 0;
 
         // ** Rune Mints and Fees
         if ((flags & OrdpoolTransactionFlags.ordpool_rune_mint) === OrdpoolTransactionFlags.ordpool_rune_mint) {
@@ -183,7 +195,7 @@ export class DigitalArtifactAnalyserService {
               mostActiveRuneMintCount = runeMintActivity[mintKey];
             }
 
-            var isUncommonGoods = isUncommonGoodsMint(runestone.runestone);
+            const isUncommonGoods = isUncommonGoodsMint(runestone.runestone);
             // Track non-UNCOMMON•GOODS Rune mints
             if (!isUncommonGoods) {
               runeNonUncommonGoodsActivity[mintKey] = (runeNonUncommonGoodsActivity[mintKey] ?? 0) + 1;
@@ -193,71 +205,52 @@ export class DigitalArtifactAnalyserService {
               }
             }
 
-            // Accumulate Rune mint fees if not already added for this transaction
+            // Accumulate fees only once per transaction
             if (!runeMintFeeAdded) {
-              const txFee = tx.fee ?? 0;
               totalRuneMintFees += txFee;
               runeMintFeeAdded = true;
             }
-
-            // Accumulate non-UncommonGoods Rune mint fees if not already added for this transaction
             if (!nonUncommonRuneMintFeeAdded && !isUncommonGoods) {
-              const txFee = tx.fee ?? 0;
               totalNonUncommonRuneMintFees += txFee;
               nonUncommonRuneMintFeeAdded = true;
             }
           }
         }
 
-        // ** BRC-20 Mints and Fees
+        // ** BRC-20 Mints and Fees — uses brc20 from analyse() (no re-parse!)
         if ((flags & OrdpoolTransactionFlags.ordpool_brc20_mint) === OrdpoolTransactionFlags.ordpool_brc20_mint) {
-          if (!brc20MintFeeAdded) {
-            const inscription = artifact as ParsedInscription;
-            const brc20 = parseBrc20Content(await inscription.getContent());
-            if (brc20) {
-              const mintKey = brc20.tick ?? 'unknown'; // unknown should never happen
+          if (!brc20MintFeeAdded && brc20) {
+            const mintKey = brc20.tick ?? 'unknown';
 
-              // Track BRC-20 mint activity
-              brc20MintActivity[mintKey] = (brc20MintActivity[mintKey] ?? 0) + 1;
-              if (brc20MintActivity[mintKey] > mostActiveBrc20MintCount) {
-                mostActiveBrc20Mint = mintKey;
-                mostActiveBrc20MintCount = brc20MintActivity[mintKey];
-              }
-
-              // Accumulate BRC-20 mint fees only once per transaction
-              const txFee = tx.fee ?? 0;
-              totalBrc20MintFees += txFee;
-              brc20MintFeeAdded = true;
+            brc20MintActivity[mintKey] = (brc20MintActivity[mintKey] ?? 0) + 1;
+            if (brc20MintActivity[mintKey] > mostActiveBrc20MintCount) {
+              mostActiveBrc20Mint = mintKey;
+              mostActiveBrc20MintCount = brc20MintActivity[mintKey];
             }
+
+            totalBrc20MintFees += txFee;
+            brc20MintFeeAdded = true;
           }
         }
 
-        // ** SRC-20 Mints and Fees
+        // ** SRC-20 Mints and Fees — uses src20Content from analyse() (no re-parse!)
         if ((flags & OrdpoolTransactionFlags.ordpool_src20_mint) === OrdpoolTransactionFlags.ordpool_src20_mint) {
-          if (!src20MintFeeAdded) {
-            const src20 = artifact as ParsedSrc20;
-            const parsedSrcContent = parseJsonObject(src20.getContent());
-            if (parsedSrcContent && parsedSrcContent.p === 'src-20') {
-              const mintKey = parsedSrcContent.tick ?? 'unknown'; // unknown should never happen
+          if (!src20MintFeeAdded && src20Content) {
+            const mintKey = src20Content.tick ?? 'unknown';
 
-              // Track SRC-20 mint activity
-              src20MintActivity[mintKey] = (src20MintActivity[mintKey] ?? 0) + 1;
-              if (src20MintActivity[mintKey] > mostActiveSrc20MintCount) {
-                mostActiveSrc20Mint = mintKey;
-                mostActiveSrc20MintCount = src20MintActivity[mintKey];
-              }
-
-              // Accumulate SRC-20 mint fees only once per transaction
-              const txFee = tx.fee ?? 0;
-              totalSrc20MintFees += txFee;
-              src20MintFeeAdded = true;
+            src20MintActivity[mintKey] = (src20MintActivity[mintKey] ?? 0) + 1;
+            if (src20MintActivity[mintKey] > mostActiveSrc20MintCount) {
+              mostActiveSrc20Mint = mintKey;
+              mostActiveSrc20MintCount = src20MintActivity[mintKey];
             }
+
+            totalSrc20MintFees += txFee;
+            src20MintFeeAdded = true;
           }
         }
 
         // ** CAT-21 Fees
         if ((flags & OrdpoolTransactionFlags.ordpool_cat21_mint) === OrdpoolTransactionFlags.ordpool_cat21_mint) {
-
           const cat = artifact as ParsedCat21;
           const cat21Mint = constructCat21Mint(cat, txIndex, tx);
 
@@ -265,9 +258,7 @@ export class DigitalArtifactAnalyserService {
             cat21MintActivity.push(cat21Mint);
           }
 
-          // not really necessary, because a transaction can only have one cat
           if (!cat21MintFeeAdded) {
-            const txFee = tx.fee ?? 0;
             totalCat21MintFees += txFee;
             cat21MintFeeAdded = true;
           }
@@ -276,7 +267,6 @@ export class DigitalArtifactAnalyserService {
         // ** Atomical Fees
         if ((flags & OrdpoolTransactionFlags.ordpool_atomical) === OrdpoolTransactionFlags.ordpool_atomical) {
           if (!atomicalFeeAdded) {
-            const txFee = tx.fee ?? 0;
             totalAtomicalFees += txFee;
             atomicalFeeAdded = true;
           }
@@ -285,28 +275,21 @@ export class DigitalArtifactAnalyserService {
         // ** Inscription Mint Fees + extra stats for inscriptions
         if ((flags & OrdpoolTransactionFlags.ordpool_inscription_mint) === OrdpoolTransactionFlags.ordpool_inscription_mint) {
           if (!inscriptionMintFeeAdded) {
-            const txFee = tx.fee ?? 0;
             totalInscriptionMintFees += txFee;
             inscriptionMintFeeAdded = true;
           }
 
           const inscription = artifact as ParsedInscription;
-
-          // accessing of the properties only once, to improve performance
           const envelopeSize = inscription.envelopeSize;
           const contentSize = inscription.contentSize;
 
-          // Increment total sizes
           totalEnvelopeSize += envelopeSize;
           totalContentSize += contentSize;
 
-          // Check for largest envelope size
           if (envelopeSize > largestEnvelopeSize) {
             largestEnvelopeSize = envelopeSize;
             largestEnvelopeInscriptionId = inscription.inscriptionId;
           }
-
-          // Check for largest content size
           if (contentSize > largestContentSize) {
             largestContentSize = contentSize;
             largestContentInscriptionId = inscription.inscriptionId;
@@ -317,40 +300,33 @@ export class DigitalArtifactAnalyserService {
         if ((flags & OrdpoolTransactionFlags.ordpool_rune_etch) === OrdpoolTransactionFlags.ordpool_rune_etch) {
           const runestone = artifact as ParsedRunestone;
           const runeEtchAttempt = contructRuneEtchAttempt(tx.txid, tx.status.block_height ?? -1, txIndex, runestone.runestone?.etching)
-
           if (runeEtchAttempt) {
             runeEtchAttempts.push(runeEtchAttempt);
           }
         }
 
-        // ** BRC-20 Deployment Attempts
+        // ** BRC-20 Deployment Attempts — uses brc20 from analyse() (no re-parse!)
         if ((flags & OrdpoolTransactionFlags.ordpool_brc20_deploy) === OrdpoolTransactionFlags.ordpool_brc20_deploy) {
-          const inscription = artifact as ParsedInscription;
-          const brc20 = parseBrc20Content(await inscription.getContent());
-
           if (brc20 && brc20.op === 'deploy') {
             brc20DeployAttempts.push({
               txId: tx.txid,
-              ticker: brc20.tick ?? 'ERROR', // Required
-              maxSupply: brc20.max ?? 'ERROR', // Required
-              mintLimit: brc20.lim, // Optional
-              decimals: brc20.dec, // Optional
+              ticker: brc20.tick ?? 'ERROR',
+              maxSupply: brc20.max ?? 'ERROR',
+              mintLimit: brc20.lim,
+              decimals: brc20.dec,
             });
           }
         }
 
-        // ** SRC-20 Deployment Attempts
+        // ** SRC-20 Deployment Attempts — uses src20Content from analyse() (no re-parse!)
         if ((flags & OrdpoolTransactionFlags.ordpool_src20_deploy) === OrdpoolTransactionFlags.ordpool_src20_deploy) {
-          const src20 = artifact as ParsedSrc20;
-          const parsedContent = parseJsonObject(src20.getContent());
-
-          if (parsedContent && parsedContent.p === 'src-20' && parsedContent.op === 'deploy') {
+          if (src20Content && src20Content.op === 'deploy') {
             src20DeployAttempts.push({
               txId: tx.txid,
-              ticker: parsedContent.tick ?? 'ERROR', // Required
-              maxSupply: parsedContent.max ?? 'ERROR', // Required
-              mintLimit: parsedContent.lim ?? 'ERROR', // Required
-              decimals: parsedContent.dec, // Optional
+              ticker: src20Content.tick ?? 'ERROR',
+              maxSupply: src20Content.max ?? 'ERROR',
+              mintLimit: src20Content.lim ?? 'ERROR',
+              decimals: src20Content.dec,
             });
           }
         }
@@ -403,15 +379,18 @@ export class DigitalArtifactAnalyserService {
   }
 
   /**
-   * Returns the corresponding ordpool flags for the given digital asset.
-   * Only used interally by analyseTransactions.
+   * Returns the corresponding ordpool flags and any parsed intermediate data
+   * for the given digital asset. Parsed data (BRC-20, SRC-20) is returned
+   * alongside flags so that callers don't need to re-parse the same content.
    *
    * @param artifact - The digital artifact to analyze.
-   * @returns The corresponding flags for the artifact type (multiple flags can be combined).
+   * @returns Flags + parsed data for the artifact.
    */
-  static async analyse(artifact: DigitalArtifact): Promise<bigint> {
+  static async analyse(artifact: DigitalArtifact): Promise<AnalyseResult> {
 
     let flags: bigint = BigInt(0);
+    let brc20: BrC20Parsed | undefined;
+    let src20Content: any;
 
     switch (artifact.type) {
       case DigitalArtifactType.Cat21:
@@ -438,7 +417,7 @@ export class DigitalArtifactAnalyserService {
           inscription.contentType?.startsWith('application/json')
         ) {
 
-          const brc20 = parseBrc20Content(await inscription.getContent());
+          brc20 = parseBrc20Content(await inscription.getContent()) ?? undefined;
           if (brc20) {
 
             flags |= OrdpoolTransactionFlags.ordpool_brc20;
@@ -480,19 +459,21 @@ export class DigitalArtifactAnalyserService {
       case DigitalArtifactType.Src20:
         const src20 = artifact as ParsedSrc20;
 
-        const parsedContent = parseJsonObject(src20.getContent());
-        if (parsedContent && parsedContent.p === 'src-20') {
+        src20Content = parseJsonObject(src20.getContent());
+        if (src20Content && src20Content.p === 'src-20') {
 
           flags |= OrdpoolTransactionFlags.ordpool_src20;
 
           // Check for SRC-20 operations
-          if (parsedContent.op === 'deploy') {
+          if (src20Content.op === 'deploy') {
             flags |= OrdpoolTransactionFlags.ordpool_src20_deploy;
-          } else if (parsedContent.op === 'mint') {
+          } else if (src20Content.op === 'mint') {
             flags |= OrdpoolTransactionFlags.ordpool_src20_mint;
-          } else if (parsedContent.op === 'transfer') {
+          } else if (src20Content.op === 'transfer') {
             flags |= OrdpoolTransactionFlags.ordpool_src20_transfer;
           }
+        } else {
+          src20Content = undefined;
         }
         break;
 
@@ -501,7 +482,7 @@ export class DigitalArtifactAnalyserService {
         break;
     }
 
-    return flags;
+    return { flags, brc20, src20Content };
   }
 
   /**
@@ -597,9 +578,7 @@ export class DigitalArtifactAnalyserService {
     const artifacts: DigitalArtifact[] = DigitalArtifactsParserService.parse(tx);
 
     for (const artifact of artifacts) {
-      const ordpoolFlags = await DigitalArtifactAnalyserService.analyse(artifact);
-
-      // Apply ordpoolFlags to the existing flags using bitwise OR
+      const { flags: ordpoolFlags } = await DigitalArtifactAnalyserService.analyse(artifact);
       flags |= ordpoolFlags;
     }
 

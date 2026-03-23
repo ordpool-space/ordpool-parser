@@ -40,7 +40,7 @@ describe('DigitalArtifactAnalyserService.analyseTransaction', () => {
 
     // Mock analyse to return a single flag for the artifact
     const mockFlag = OrdpoolTransactionFlags.ordpool_cat21;
-    (DigitalArtifactAnalyserService.analyse as jest.Mock).mockReturnValue(mockFlag);
+    (DigitalArtifactAnalyserService.analyse as jest.Mock).mockReturnValue({ flags: mockFlag });
 
     const result = await DigitalArtifactAnalyserService.analyseTransaction(transaction, initialFlags);
 
@@ -62,8 +62,8 @@ describe('DigitalArtifactAnalyserService.analyseTransaction', () => {
     const cat21Flag = OrdpoolTransactionFlags.ordpool_cat21;
     const inscriptionFlag = OrdpoolTransactionFlags.ordpool_inscription;
     (DigitalArtifactAnalyserService.analyse as jest.Mock)
-      .mockReturnValueOnce(cat21Flag)
-      .mockReturnValueOnce(inscriptionFlag);
+      .mockReturnValueOnce({ flags: cat21Flag })
+      .mockReturnValueOnce({ flags: inscriptionFlag });
 
     const expectedFlags = cat21Flag | inscriptionFlag;
 
@@ -82,7 +82,7 @@ describe('DigitalArtifactAnalyserService.analyseTransaction', () => {
 
     // Mock analyse to return the new Inscription flag
     const newFlag = OrdpoolTransactionFlags.ordpool_inscription;
-    (DigitalArtifactAnalyserService.analyse as jest.Mock).mockReturnValue(newFlag);
+    (DigitalArtifactAnalyserService.analyse as jest.Mock).mockReturnValue({ flags: newFlag });
 
     const expectedFlags = initialFlags | newFlag;
 
