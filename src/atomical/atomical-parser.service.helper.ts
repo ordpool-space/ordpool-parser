@@ -1,4 +1,6 @@
 import { hexToBytes, isStringInArrayOfStrings } from '../lib/conversions';
+import { OP_ENDIF } from '../lib/op-codes';
+import { readPushdata } from '../lib/reader';
 
 // OP_FALSE (0x00), OP_IF (0x63), OP_PUSHBYTES_4 (0x04), 'a', 't', 'o', 'm' (0x61, 0x74, 0x6f, 0x6d)
 const ATOMICAL_MARK = new Uint8Array([0x00, 0x63, 0x04, 0x61, 0x74, 0x6f, 0x6d]);
@@ -99,4 +101,114 @@ export function extractAtomicalOperationFromWitness(witness: string[]): Atomical
     }
   }
   return null;
+}
+
+/**
+ * The full extracted atomical envelope: operation + raw CBOR payload.
+ */
+export interface AtomicalEnvelope {
+  operation: AtomicalOperation;
+  payload: Uint8Array;
+}
+
+/**
+ * Searches for the atomical mark in raw bytes and returns the position
+ * immediately after the mark (i.e., where the operation pushdata starts).
+ * Returns -1 if no mark is found.
+ *
+ * Modeled after getNextInscriptionMark() in the inscription parser.
+ */
+export function getNextAtomicalMark(raw: Uint8Array, startPosition: number): number {
+  for (let i = startPosition; i <= raw.length - ATOMICAL_MARK.length; i++) {
+    let match = true;
+    for (let j = 0; j < ATOMICAL_MARK.length; j++) {
+      if (raw[i + j] !== ATOMICAL_MARK[j]) {
+        match = false;
+        break;
+      }
+    }
+    if (match) {
+      return i + ATOMICAL_MARK.length;
+    }
+  }
+  return -1;
+}
+
+/**
+ * Extracts the full atomical envelope from raw witness bytes:
+ * operation string + concatenated CBOR payload chunks.
+ *
+ * Uses readPushdata() to correctly handle multi-chunk payloads (>520 bytes),
+ * same approach as the inscription parser's body extraction.
+ *
+ * Envelope layout after the 7-byte mark:
+ *   <pushdata: operation string>    e.g., 03 "dft"
+ *   <pushdata: CBOR chunk 1>       up to 520 bytes each
+ *   <pushdata: CBOR chunk 2>
+ *   ...
+ *   OP_ENDIF (0x68)
+ */
+export function extractAtomicalEnvelope(raw: Uint8Array): AtomicalEnvelope | null {
+  const afterMark = getNextAtomicalMark(raw, 0);
+  if (afterMark === -1) {
+    return null;
+  }
+
+  let pointer = afterMark;
+
+  // Read the operation string
+  let slice: Uint8Array;
+  [slice, pointer] = readPushdata(raw, pointer);
+  const opString = String.fromCharCode(...slice);
+  const operation = mapOperationString(opString);
+
+  // Collect CBOR payload chunks until OP_ENDIF (same pattern as inscription body)
+  const chunks: Uint8Array[] = [];
+  while (pointer < raw.length && raw[pointer] !== OP_ENDIF) {
+    [slice, pointer] = readPushdata(raw, pointer);
+    chunks.push(slice);
+  }
+
+  // Concatenate all chunks into a single buffer
+  const totalLength = chunks.reduce((sum, c) => sum + c.length, 0);
+  const payload = new Uint8Array(totalLength);
+  let offset = 0;
+  for (const chunk of chunks) {
+    payload.set(chunk, offset);
+    offset += chunk.length;
+  }
+
+  return { operation, payload };
+}
+
+/**
+ * Extracts the full atomical envelope from a witness array.
+ */
+export function extractAtomicalEnvelopeFromWitness(witness: string[]): AtomicalEnvelope | null {
+  for (const element of witness) {
+    if (element.includes(ATOMICAL_MARK_HEX)) {
+      const raw = hexToBytes(element);
+      const envelope = extractAtomicalEnvelope(raw);
+      if (envelope !== null) {
+        return envelope;
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Maps an operation string to the AtomicalOperation type.
+ */
+function mapOperationString(opString: string): AtomicalOperation {
+  switch (opString) {
+    case 'nft': return 'nft';
+    case 'ft': return 'ft';
+    case 'dft': return 'dft';
+    case 'mod': return 'mod';
+    case 'evt': return 'evt';
+    case 'dat': return 'dat';
+    case 'sl': return 'sl';
+    default: return 'unknown';
+  }
 }

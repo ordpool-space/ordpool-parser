@@ -2,7 +2,12 @@ import { readTransaction } from '../../testdata/test.helper';
 import { hexToBytes } from '../lib/conversions';
 import { DigitalArtifactType } from '../types/digital-artifact';
 import { AtomicalParserService } from './atomical-parser.service';
-import { extractAtomicalOperation, extractAtomicalOperationFromWitness } from './atomical-parser.service.helper';
+import {
+  extractAtomicalEnvelope,
+  extractAtomicalEnvelopeFromWitness,
+  extractAtomicalOperation,
+  extractAtomicalOperationFromWitness,
+} from './atomical-parser.service.helper';
 
 // Real mainnet atomical transaction: DFT (distributed fungible token) mint
 // Atomical #0 — Reveal TXID
@@ -37,7 +42,7 @@ describe('AtomicalParserService', () => {
   });
 
   describe('parse', () => {
-    it('should parse a real DFT atomical and extract operation type', () => {
+    it('should parse a real DFT atomical with operation and decoded CBOR payload', () => {
       const txn = readTransaction(ATOMICAL_DFT_TXID);
       const result = AtomicalParserService.parse(txn);
 
@@ -45,9 +50,23 @@ describe('AtomicalParserService', () => {
       expect(result!.type).toBe(DigitalArtifactType.Atomical);
       expect(result!.transactionId).toBe(ATOMICAL_DFT_TXID);
       expect(result!.operation).toBe('dft');
+
+      // CBOR payload should be decoded (DFT has a large payload with an embedded PNG)
+      expect(result!.payload).not.toBeNull();
+      const args = (result!.payload as any).args;
+      expect(args).toBeDefined();
+      expect(args.mint_amount).toBe(1000);
+      expect(args.request_ticker).toBe('atom');
+
+      // DFT payload contains an embedded PNG image (~8KB, was the Phase 2 blocker)
+      const imageAttachment = (result!.payload as any)['image.png'];
+      expect(imageAttachment).toBeDefined();
+      expect(imageAttachment.$ct).toBe('image/png');
+      expect(imageAttachment.$b).toBeInstanceOf(Uint8Array);
+      expect(imageAttachment.$b.length).toBeGreaterThan(1000);
     });
 
-    it('should parse a real NFT atomical (realm) and extract operation type', () => {
+    it('should parse a real NFT atomical (realm) with decoded CBOR payload', () => {
       const txn = readTransaction(ATOMICAL_NFT_TXID);
       const result = AtomicalParserService.parse(txn);
 
@@ -55,6 +74,13 @@ describe('AtomicalParserService', () => {
       expect(result!.type).toBe(DigitalArtifactType.Atomical);
       expect(result!.transactionId).toBe(ATOMICAL_NFT_TXID);
       expect(result!.operation).toBe('nft');
+
+      // CBOR payload for realm "terafab"
+      expect(result!.payload).not.toBeNull();
+      const args = (result!.payload as any).args;
+      expect(args).toBeDefined();
+      expect(args.request_realm).toBe('terafab');
+      expect(args.bitworkc).toBe('8857');
     });
 
     it('should return null for a non-atomical transaction', () => {
@@ -99,6 +125,53 @@ describe('AtomicalParserService', () => {
     it('should return null for non-atomical witness', () => {
       const txn = readTransaction(INSCRIPTION_TXID);
       expect(extractAtomicalOperationFromWitness(txn.vin[0].witness!)).toBeNull();
+    });
+  });
+
+  describe('extractAtomicalEnvelope', () => {
+    it('should extract DFT envelope with multi-chunk CBOR payload (>520 bytes)', () => {
+      const txn = readTransaction(ATOMICAL_DFT_TXID);
+      const raw = hexToBytes(txn.vin[0].witness![1]);
+      const envelope = extractAtomicalEnvelope(raw);
+
+      expect(envelope).not.toBeNull();
+      expect(envelope!.operation).toBe('dft');
+      // DFT payload is split across multiple 520-byte chunks — total >520
+      expect(envelope!.payload.length).toBeGreaterThan(520);
+    });
+
+    it('should extract NFT envelope with small CBOR payload', () => {
+      const txn = readTransaction(ATOMICAL_NFT_TXID);
+      const raw = hexToBytes(txn.vin[0].witness![1]);
+      const envelope = extractAtomicalEnvelope(raw);
+
+      expect(envelope).not.toBeNull();
+      expect(envelope!.operation).toBe('nft');
+      // NFT realm payload fits in a single push (<520 bytes)
+      expect(envelope!.payload.length).toBeGreaterThan(0);
+      expect(envelope!.payload.length).toBeLessThan(520);
+    });
+
+    it('should return null for non-atomical bytes', () => {
+      const txn = readTransaction(CAT21_GENESIS_TXID);
+      const raw = hexToBytes(txn.vin[0].witness![0]);
+      expect(extractAtomicalEnvelope(raw)).toBeNull();
+    });
+  });
+
+  describe('extractAtomicalEnvelopeFromWitness', () => {
+    it('should extract envelope from DFT witness array', () => {
+      const txn = readTransaction(ATOMICAL_DFT_TXID);
+      const envelope = extractAtomicalEnvelopeFromWitness(txn.vin[0].witness!);
+
+      expect(envelope).not.toBeNull();
+      expect(envelope!.operation).toBe('dft');
+      expect(envelope!.payload.length).toBeGreaterThan(520);
+    });
+
+    it('should return null for non-atomical witness', () => {
+      const txn = readTransaction(INSCRIPTION_TXID);
+      expect(extractAtomicalEnvelopeFromWitness(txn.vin[0].witness!)).toBeNull();
     });
   });
 });
