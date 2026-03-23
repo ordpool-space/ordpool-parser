@@ -28,45 +28,41 @@ import { TransactionSimple, TransactionSimplePlus } from './types/transaction-si
  * -> it should return ordpool_cat21
  * -> it should return ordpool_cat21_mint
  *
- *
  * if the asset is an Atomical
  * -> it should return ordpool_atomical
  *
+ * if the asset is a Labitbu
+ * -> it should return ordpool_labitbu
  *
- * if the asset is a Inscription
+ * if the asset is an Inscription
  * -> it should return ordpool_inscription
  * -> it should return ordpool_inscription_mint
- * -> if the content type of the inscription is `inscription.contentType.startsWith('text/plain') || inscription.contentType.startsWith('application/json')`
- *    AND and it's valid JSON
- *    AND if the JSON has a property+value `{ "p": "brc-20" }` then it's a supported BRC-20 inscription and should return ordpool_brc20
- *    -> if the JSON of the supported BRC-20 inscription has a property+value `{ "op": "deploy" }` it should return ordpool_brc20_deploy
- *    -> if the JSON of the supported BRC-20 inscription has a property+value `{ "op": "mint" }` it should return ordpool_brc20_mint
- *    -> if the JSON of the supported BRC-20 inscription has a property+value `{ "op": "transfer" }` it should return ordpool_brc20_transfer
- *
+ * -> if the content type starts with 'text/plain' or 'application/json'
+ *    AND the content is valid JSON with `{ "p": "brc-20" }`, it should return ordpool_brc20
+ *    -> `{ "op": "deploy" }` -> ordpool_brc20_deploy
+ *    -> `{ "op": "mint" }` -> ordpool_brc20_mint
+ *    -> `{ "op": "transfer" }` -> ordpool_brc20_transfer
  *
  * if the asset is a Runestone
  * -> it should return ordpool_rune
- * -> if the asset is a Runestone and if the `runestone`(type RunestoneSpec) property is set, it's a valid Runestone
- *    -> if it's a valid Runestone AND the `etching` is set, it should return ordpool_rune_etch
- *    -> if it's a valid Runestone AND the `mint` is set, it should return ordpool_rune_etch
- * -> if the asset is a Runestone and if the `cenotaph`(type Cenotaph) property is set, it's an invalid Runestone (also called Cenotaph) and should return ordpool_rune_cenotaph, `etching` or `mint` are not counted
- *
+ * -> if the `runestone` (type RunestoneSpec) property is set, it's a valid Runestone
+ *    -> if the `etching` is set -> ordpool_rune_etch
+ *    -> if the `mint` is set -> ordpool_rune_mint
+ * -> if the `cenotaph` (type Cenotaph) property is set, it's an invalid Runestone
+ *    -> ordpool_rune_cenotaph (`etching` or `mint` are not counted for cenotaphs)
  *
  * if the asset is a SRC-20
- * -> it should return ordpool_src20
- * -> if the content of SRC-20 is valid JSON and if the the JSON has a property+value `{ "p": "src-20" }` then it's supported SRC-20 transaction
- *    -> if the JSON of the supported SRC-20 transaction has a property+value `{ "op": "deploy" }` it should return ordpool_src20_deploy
- *    -> if the JSON of the supported SRC-20 transaction has a property+value `{ "op": "mint" }` it should return ordpool_src20_mint
- *    -> if the JSON of the supported SRC-20 transaction has a property+value `{ "op": "transfer" }` it should return ordpool_src20_transfer
+ * -> if the content is valid JSON with `{ "p": "src-20" }`, it should return ordpool_src20
+ *    -> `{ "op": "deploy" }` -> ordpool_src20_deploy
+ *    -> `{ "op": "mint" }` -> ordpool_src20_mint
+ *    -> `{ "op": "transfer" }` -> ordpool_src20_transfer
  *
  *
- * Not supported right now:
- * - ordpool_atomical_X (we have no parser for that)
- * - ordpool_cat21_transfer (requires tracking of CAT-21 ordinals)
- * - ordpool_inscription_transfer (requires tracking of inscriptions)
- * - ordpool_inscription_burn (requires tracking of inscriptions)
- * - ordpool_rune_transfer (requires tracking of runes)
- * - ordpool_rune_burn (requires tracking of runes) - we can only recognize burning via Cenotaphs, but this number would be misleading
+ * Not supported right now (requires ordinal tracking, which is outside the parser's scope):
+ * - ordpool_atomical_mint / ordpool_atomical_transfer / ordpool_atomical_update
+ * - ordpool_cat21_transfer
+ * - ordpool_inscription_transfer / ordpool_inscription_burn
+ * - ordpool_rune_transfer / ordpool_rune_burn
  */
 /**
  * Result of analysing a single artifact. Carries both the flags and any
