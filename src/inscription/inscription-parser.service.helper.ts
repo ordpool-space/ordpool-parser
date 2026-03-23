@@ -53,7 +53,8 @@ export const knownFields = {
   // see https://docs.ordinals.com/inscriptions/properties.html
   properties: 0x11,
 
-  // property_encoding, with a tag of 19 — "br" for brotli compression of properties
+  // property_encoding, with a tag of 19 — "br" for brotli compression of properties.
+  // ord only supports brotli. Our parser additionally supports "gzip" for completeness.
   property_encoding: 0x13,
 }
 
