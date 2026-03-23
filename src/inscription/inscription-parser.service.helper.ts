@@ -28,7 +28,17 @@ export const knownFields = {
   content_encoding: 0x09,
 
   // delegate, with a tag of 11, see delegate docs: https://docs.ordinals.com/inscriptions/delegate.html
-  delegate: 0xb
+  delegate: 0x0b,
+
+  // rune, with a tag of 13 — used by ord for runestone commitments
+  rune: 0x0d,
+
+  // properties, with a tag of 17 — CBOR-encoded gallery items + attributes (chunked like metadata)
+  // see https://docs.ordinals.com/inscriptions/properties.html
+  properties: 0x11,
+
+  // property_encoding, with a tag of 19 — "br" for brotli compression of properties
+  property_encoding: 0x13,
 }
 
 /**

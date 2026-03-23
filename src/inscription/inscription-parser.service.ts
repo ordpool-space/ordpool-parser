@@ -21,6 +21,7 @@ import {
   hasInscription,
   knownFields,
 } from './inscription-parser.service.helper';
+import { parseProperties } from './inscription-parser.service.properties.helper';
 
 /**
  * Extracts all Ordinal inscriptions from a Bitcoin transaction.
@@ -308,6 +309,10 @@ export class InscriptionParserService {
         getDelegates: (): string[] => {
           const delegatesRaw = getKnownFieldValues(fields, knownFields.delegate);
           return delegatesRaw.map(parentRaw => extractInscriptionId(parentRaw));
+        },
+
+        getProperties: () => {
+          return parseProperties(fields);
         },
 
         envelopeSize, // The size of the envelope including the entire script

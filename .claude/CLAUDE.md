@@ -176,6 +176,22 @@ Naming convention: `testdata/<artifact_type>_<description>_<content>.<ext>`
 - Service pattern: `XxxParserService` as static classes with `parse()` methods
 - Zero runtime dependencies — all algorithms inline (brotli, CBOR, RC4, etc.)
 
+### File Organization
+
+Helper functions go in separate `*.helper.ts` files, NOT inline in the service file. Tests live next to the code they test.
+
+```
+src/inscription/
+├── inscription-parser.service.ts            # Main service (thin, delegates to helpers)
+├── inscription-parser.service.helper.ts     # Helpers: field extraction, content decoding, etc.
+├── inscription-parser.service.spec.ts       # Tests for the main service
+├── inscription-parser.service.helper.spec.ts # Tests for the helpers
+├── inscription-parser.service.parent.spec.ts # Tests for parent/child parsing
+└── inscription-parser.service.properties.helper.ts  # Properties/gallery parsing helpers
+```
+
+Keep service files thin. Move complex logic to helper files where it can be tested independently.
+
 ### Browser Compatibility (CRITICAL)
 
 This library runs in **both Node.js and browsers**. Every line of production code must work in both.

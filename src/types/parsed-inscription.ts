@@ -1,5 +1,31 @@
 import { DigitalArtifact } from "./digital-artifact";
 
+/**
+ * A single item in a gallery. References another inscription by ID,
+ * with optional title and traits.
+ */
+export interface GalleryItem {
+  inscriptionId: string;
+  title?: string;
+  traits?: Record<string, boolean | number | string | null>;
+}
+
+/**
+ * Structured properties from an inscription's tag 17 field.
+ * Contains gallery items (a curated list of inscription IDs) and
+ * inscription-level attributes (title, traits).
+ *
+ * Galleries are permissionless — anyone can create a gallery referencing
+ * any inscriptions. Inclusion in a gallery does not imply provenance.
+ *
+ * see https://docs.ordinals.com/inscriptions/properties.html
+ */
+export interface InscriptionProperties {
+  gallery: GalleryItem[];
+  title?: string;
+  traits?: Record<string, boolean | number | string | null>;
+}
+
 export interface ParsedInscription extends DigitalArtifact {
 
   inscriptionId: string;
@@ -68,6 +94,13 @@ export interface ParsedInscription extends DigitalArtifact {
    * see delegate docs: https://docs.ordinals.com/inscriptions/delegate.html
    */
   getDelegates: () => string[];
+
+  /**
+   * Get Properties, from tag 17 (with optional brotli decompression via tag 19)
+   * Contains gallery items and structured attributes.
+   * see https://docs.ordinals.com/inscriptions/properties.html
+   */
+  getProperties: () => InscriptionProperties | undefined;
 
   /**
    * The size in bytes of the envelope including the entire script
