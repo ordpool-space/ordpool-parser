@@ -20,6 +20,8 @@ describe('InscriptionParserService — Rune commitment (tag 13)', () => {
 
     const rune = inscription.getRune();
     expect(rune).toBeDefined();
+    // Commitment = rune's u128 value as little-endian bytes, trailing zeros stripped
+    // Matches Rune.fromString('UNCOMMONGOODS').commitment
     expect(bytesToHex(rune!)).toBe('b530368c74df10a303');
   });
 

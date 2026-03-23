@@ -107,6 +107,7 @@ export class InscriptionParserService {
   private static parseInscriptionsWithinWitness(witness: string[]): ParsedInscription[] | null {
 
     const inscriptions: ParsedInscription[] = [];
+    // OP_FALSE (0x00), OP_IF (0x63), OP_PUSHBYTES_3 (0x03), 'o', 'r', 'd' (0x6f, 0x72, 0x64)
     const inscriptionMarkHex = '0063036f7264';
 
     // Only convert witness elements that contain the inscription mark.
