@@ -3,6 +3,7 @@ import {
   binaryStringToBase64,
   bytesToBinaryString,
   bytesToUnicodeString,
+  concatUint8Arrays,
   hexToBytes,
   littleEndianBytesToNumber,
 } from '../lib/conversions';
@@ -198,15 +199,7 @@ export class InscriptionParserService {
       // +1 for the OP_ENDIF
       const envelopeSize = newPointer - initialPointer + 7;
 
-      const combinedLengthOfAllArrays = data.reduce((acc, curr) => acc + curr.length, 0);
-      let combinedData = new Uint8Array(combinedLengthOfAllArrays);
-
-      // Copy all segments from data into combinedData, forming a single contiguous Uint8Array
-      let idx = 0;
-      for (const segment of data) {
-        combinedData.set(segment, idx);
-        idx += segment.length;
-      }
+      let combinedData = concatUint8Arrays(data);
 
       const contentTypeRaw = getKnownFieldValue(fields, knownFields.content_type);
       let contentType: string | undefined = undefined;
@@ -282,17 +275,7 @@ export class InscriptionParserService {
             return CBOR.decode(metadataChunks[0]);
           }
 
-          // Concatenate all metadata chunks into one Uint8Array
-          const totalLength = metadataChunks.reduce((sum, chunk) => sum + chunk.length, 0);
-          const concatenatedMetadata = new Uint8Array(totalLength);
-
-          let offset = 0;
-          for (const chunk of metadataChunks) {
-            concatenatedMetadata.set(chunk, offset);
-            offset += chunk.length;
-          }
-
-          return CBOR.decode(concatenatedMetadata);
+          return CBOR.decode(concatUint8Arrays(metadataChunks));
         },
 
         getMetaprotocol: (): string | undefined => {
@@ -325,7 +308,7 @@ export class InscriptionParserService {
         },
 
         envelopeSize, // The size of the envelope including the entire script
-        contentSize: combinedLengthOfAllArrays // The size of the content (the body of the inscription)
+        contentSize: combinedData.length // The size of the content (the body of the inscription)
       };
 
     } catch (ex) {
