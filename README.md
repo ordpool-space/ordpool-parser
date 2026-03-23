@@ -98,38 +98,6 @@ import { DigitalArtifactAnalyserService } from 'ordpool-parser';
 const stats = await DigitalArtifactAnalyserService.analyseTransactions(blockTxns);
 ```
 
-## Contribute
-
-### Prerequisites
-
-Node.js (version 20 or later).
-
-### Install & test
-
-```bash
-npm install
-npm test
-```
-
-### How to add a feature
-
-Every feature must be tested in the browser and in the node environment!
-Use a mainnet transaction to create a test scenario.
-
-1. **Fetch transaction test data:**
-    ```bash
-    npm run fetch-tx-testdata
-    ```
-
-2. **Fetch inscription reference file** (for byte-for-byte comparison):
-    ```bash
-    npm run fetch-inscription-testdata
-    ```
-
-3. Add your feature, include meaningful tests with real blockchain data, and submit a pull request.
-
-4. **Hint:** Debug the unit tests using VS Code. The `launch.json` file is already prepared.
-
 ## License
 
 MIT
