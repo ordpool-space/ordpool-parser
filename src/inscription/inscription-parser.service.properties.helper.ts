@@ -41,10 +41,16 @@ export function parseProperties(fields: { tag: number; value: Uint8Array }[]): I
   const encodingRaw = getKnownFieldValue(fields, knownFields.property_encoding);
   if (encodingRaw) {
     const encoding = bytesToUnicodeString(encodingRaw);
-    if (encoding !== 'br') {
-      return undefined; // unknown encoding — treat as no properties (same as ord)
+    if (encoding === 'br') {
+      propertiesBytes = brotliDecodeUint8Array(propertiesBytes);
+    } else {
+      // ord only supports brotli for properties (not gzip).
+      // Our brotli decoder is sync (inline implementation), but gzip would require
+      // the async DecompressionStream API — which would make getProperties() async.
+      // If ord ever adds gzip support for properties, we'll need to make this async
+      // (like getContent() already is for inscription bodies).
+      return undefined;
     }
-    propertiesBytes = brotliDecodeUint8Array(propertiesBytes);
   }
 
   if (propertiesBytes.length === 0) {
