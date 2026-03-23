@@ -30,7 +30,8 @@ export const knownFields = {
   // delegate, with a tag of 11, see delegate docs: https://docs.ordinals.com/inscriptions/delegate.html
   delegate: 0x0b,
 
-  // rune, with a tag of 13 — used by ord for runestone commitments
+  // rune, with a tag of 13 — used by ord for rune etching commitments embedded in inscriptions.
+  // TODO: expose this field via ParsedInscription so consumers can link inscriptions to rune etchings.
   rune: 0x0d,
 
   // properties, with a tag of 17 — CBOR-encoded gallery items + attributes (chunked like metadata)
