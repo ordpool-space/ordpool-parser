@@ -42,7 +42,7 @@ export class Runestone {
       return None;
     }
     const payload = optionPayload.unwrap();
-    if (!(payload instanceof Uint8Array)) {
+    if (!ArrayBuffer.isView(payload)) {
       return Some(new Cenotaph([payload]));
     }
 
@@ -192,7 +192,7 @@ export class Runestone {
       nextInstructionResult = instructions.next();
       if (
         nextInstructionResult.done ||
-        nextInstructionResult.value instanceof Uint8Array ||
+        ArrayBuffer.isView(nextInstructionResult.value) ||
         nextInstructionResult.value !== MAGIC_NUMBER
       ) {
         continue;
@@ -213,7 +213,7 @@ export class Runestone {
         }
 
         const instruction = nextInstructionResult.value;
-        if (instruction instanceof Uint8Array) {
+        if (ArrayBuffer.isView(instruction)) {
           payloads.push(instruction);
         } else {
           return Some(Flaw.OPCODE);

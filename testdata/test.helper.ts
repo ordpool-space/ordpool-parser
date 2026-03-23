@@ -44,7 +44,10 @@ export function readBinaryInscriptionAsBase64(inscriptionId: string, fileEnding:
 */
 export function readBinaryFileAsUint8Array(fileName: string): Uint8Array {
  const filePath = `testdata/${fileName}`;
- return fs.readFileSync(filePath);
+ const buffer = fs.readFileSync(filePath);
+ // Node's Buffer extends Uint8Array but fails deep equality checks against plain Uint8Array.
+ // Wrap in a proper Uint8Array for cross-environment compatibility.
+ return new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
 }
 
 /**

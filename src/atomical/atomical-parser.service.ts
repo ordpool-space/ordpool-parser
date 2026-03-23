@@ -113,19 +113,19 @@ export class AtomicalParserService {
             const entry = payload[key] as any;
 
             // Format 1: {$ct: "image/png", $b: <binary>} — used by prepareFilesData (old path)
-            if (entry && entry.$ct && entry.$b instanceof Uint8Array) {
+            if (entry && entry.$ct && ArrayBuffer.isView(entry.$b)) {
               files.push({
                 name: key,
                 contentType: entry.$ct,
-                data: entry.$b,
+                data: new Uint8Array(entry.$b.buffer, entry.$b.byteOffset, entry.$b.byteLength),
               });
 
             // Format 2: raw binary directly — used by prepareFilesDataAsObject (newer path)
-            } else if (entry instanceof Uint8Array) {
+            } else if (ArrayBuffer.isView(entry)) {
               files.push({
                 name: key,
                 contentType: guessContentType(key),
-                data: entry,
+                data: new Uint8Array(entry.buffer, entry.byteOffset, entry.byteLength),
               });
             }
           }

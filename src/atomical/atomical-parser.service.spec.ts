@@ -1,4 +1,4 @@
-import { readTransaction } from '../../testdata/test.helper';
+import { readTransaction, readBinaryFileAsUint8Array } from '../../testdata/test.helper';
 import { hexToBytes } from '../lib/conversions';
 import { DigitalArtifactType } from '../types/digital-artifact';
 import { AtomicalParserService } from './atomical-parser.service';
@@ -34,6 +34,16 @@ describe('AtomicalParserService', () => {
       expect(AtomicalParserService.hasAtomical(txn)).toBe(true);
     });
 
+    it('should detect atomical in a real NFT transaction', () => {
+      const txn = readTransaction(ATOMICAL_NFT_TXID);
+      expect(AtomicalParserService.hasAtomical(txn)).toBe(true);
+    });
+
+    it('should detect atomical in a real NFT image transaction', () => {
+      const txn = readTransaction(ATOMICAL_NFT_IMAGE_TXID);
+      expect(AtomicalParserService.hasAtomical(txn)).toBe(true);
+    });
+
     it('should return false for a CAT-21 transaction', () => {
       const txn = readTransaction(CAT21_GENESIS_TXID);
       expect(AtomicalParserService.hasAtomical(txn)).toBe(false);
@@ -48,83 +58,94 @@ describe('AtomicalParserService', () => {
   describe('parse', () => {
     it('should parse a real DFT atomical with args and embedded image', () => {
       const txn = readTransaction(ATOMICAL_DFT_TXID);
-      const result = AtomicalParserService.parse(txn);
+      const result = AtomicalParserService.parse(txn)!;
 
-      expect(result).not.toBeNull();
-      expect(result!.type).toBe(DigitalArtifactType.Atomical);
-      expect(result!.transactionId).toBe(ATOMICAL_DFT_TXID);
-      expect(result!.operation).toBe('dft');
+      expect(result.type).toBe(DigitalArtifactType.Atomical);
+      expect(result.uniqueId).toBe(`${DigitalArtifactType.Atomical}-${ATOMICAL_DFT_TXID}`);
+      expect(result.transactionId).toBe(ATOMICAL_DFT_TXID);
+      expect(result.operation).toBe('dft');
 
-      // Raw payload should be available (multi-chunk, >520 bytes)
-      expect(result!.getPayloadRaw().length).toBeGreaterThan(520);
+      // Raw payload: 9925 bytes (20 chunks of 520 + 1 chunk of 45 = multi-chunk CBOR)
+      expect(result.getPayloadRaw().length).toBe(9925);
 
-      // Args — the structured operation parameters
-      const args = result!.getArgs()!;
-      expect(args).not.toBeNull();
+      // Args — all fields from the ATOM DFT deploy transaction
+      const args = result.getArgs()!;
       expect(args.mint_amount).toBe(1000);
+      expect(args.mint_height).toBe(808512);
+      expect(args.max_mints).toBe(21000);
+      expect(args.mint_bitworkc).toBe('1618');
       expect(args.request_ticker).toBe('atom');
+      expect(args.bitworkc).toBe('56a8');
+      expect(args.nonce).toBe(6426328);
+      expect(args.time).toBe(1694929108);
 
-      // Files — the DFT has an embedded PNG image (was the Phase 2 blocker)
-      const files = result!.getFiles();
+      // File: embedded PNG image (Format 1: {$ct, $b} wrapper)
+      const files = result.getFiles();
       expect(files.length).toBe(1);
       expect(files[0].name).toBe('image.png');
       expect(files[0].contentType).toBe('image/png');
-      expect(files[0].data).toBeInstanceOf(Uint8Array);
-      expect(files[0].data.length).toBeGreaterThan(1000);
+      expect(files[0].data.length).toBe(8496);
 
-      // Verify PNG magic bytes (89 50 4E 47 = \x89PNG)
-      expect(files[0].data[0]).toBe(0x89);
-      expect(files[0].data[1]).toBe(0x50); // P
-      expect(files[0].data[2]).toBe(0x4E); // N
-      expect(files[0].data[3]).toBe(0x47); // G
+      // Byte-for-byte comparison with saved reference image
+      const expectedImage = readBinaryFileAsUint8Array('atomical_dft_atom_image.png');
+      expect(files[0].data).toEqual(expectedImage);
     });
 
-    it('should parse a real NFT atomical (realm) with args', () => {
+    it('should parse a real NFT atomical (realm terafab) with args', () => {
       const txn = readTransaction(ATOMICAL_NFT_TXID);
-      const result = AtomicalParserService.parse(txn);
+      const result = AtomicalParserService.parse(txn)!;
 
-      expect(result).not.toBeNull();
-      expect(result!.type).toBe(DigitalArtifactType.Atomical);
-      expect(result!.transactionId).toBe(ATOMICAL_NFT_TXID);
-      expect(result!.operation).toBe('nft');
+      expect(result.type).toBe(DigitalArtifactType.Atomical);
+      expect(result.uniqueId).toBe(`${DigitalArtifactType.Atomical}-${ATOMICAL_NFT_TXID}`);
+      expect(result.transactionId).toBe(ATOMICAL_NFT_TXID);
+      expect(result.operation).toBe('nft');
+
+      // Raw payload: 64 bytes (single push, no chunking needed)
+      expect(result.getPayloadRaw().length).toBe(64);
 
       // Args for realm "terafab"
-      const args = result!.getArgs()!;
-      expect(args).not.toBeNull();
+      const args = result.getArgs()!;
       expect(args.request_realm).toBe('terafab');
       expect(args.bitworkc).toBe('8857');
+      expect(args.nonce).toBe(9232990);
+      expect(args.time).toBe(1773568724);
 
       // Realm has no file attachments
-      expect(result!.getFiles()).toEqual([]);
+      expect(result.getFiles()).toEqual([]);
     });
 
-    it('should parse a real NFT with image file attachment (toothy collection)', () => {
+    it('should parse a real NFT with image file attachment (toothy #7579)', () => {
       const txn = readTransaction(ATOMICAL_NFT_IMAGE_TXID);
-      const result = AtomicalParserService.parse(txn);
+      const result = AtomicalParserService.parse(txn)!;
 
-      expect(result).not.toBeNull();
-      expect(result!.type).toBe(DigitalArtifactType.Atomical);
-      expect(result!.operation).toBe('nft');
+      expect(result.type).toBe(DigitalArtifactType.Atomical);
+      expect(result.uniqueId).toBe(`${DigitalArtifactType.Atomical}-${ATOMICAL_NFT_IMAGE_TXID}`);
+      expect(result.transactionId).toBe(ATOMICAL_NFT_IMAGE_TXID);
+      expect(result.operation).toBe('nft');
 
-      // Args should reference the main image and dmint container
-      const args = result!.getArgs()!;
-      expect(args).not.toBeNull();
+      // Raw payload: 2512 bytes
+      expect(result.getPayloadRaw().length).toBe(2512);
+
+      // Args: dmint container item
+      const args = result.getArgs()!;
       expect(args.main).toBe('image.png');
       expect(args.request_dmitem).toBe('7579');
+      expect(args.bitworkc).toBe('1618');
+      expect(args.nonce).toBe(863997);
+      expect(args.time).toBe(1701386841);
+      expect(args.i).toBe(true);
+      expect(args.parent_container).toBe('6341fdaf0ef212ed3d4344a73df44389950442d753dc851b423ed9f541fd9a04i0');
 
-      // File attachment: raw binary PNG (Format 2 — no $ct/$b wrapper)
-      const files = result!.getFiles();
+      // File: raw binary PNG (Format 2: no $ct/$b wrapper, content type inferred from name)
+      const files = result.getFiles();
       expect(files.length).toBe(1);
       expect(files[0].name).toBe('image.png');
       expect(files[0].contentType).toBe('image/png');
-      expect(files[0].data).toBeInstanceOf(Uint8Array);
       expect(files[0].data.length).toBe(1319);
 
-      // Verify PNG magic bytes (89 50 4E 47 = \x89PNG)
-      expect(files[0].data[0]).toBe(0x89);
-      expect(files[0].data[1]).toBe(0x50); // P
-      expect(files[0].data[2]).toBe(0x4E); // N
-      expect(files[0].data[3]).toBe(0x47); // G
+      // Byte-for-byte comparison with saved reference image
+      const expectedImage = readBinaryFileAsUint8Array('atomical_nft_toothy_7579_image.png');
+      expect(files[0].data).toEqual(expectedImage);
     });
 
     it('should return null for a non-atomical transaction', () => {
@@ -140,20 +161,25 @@ describe('AtomicalParserService', () => {
       const onError = jest.fn();
       const result = AtomicalParserService.parse(txn, onError);
 
-      // Mark is no longer detectable in truncated data → null
+      // Mark is no longer detectable in truncated data
       expect(result).toBeNull();
     });
   });
 
   describe('extractAtomicalOperation', () => {
-    it('should extract dft operation from real witness bytes', () => {
+    it('should extract dft operation from real DFT witness bytes', () => {
       const txn = readTransaction(ATOMICAL_DFT_TXID);
       const raw = hexToBytes(txn.vin[0].witness![1]);
       expect(extractAtomicalOperation(raw)).toBe('dft');
     });
 
+    it('should extract nft operation from real NFT witness bytes', () => {
+      const txn = readTransaction(ATOMICAL_NFT_TXID);
+      const raw = hexToBytes(txn.vin[0].witness![1]);
+      expect(extractAtomicalOperation(raw)).toBe('nft');
+    });
+
     it('should return null for bytes without atomical mark', () => {
-      // Use real witness data from a non-atomical transaction
       const txn = readTransaction(CAT21_GENESIS_TXID);
       const raw = hexToBytes(txn.vin[0].witness![0]);
       expect(extractAtomicalOperation(raw)).toBeNull();
@@ -161,9 +187,14 @@ describe('AtomicalParserService', () => {
   });
 
   describe('extractAtomicalOperationFromWitness', () => {
-    it('should extract operation from real witness array', () => {
+    it('should extract dft operation from real witness array', () => {
       const txn = readTransaction(ATOMICAL_DFT_TXID);
       expect(extractAtomicalOperationFromWitness(txn.vin[0].witness!)).toBe('dft');
+    });
+
+    it('should extract nft operation from real witness array', () => {
+      const txn = readTransaction(ATOMICAL_NFT_TXID);
+      expect(extractAtomicalOperationFromWitness(txn.vin[0].witness!)).toBe('nft');
     });
 
     it('should return null for non-atomical witness', () => {
@@ -173,27 +204,31 @@ describe('AtomicalParserService', () => {
   });
 
   describe('extractAtomicalEnvelope', () => {
-    it('should extract DFT envelope with multi-chunk CBOR payload (>520 bytes)', () => {
+    it('should extract DFT envelope with exact multi-chunk payload size', () => {
       const txn = readTransaction(ATOMICAL_DFT_TXID);
       const raw = hexToBytes(txn.vin[0].witness![1]);
-      const envelope = extractAtomicalEnvelope(raw);
+      const envelope = extractAtomicalEnvelope(raw)!;
 
-      expect(envelope).not.toBeNull();
-      expect(envelope!.operation).toBe('dft');
-      // DFT payload is split across multiple 520-byte chunks — total >520
-      expect(envelope!.payload.length).toBeGreaterThan(520);
+      expect(envelope.operation).toBe('dft');
+      expect(envelope.payload.length).toBe(9925);
     });
 
-    it('should extract NFT envelope with small CBOR payload', () => {
+    it('should extract NFT realm envelope with exact single-push payload size', () => {
       const txn = readTransaction(ATOMICAL_NFT_TXID);
       const raw = hexToBytes(txn.vin[0].witness![1]);
-      const envelope = extractAtomicalEnvelope(raw);
+      const envelope = extractAtomicalEnvelope(raw)!;
 
-      expect(envelope).not.toBeNull();
-      expect(envelope!.operation).toBe('nft');
-      // NFT realm payload fits in a single push (<520 bytes)
-      expect(envelope!.payload.length).toBeGreaterThan(0);
-      expect(envelope!.payload.length).toBeLessThan(520);
+      expect(envelope.operation).toBe('nft');
+      expect(envelope.payload.length).toBe(64);
+    });
+
+    it('should extract NFT image envelope with exact payload size', () => {
+      const txn = readTransaction(ATOMICAL_NFT_IMAGE_TXID);
+      const raw = hexToBytes(txn.vin[0].witness![1]);
+      const envelope = extractAtomicalEnvelope(raw)!;
+
+      expect(envelope.operation).toBe('nft');
+      expect(envelope.payload.length).toBe(2512);
     });
 
     it('should return null for non-atomical bytes', () => {
@@ -204,13 +239,20 @@ describe('AtomicalParserService', () => {
   });
 
   describe('extractAtomicalEnvelopeFromWitness', () => {
-    it('should extract envelope from DFT witness array', () => {
+    it('should extract DFT envelope from witness array', () => {
       const txn = readTransaction(ATOMICAL_DFT_TXID);
-      const envelope = extractAtomicalEnvelopeFromWitness(txn.vin[0].witness!);
+      const envelope = extractAtomicalEnvelopeFromWitness(txn.vin[0].witness!)!;
 
-      expect(envelope).not.toBeNull();
-      expect(envelope!.operation).toBe('dft');
-      expect(envelope!.payload.length).toBeGreaterThan(520);
+      expect(envelope.operation).toBe('dft');
+      expect(envelope.payload.length).toBe(9925);
+    });
+
+    it('should extract NFT envelope from witness array', () => {
+      const txn = readTransaction(ATOMICAL_NFT_TXID);
+      const envelope = extractAtomicalEnvelopeFromWitness(txn.vin[0].witness!)!;
+
+      expect(envelope.operation).toBe('nft');
+      expect(envelope.payload.length).toBe(64);
     });
 
     it('should return null for non-atomical witness', () => {
