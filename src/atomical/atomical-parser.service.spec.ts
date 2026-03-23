@@ -42,7 +42,7 @@ describe('AtomicalParserService', () => {
   });
 
   describe('parse', () => {
-    it('should parse a real DFT atomical with operation and decoded CBOR payload', () => {
+    it('should parse a real DFT atomical with args and embedded image', () => {
       const txn = readTransaction(ATOMICAL_DFT_TXID);
       const result = AtomicalParserService.parse(txn);
 
@@ -54,23 +54,28 @@ describe('AtomicalParserService', () => {
       // Raw payload should be available (multi-chunk, >520 bytes)
       expect(result!.getPayloadRaw().length).toBeGreaterThan(520);
 
-      // CBOR payload should be decoded lazily via getPayload()
-      const payload = result!.getPayload();
-      expect(payload).not.toBeNull();
-      const args = (payload as any).args;
-      expect(args).toBeDefined();
+      // Args — the structured operation parameters
+      const args = result!.getArgs()!;
+      expect(args).not.toBeNull();
       expect(args.mint_amount).toBe(1000);
       expect(args.request_ticker).toBe('atom');
 
-      // DFT payload contains an embedded PNG image (~8KB, was the Phase 2 blocker)
-      const imageAttachment = (payload as any)['image.png'];
-      expect(imageAttachment).toBeDefined();
-      expect(imageAttachment.$ct).toBe('image/png');
-      expect(imageAttachment.$b).toBeInstanceOf(Uint8Array);
-      expect(imageAttachment.$b.length).toBeGreaterThan(1000);
+      // Files — the DFT has an embedded PNG image (was the Phase 2 blocker)
+      const files = result!.getFiles();
+      expect(files.length).toBe(1);
+      expect(files[0].name).toBe('image.png');
+      expect(files[0].contentType).toBe('image/png');
+      expect(files[0].data).toBeInstanceOf(Uint8Array);
+      expect(files[0].data.length).toBeGreaterThan(1000);
+
+      // Verify PNG magic bytes (89 50 4E 47 = \x89PNG)
+      expect(files[0].data[0]).toBe(0x89);
+      expect(files[0].data[1]).toBe(0x50); // P
+      expect(files[0].data[2]).toBe(0x4E); // N
+      expect(files[0].data[3]).toBe(0x47); // G
     });
 
-    it('should parse a real NFT atomical (realm) with decoded CBOR payload', () => {
+    it('should parse a real NFT atomical (realm) with args', () => {
       const txn = readTransaction(ATOMICAL_NFT_TXID);
       const result = AtomicalParserService.parse(txn);
 
@@ -79,13 +84,14 @@ describe('AtomicalParserService', () => {
       expect(result!.transactionId).toBe(ATOMICAL_NFT_TXID);
       expect(result!.operation).toBe('nft');
 
-      // CBOR payload for realm "terafab" — decoded lazily via getPayload()
-      const payload = result!.getPayload();
-      expect(payload).not.toBeNull();
-      const args = (payload as any).args;
-      expect(args).toBeDefined();
+      // Args for realm "terafab"
+      const args = result!.getArgs()!;
+      expect(args).not.toBeNull();
       expect(args.request_realm).toBe('terafab');
       expect(args.bitworkc).toBe('8857');
+
+      // Realm has no file attachments
+      expect(result!.getFiles()).toEqual([]);
     });
 
     it('should return null for a non-atomical transaction', () => {

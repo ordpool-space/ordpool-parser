@@ -1,6 +1,6 @@
 import { CBOR } from '../lib/cbor';
 import { DigitalArtifactType } from "../types/digital-artifact";
-import { ParsedAtomical } from "../types/parsed-atomical";
+import { AtomicalFile, ParsedAtomical } from "../types/parsed-atomical";
 import { OnParseError } from '../types/parser-options';
 import { AtomicalEnvelope, extractAtomicalEnvelopeFromWitness, hasAtomical } from "./atomical-parser.service.helper";
 
@@ -14,7 +14,7 @@ export class AtomicalParserService {
   /**
    * Parses a transaction and returns a ParsedAtomical if an atomical envelope is found.
    * Extracts the operation type immediately. CBOR payload decoding is deferred
-   * to getPayload() — same lazy pattern as the inscription parser.
+   * to getArgs()/getFiles() — same lazy pattern as the inscription parser.
    */
   static parse(transaction: {
     txid: string,
@@ -43,6 +43,28 @@ export class AtomicalParserService {
 
       const payloadRaw = envelope.payload;
 
+      // Lazy CBOR decode — only happens once, then cached
+      let decoded = false;
+      let decodedPayload: Record<string, unknown> | null = null;
+      function decodePayload(): Record<string, unknown> | null {
+        if (decoded) {
+          return decodedPayload;
+        }
+        decoded = true;
+        if (payloadRaw.length === 0) {
+          decodedPayload = null;
+          return null;
+        }
+        try {
+          decodedPayload = CBOR.decodeFirst(payloadRaw);
+          return decodedPayload;
+        } catch (e) {
+          onError?.(e);
+          decodedPayload = null;
+          return null;
+        }
+      }
+
       return {
         type: DigitalArtifactType.Atomical,
         uniqueId: `${DigitalArtifactType.Atomical}-${transaction.txid}`,
@@ -53,16 +75,32 @@ export class AtomicalParserService {
           return payloadRaw;
         },
 
-        getPayload: (): Record<string, unknown> | null => {
-          if (payloadRaw.length === 0) {
-            return null;
+        getArgs: (): Record<string, unknown> | null => {
+          const payload = decodePayload();
+          return (payload as any)?.args ?? null;
+        },
+
+        getFiles: (): AtomicalFile[] => {
+          const payload = decodePayload();
+          if (!payload) {
+            return [];
           }
-          try {
-            return CBOR.decodeFirst(payloadRaw);
-          } catch (e) {
-            onError?.(e);
-            return null;
+
+          const files: AtomicalFile[] = [];
+          for (const key of Object.keys(payload)) {
+            if (key === 'args') {
+              continue;
+            }
+            const entry = payload[key] as any;
+            if (entry && entry.$ct && entry.$b instanceof Uint8Array) {
+              files.push({
+                name: key,
+                contentType: entry.$ct,
+                data: entry.$b,
+              });
+            }
           }
+          return files;
         },
       };
     } catch (ex) {

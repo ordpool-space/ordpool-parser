@@ -1,6 +1,16 @@
 import { DigitalArtifact } from "./digital-artifact";
 import { AtomicalOperation } from "../atomical/atomical-parser.service.helper";
 
+/**
+ * A file attachment embedded in an Atomicals CBOR payload.
+ * The CBOR map stores files as `{ "image.png": { $ct: "image/png", $b: <binary> } }`.
+ */
+export interface AtomicalFile {
+  name: string;
+  contentType: string;
+  data: Uint8Array;
+}
+
 export interface ParsedAtomical extends DigitalArtifact {
 
   /**
@@ -10,15 +20,21 @@ export interface ParsedAtomical extends DigitalArtifact {
   operation: AtomicalOperation;
 
   /**
-   * The raw CBOR payload bytes from the envelope (concatenated from all pushdata chunks).
-   * Empty Uint8Array if no payload found.
+   * The raw CBOR payload bytes (concatenated from all pushdata chunks).
    */
   getPayloadRaw: () => Uint8Array;
 
   /**
-   * The decoded CBOR payload from the atomical envelope.
-   * Contains the `args` field (operation parameters) and optional file attachments.
-   * null if CBOR decoding fails or no payload found.
+   * The operation parameters from the CBOR `args` field.
+   * DFT example: `{ request_ticker: "atom", mint_amount: 1000, ... }`
+   * NFT example: `{ request_realm: "terafab", bitworkc: "8857", ... }`
+   * null if CBOR decoding fails or no args found.
    */
-  getPayload: () => Record<string, unknown> | null;
+  getArgs: () => Record<string, unknown> | null;
+
+  /**
+   * File attachments embedded in the CBOR payload (images, SVGs, etc.).
+   * Each file has a name, contentType and raw binary data.
+   */
+  getFiles: () => AtomicalFile[];
 }
