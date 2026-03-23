@@ -131,11 +131,6 @@ export function bigEndianBytesToNumber(byteArray: Uint8Array): number {
 }
 
 /**
- * @deprecated Each Bitcoin witness item is an atomic byte array. The cross-boundary
- * check this function performs can never trigger on real blockchain data — the
- * inscription/atomical mark and its OP_ENDIF are always within a single witness
- * element (the tapscript). Use a simple `for (element of witness) element.includes(hex)` instead.
- *
  * Checks if a specified string is contained within an array of strings, considering potential splits between array elements.
  *
  * This code is supposed to be effective, when i comes to large witness scripts to avoid a lot of memory consumption!

@@ -1,5 +1,5 @@
 import { MAX_DECOMPRESSED_SIZE_MESSAGE, brotliDecode } from "../lib/brotli-decode";
-import { hexToBytes, littleEndianBytesToNumber } from "../lib/conversions";
+import { hexToBytes, isStringInArrayOfStrings, littleEndianBytesToNumber } from "../lib/conversions";
 import { bytesToHex } from "../lib/conversions";
 import { OP_ENDIF, OP_FALSE, OP_IF, OP_PUSHBYTES_3 } from "../lib/op-codes";
 
@@ -139,17 +139,21 @@ export function getNextInscriptionMark(raw: Uint8Array, startPosition: number): 
 export function hasInscription(witness: string[]): boolean {
 
   // OP_FALSE (0x00), OP_IF (0x63), OP_PUSHBYTES_3 (0x03), 'o', 'r', 'd' (0x6f, 0x72, 0x64)
+  // --> nothing more!! no check for OP_ENDIF
   const inscriptionMarkHex = '0063036f7264';
 
-  // Each Bitcoin witness item is an atomic byte array — the inscription envelope
-  // (mark through OP_ENDIF) is always within a single element (the tapscript).
-  // No need for cross-boundary checks or joins.
-  for (const element of witness) {
-    if (element.includes(inscriptionMarkHex)) {
-      return true;
-    }
-  }
-  return false;
+  // note from Johannes: I'm not sure if this is a realistic case.
+  // witness: string[] could be potentially splitted at a super unlucky position?!
+  // if someone is smarter than me, please tell me that I can change this! :-)
+  // --> so is it save to do this?
+  // return witness.some((entry) => entry.includes(inscriptionMarkHex));
+
+  // this would also work, but would join the string, which could result in a lot of memory consumption!
+  // imagine a 4MB inscription! 💀
+  // const witnessJoined = witness.join('');
+  // return witnessJoined.includes(inscriptionMarkHex);
+
+  return isStringInArrayOfStrings(inscriptionMarkHex, witness);
 }
 
 /**
@@ -305,14 +309,7 @@ export function measureInscriptionSize(witness: string[]): number | null {
     return null;
   }
 
-  // Find the witness element that contains the inscription
-  const inscriptionMarkHex = '0063036f7264';
-  const element = witness.find(e => e.includes(inscriptionMarkHex));
-  if (!element) {
-    return null;
-  }
-
-  const raw = hexToBytes(element);
+  const raw = hexToBytes(witness.join(''));
 
   // Find the start of the inscription using the inscription mark
   const startPosition = getNextInscriptionMark(raw, 0);

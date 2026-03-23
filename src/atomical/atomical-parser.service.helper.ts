@@ -1,4 +1,4 @@
-import { concatUint8Arrays, hexToBytes } from '../lib/conversions';
+import { concatUint8Arrays, hexToBytes, isStringInArrayOfStrings } from '../lib/conversions';
 import { OP_ENDIF } from '../lib/op-codes';
 import { readPushdata } from '../lib/reader';
 
@@ -15,12 +15,7 @@ const ATOMICAL_MARK_HEX = '00630461746f6d';
  * @returns True if an atomical mark is found, false otherwise.
  */
 export function hasAtomical(witness: string[]): boolean {
-  for (const element of witness) {
-    if (element.includes(ATOMICAL_MARK_HEX)) {
-      return true;
-    }
-  }
-  return false;
+  return isStringInArrayOfStrings(ATOMICAL_MARK_HEX, witness);
 }
 
 /**

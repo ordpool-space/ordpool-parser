@@ -29,8 +29,18 @@ describe('Inscription parser', () => {
     expect(InscriptionParserService.hasInscription(transaction)).toBe(true);
   });
 
-  // Cross-boundary splits can't happen: each Bitcoin witness item is an atomic byte array.
-  // The inscription envelope is always within a single element (the tapscript).
+  // note from Johannes: I'm not sure if this is a realistic case.
+  // witness: string[] could be potentially splitted at a super unlucky position?! --> that's why I always concatenate the data (which is inneficient, but save)
+  // if someone is smarter than me, please tell me that I can change this! :-)
+  it('should return true if the witness data is split at an unfortunate place', () => {
+    const transaction = {
+      vin: [
+        // so the split here is directly at OP_PUSHBYTES_3 --- SPLIT --- ord
+        { witness: ['01230063', '036f7264abcdef'] },
+      ]
+    };
+    expect(InscriptionParserService.hasInscription(transaction)).toBe(true);
+  });
 
   it('should return true when multiple inputs are present and only one contains the inscription mark', () => {
     const transaction = {

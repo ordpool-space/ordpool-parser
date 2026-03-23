@@ -1,4 +1,4 @@
-import { bytesToHex } from '../lib/conversions';
+import { bytesToHex, isStringInArrayOfStrings } from '../lib/conversions';
 import { IEsploraApi } from '../types/mempool';
 import { removeSpacers } from './rune-parser.service.helper';
 import { Rune } from './src/rune';
@@ -61,12 +61,11 @@ export function findCommitment(transaction: { vin: IEsploraApi.Vin[] }, runeName
       continue;
     }
 
-    // Check if the commitment (as hex) is found in any witness element
-    const commitmentHex = bytesToHex(commitment);
-    for (const element of witness) {
-      if (element.includes(commitmentHex)) {
-        return vin;
-      }
+    // Check if the commitment (as hex) is found in the witness (as hex)
+    const commitmentFound = isStringInArrayOfStrings(bytesToHex(commitment), witness);
+
+    if (commitmentFound) {
+      return vin;
     }
   }
 
