@@ -52,6 +52,7 @@ The only safe changes to CAT-21 code:
 - **Zero runtime dependencies is a hard requirement.** All algorithms must be inline (brotli, CBOR, RC4, etc.). Never add an npm dependency.
 - **Pure functions preferred.** No DI, no classes with state where avoidable. No ILogger abstractions.
 - **Keep explanatory comments.** This codebase parses Bitcoin script opcodes, CBOR binary formats, and protocol-specific envelope structures. These are genuinely complicated. Comments that explain the flow ("No more inscriptions found", "Parse the inscription at the current position", "Update startPosition for the next iteration") help humans navigate the logic. Do NOT remove them as "unnecessary WHAT comments" — they are useful here.
+- **Humans can't read hex.** Always comment what hex values mean: `'0063036f7264'` is meaningless without `// OP_FALSE, OP_IF, OP_PUSHBYTES_3, 'o', 'r', 'd'`. Every hex constant, test data snippet, and inline byte sequence MUST have a human-readable explanation next to it. Never remove these comments.
 
 ## Architecture
 
