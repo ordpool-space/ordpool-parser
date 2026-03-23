@@ -59,6 +59,9 @@ The only safe changes to CAT-21 code:
 ```
 src/
 ├── index.ts                          # Public API exports
+├── atomical/                         # Atomicals parser
+│   ├── atomical-parser.service.ts    # Entry point: parse() → ParsedAtomical
+│   └── atomical-parser.service.helper.ts  # Detection, envelope extraction, operation types
 ├── cat21/                            # CAT-21 parser (FROZEN — see rule above)
 │   ├── cat21-parser.service.ts       # Entry point: parse() → ParsedCat21
 │   ├── mooncat-parser.ts             # Image + trait generation (monolithic, by design)
@@ -67,20 +70,27 @@ src/
 │   └── mooncat-parser.colors.ts      # Color palettes, backgrounds
 ├── inscription/                      # Inscription parser (Ordinals)
 │   ├── inscription-parser.service.ts # Parses envelopes from witness data
-│   └── inscription-parser.service.helper.ts
+│   ├── inscription-parser.service.helper.ts  # Field extraction, content decoding
+│   └── inscription-parser.service.properties.helper.ts  # Gallery/properties (tag 17) parsing
+├── labitbu/                          # Labitbu parser (WebP in Taproot control blocks)
+│   ├── labitbu-parser.service.ts     # Entry point: parse() → ParsedLabitbu
+│   └── labitbu-parser.service.helper.ts  # NUMS key detection, image extraction
 ├── rune/                             # Rune parser
 │   ├── index.ts
 │   └── src/                          # Forked from a JS rune library, heavily trimmed
+├── src20/                            # SRC-20 parser (Stamps)
+│   └── src20-parser.service.ts       # RC4 decryption of stamp data from multisig outputs
 ├── types/                            # TypeScript interfaces
 │   ├── digital-artifact.ts           # Base type for all artifacts
-│   ├── parsed-cat21.ts               # ParsedCat21 + CatTraits
-│   ├── parsed-inscription.ts         # ParsedInscription
+│   ├── parsed-inscription.ts         # ParsedInscription + GalleryItem + InscriptionProperties
+│   ├── parsed-atomical.ts            # ParsedAtomical + AtomicalFile
+│   ├── parsed-labitbu.ts             # ParsedLabitbu
 │   └── ...
 ├── lib/                              # Shared utilities
-│   ├── reader.ts                     # Binary reader for Bitcoin script
-│   ├── conversions.ts                # Hex/byte conversions, helpers
-│   ├── cbor-encoder.ts               # CBOR encoding (for inscription metadata)
-│   └── brotli-decoder.ts             # Brotli decompression (inline, zero-dep)
+│   ├── reader.ts                     # Binary reader for Bitcoin script (readPushdata)
+│   ├── conversions.ts                # Hex/byte conversions, concatUint8Arrays, isStringInArrayOfStrings
+│   ├── cbor.ts                       # CBOR encoder + decoder (for metadata and Atomicals payloads)
+│   └── brotli-decode.ts              # Brotli decompression (inline, zero-dep)
 └── digital-artifact-analyser.service.ts  # Unified: parse all artifact types at once
 ```
 
@@ -94,6 +104,9 @@ DigitalArtifactsParserService.parse(tx): DigitalArtifact[]
 InscriptionParserService.parse(tx): ParsedInscription[]
 Cat21ParserService.parse(tx): ParsedCat21 | null
 RuneParserService.parse(tx): ParsedRunestone | null
+AtomicalParserService.parse(tx): ParsedAtomical | null
+LabitbuParserService.parse(tx): ParsedLabitbu | null
+Src20ParserService.parse(tx): ParsedSrc20 | null
 
 // Analyze a full block's transactions (used by ordpool backend)
 DigitalArtifactAnalyserService.analyseTransactions(txs): OrdpoolStats

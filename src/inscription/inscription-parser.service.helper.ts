@@ -6,7 +6,6 @@ import { OP_ENDIF, OP_FALSE, OP_IF, OP_PUSHBYTES_3 } from "../lib/op-codes";
 
 /**
  * Inscriptions may include fields before an optional body. Each field consists of two data pushes, a tag and a value.
- * Currently, there are six defined fields:
  */
 export const knownFields = {
   // content_type, with a tag of 1, whose value is the MIME type of the body.

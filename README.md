@@ -1,6 +1,6 @@
 # ordpool-parser
 
-The parsing engine that detects Inscriptions, SRC-20 Stamps, CAT-21 Ordinals, and Runes in Bitcoin transactions.
+The parsing engine that detects Inscriptions, Runes, BRC-20, SRC-20 Stamps, CAT-21, Atomicals, and Labitbu in Bitcoin transactions.
 The compiled code has zero dependencies and works in the Browser and in Node.js out of the box.
 
 The latest version of this script is used by https://ordpool.space
@@ -52,11 +52,11 @@ if (!parsedInscriptions.length) {
 
   // UTF-8 encoded string (not intended for binary content like images or videos)
   // Output: <html><!--cubes.haushoppe.art--><body> [...]
-  console.log(parsedInscriptions[0].getContent());
+  console.log(await parsedInscriptions[0].getContent());
 
   // Base64 encoded data URI that can be displayed in an iframe
   // Output: data:text/html;charset=utf-8;base64,PGh0bWw+PCEtLWN1YmVzLmhhdXNob3BwZS5hcnQtLT48Ym9keT4 [...]
-  console.log(parsedInscriptions[0].getDataUri());
+  console.log(await parsedInscriptions[0].getDataUri());
 }
 
 ```

@@ -23,7 +23,6 @@ export * from './lib/op-codes';
 export * from './lib/reader';
 export * from './lib/sha256-uint8array';
 export * from './rune/index';
-export * from './rune/index';
 export * from './rune/rune-parser.service.helper';
 export * from './rune/rune-parser.service';
 export * from './src20/src20-parser.service.helper';
