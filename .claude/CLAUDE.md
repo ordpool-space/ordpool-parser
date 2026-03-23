@@ -113,7 +113,7 @@ All `parse()` methods return `null` on error — silently. This is intentional:
 **Every test MUST assert against real transaction data downloaded from the Bitcoin blockchain. Zero exceptions.**
 
 - Test data lives in `testdata/` as JSON files (`tx_<txid>.json`)
-- Fetched via `npm run fetch-tx-testdata` from Esplora API
+- Fetched via `npm run fetch-tx-testdata` from Esplora API (pipes txid to the interactive script)
 - **NEVER use synthetic/fabricated transaction data** — always use a real txid
 - **NEVER mock the parser input** — use the actual Esplora API format
 - If you need test data for a new feature, find a real mainnet transaction that exercises it
@@ -121,6 +121,48 @@ All `parse()` methods return `null` on error — silently. This is intentional:
 ### Test Coverage Rule
 
 If the parser claims to detect a specific type or operation, there MUST be a real mainnet transaction in `testdata/` that exercises it. No exceptions. If you can't find a real transaction, don't claim support for that type.
+
+### NO LAZY ASSERTIONS
+
+**Every assertion must use exact, deterministic values. Ranges and existence checks are forbidden.**
+
+Bad (lazy):
+```typescript
+expect(result).not.toBeNull();               // just proves it exists
+expect(payload.length).toBeGreaterThan(520);  // what IS the length?
+expect(files[0].data.length).toBeGreaterThan(1000);  // vague
+expect(files[0].data).toBeInstanceOf(Uint8Array);    // proves nothing useful
+expect(args).toBeDefined();                   // weakest possible check
+```
+
+Good (exact):
+```typescript
+expect(result.operation).toBe('dft');
+expect(result.getPayloadRaw().length).toBe(9925);
+expect(files[0].data.length).toBe(8496);
+expect(args.mint_amount).toBe(1000);
+expect(args.request_ticker).toBe('atom');
+```
+
+**Why?** Lazy assertions pass even when the code is wrong. If the payload is supposed to be 9925 bytes but a bug makes it 520 (first chunk only), `toBeGreaterThan(0)` still passes. Exact values catch regressions that ranges miss.
+
+### Binary Content: Save Reference Files and Compare Byte-for-Byte
+
+When the parser extracts binary data (images, etc.), save the extracted file to `testdata/` as a reference and compare against it in tests:
+
+```typescript
+// Save once (during development): extract the image, visually verify it, commit to testdata/
+// Then in tests:
+const expectedImage = readBinaryFileAsUint8Array('atomical_dft_atom_image.png');
+expect(files[0].data).toEqual(expectedImage);
+```
+
+Naming convention: `testdata/<artifact_type>_<description>_<content>.<ext>`
+- `atomical_dft_atom_image.png`
+- `atomical_nft_toothy_7579_image.png`
+- `inscription_<inscriptionId>.png`
+
+**The developer MUST visually inspect the image before committing it as a reference.** The test proves the parser reproduces the exact same bytes every time.
 
 ### Other Testing Rules
 
@@ -133,6 +175,34 @@ If the parser claims to detect a specific type or operation, there MUST be a rea
 - Pure functions preferred (no DI, no classes with state where avoidable)
 - Service pattern: `XxxParserService` as static classes with `parse()` methods
 - Zero runtime dependencies — all algorithms inline (brotli, CBOR, RC4, etc.)
+
+### Browser Compatibility (CRITICAL)
+
+This library runs in **both Node.js and browsers**. Every line of production code must work in both.
+
+- **Use `Uint8Array`**, never Node's `Buffer`. `Buffer` is Node-only and fails in browsers.
+- **Use `ArrayBuffer.isView(x)`** to check for binary data, never `x instanceof Uint8Array`. The `instanceof` check fails across realms (iframes, web workers) because each realm has its own `Uint8Array` constructor. `ArrayBuffer.isView()` works everywhere.
+- **Use `TextEncoder`/`TextDecoder`** for string encoding, never `Buffer.from(str)`.
+- **Use `ArrayBuffer` + `DataView`** for binary manipulation, never Node streams.
+- `Buffer` is acceptable in **test code only** (`testdata/test.helper.ts`), but must be wrapped in `new Uint8Array()` before comparison with parser output.
+
+### Lazy Evaluation Pattern
+
+Expensive operations (CBOR decoding, decompression) are deferred to method calls, not computed eagerly in `parse()`. This way consumers who only need metadata skip the heavy work.
+
+```typescript
+// Inscription pattern:
+contentType     // cheap: direct property
+getContent()    // lazy: decompresses + decodes on demand
+getDataRaw()    // lazy: returns raw bytes
+getMetadata()   // lazy: CBOR-decodes metadata field
+
+// Atomicals pattern (same idea):
+operation       // cheap: direct property
+getArgs()       // lazy: CBOR-decodes and returns args
+getFiles()      // lazy: CBOR-decodes and extracts file attachments
+getPayloadRaw() // lazy: returns raw CBOR bytes
+```
 
 ## Parser-Specific Notes
 
@@ -158,6 +228,8 @@ If the parser claims to detect a specific type or operation, there MUST be a rea
 - Detects both SRC-20 deploy and mint operations
 
 ### Atomicals
-- **Stub only** — `parse()` always returns null
-- Implementation was never completed
-- Kept as placeholder for potential future work
+- Detects the `atom` envelope marker in witness data (similar to inscriptions' `ord` marker)
+- Extracts operation type and CBOR-encoded payload (multi-chunk, same as inscription body)
+- Two CBOR file formats on mainnet: `{$ct, $b}` wrapper (old) and raw binary (new)
+- Lazy API: `getArgs()`, `getFiles()`, `getPayloadRaw()`
+- See `atomical-parser.service.helper.ts` for full documentation of operation types and terminology
