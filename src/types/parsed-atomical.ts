@@ -10,9 +10,15 @@ export interface ParsedAtomical extends DigitalArtifact {
   operation: AtomicalOperation;
 
   /**
+   * The raw CBOR payload bytes from the envelope (concatenated from all pushdata chunks).
+   * Empty Uint8Array if no payload found.
+   */
+  getPayloadRaw: () => Uint8Array;
+
+  /**
    * The decoded CBOR payload from the atomical envelope.
    * Contains the `args` field (operation parameters) and optional file attachments.
    * null if CBOR decoding fails or no payload found.
    */
-  payload: Record<string, unknown> | null;
+  getPayload: () => Record<string, unknown> | null;
 }

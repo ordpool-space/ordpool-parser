@@ -7,14 +7,14 @@ import { AtomicalEnvelope, extractAtomicalEnvelopeFromWitness, hasAtomical } fro
 /**
  * Extracts Atomicals from a Bitcoin transaction.
  * Detects the atomical envelope marker, extracts the operation type,
- * and decodes the CBOR payload.
+ * and provides lazy access to the CBOR payload.
  */
 export class AtomicalParserService {
 
   /**
    * Parses a transaction and returns a ParsedAtomical if an atomical envelope is found.
-   * Extracts the operation type and decodes the CBOR payload (concatenated from
-   * multiple pushdata chunks, same approach as the inscription parser).
+   * Extracts the operation type immediately. CBOR payload decoding is deferred
+   * to getPayload() — same lazy pattern as the inscription parser.
    */
   static parse(transaction: {
     txid: string,
@@ -41,22 +41,29 @@ export class AtomicalParserService {
         return null;
       }
 
-      // Decode the CBOR payload (may fail for exotic payloads — returns null on error)
-      let payload: Record<string, unknown> | null = null;
-      if (envelope.payload.length > 0) {
-        try {
-          payload = CBOR.decodeFirst(envelope.payload);
-        } catch (e) {
-          onError?.(e);
-        }
-      }
+      const payloadRaw = envelope.payload;
 
       return {
         type: DigitalArtifactType.Atomical,
         uniqueId: `${DigitalArtifactType.Atomical}-${transaction.txid}`,
         transactionId: transaction.txid,
         operation: envelope.operation,
-        payload,
+
+        getPayloadRaw: (): Uint8Array => {
+          return payloadRaw;
+        },
+
+        getPayload: (): Record<string, unknown> | null => {
+          if (payloadRaw.length === 0) {
+            return null;
+          }
+          try {
+            return CBOR.decodeFirst(payloadRaw);
+          } catch (e) {
+            onError?.(e);
+            return null;
+          }
+        },
       };
     } catch (ex) {
       onError?.(ex);
