@@ -61,6 +61,15 @@ export function hasAtomical(witness: string[]): boolean {
  * - `evt`  — Emit an event log attached to an existing atomical
  * - `sl`   — Seal a container (make it immutable)
  *
+ * **Transfer/manage fungible token UTXOs** (single-letter codes, very niche):
+ * - `x`   — "splat": split a UTXO containing multiple FT units into separate outputs
+ * - `y`   — "split": similar split operation for FT UTXOs
+ * - `z`   — "custom-color": set custom coloring/labeling on fungible token outputs
+ *
+ * Source: `splat-interactive-command.ts`, `split-interactive-command.ts`,
+ * `custom-color-interactive-command.ts` in atomicals-js. These are extremely rare
+ * on mainnet and invisible in explorers. The single-letter codes are... a choice.
+ *
  * ## CBOR payload structure
  *
  * Every operation carries a CBOR-encoded map. The `args` key is always present.
@@ -69,9 +78,9 @@ export function hasAtomical(witness: string[]): boolean {
  * - Format 2: `{ "image.png": <raw binary bytes> }` (newer CLI path)
  *
  * Verified with real mainnet data: 'dft' (tx 1d2f39f5...), 'nft' (tx d8c96e39..., 7c852754...)
- * Known from atomicals-js source but no test data yet: 'ft', 'dmt', 'mod', 'evt', 'dat', 'sl'
+ * Known from atomicals-js source but no test data yet: 'ft', 'dmt', 'mod', 'evt', 'dat', 'sl', 'x', 'y', 'z'
  */
-export type AtomicalOperation = 'dft' | 'nft' | 'ft' | 'dmt' | 'mod' | 'evt' | 'dat' | 'sl' | 'unknown';
+export type AtomicalOperation = 'dft' | 'nft' | 'ft' | 'dmt' | 'mod' | 'evt' | 'dat' | 'sl' | 'x' | 'y' | 'z' | 'unknown';
 
 /**
  * Finds the atomical mark in raw witness bytes and extracts the operation type.
@@ -118,6 +127,9 @@ export function extractAtomicalOperation(raw: Uint8Array): AtomicalOperation | n
           case 'evt': return 'evt';
           case 'dat': return 'dat';
           case 'sl': return 'sl';
+          case 'x': return 'x';
+          case 'y': return 'y';
+          case 'z': return 'z';
           default: return 'unknown';
         }
       }
@@ -255,6 +267,9 @@ function mapOperationString(opString: string): AtomicalOperation {
     case 'evt': return 'evt';
     case 'dat': return 'dat';
     case 'sl': return 'sl';
+    case 'x': return 'x';   // splat: split FT UTXO into separate outputs
+    case 'y': return 'y';   // split: similar FT UTXO split
+    case 'z': return 'z';   // custom-color: set custom coloring on FT outputs
     default: return 'unknown';
   }
 }
