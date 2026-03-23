@@ -225,6 +225,8 @@ export class InscriptionParserService {
         contentEncoding = bytesToUnicodeString(contentEncodingRaw);
       }
 
+      let cachedProperties: ReturnType<typeof parseProperties> | undefined;
+
       return {
 
         type: DigitalArtifactType.Inscription,
@@ -315,8 +317,11 @@ export class InscriptionParserService {
           return getKnownFieldValue(fields, knownFields.rune);
         },
 
-        getProperties: async () => {
-          return parseProperties(fields);
+        getProperties: () => {
+          if (!cachedProperties) {
+            cachedProperties = parseProperties(fields);
+          }
+          return cachedProperties;
         },
 
         envelopeSize, // The size of the envelope including the entire script

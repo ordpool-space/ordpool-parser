@@ -1,4 +1,8 @@
 import { CBOR } from '../lib/cbor';
+import { DigitalArtifactType } from "../types/digital-artifact";
+import { AtomicalFile, ParsedAtomical } from "../types/parsed-atomical";
+import { OnParseError } from '../types/parser-options';
+import { AtomicalEnvelope, extractAtomicalEnvelopeFromWitness, hasAtomical } from "./atomical-parser.service.helper";
 
 /**
  * Guess content type from a filename. Used when the CBOR payload stores raw
@@ -18,10 +22,6 @@ function guessContentType(name: string): string {
     default: return 'application/octet-stream';
   }
 }
-import { DigitalArtifactType } from "../types/digital-artifact";
-import { AtomicalFile, ParsedAtomical } from "../types/parsed-atomical";
-import { OnParseError } from '../types/parser-options';
-import { AtomicalEnvelope, extractAtomicalEnvelopeFromWitness, hasAtomical } from "./atomical-parser.service.helper";
 
 /**
  * Extracts Atomicals from a Bitcoin transaction.
@@ -41,11 +41,8 @@ export class AtomicalParserService {
   }, onError?: OnParseError): ParsedAtomical | null {
 
     try {
-      if (!AtomicalParserService.hasAtomical(transaction)) {
-        return null;
-      }
-
       // Extract the full envelope (operation + CBOR payload) from the first matching witness
+      // No need for a separate hasAtomical() guard — envelope extraction returns null if no mark
       let envelope: AtomicalEnvelope | null = null;
       for (const vin of transaction.vin) {
         if (vin.witness) {
@@ -62,9 +59,9 @@ export class AtomicalParserService {
 
       const payloadRaw = envelope.payload;
 
-      // Lazy CBOR decode — only happens once, then cached
       let decoded = false;
       let decodedPayload: Record<string, unknown> | null = null;
+      let cachedFiles: AtomicalFile[] | null = null;
       function decodePayload(): Record<string, unknown> | null {
         if (decoded) {
           return decodedPayload;
@@ -100,9 +97,14 @@ export class AtomicalParserService {
         },
 
         getFiles: (): AtomicalFile[] => {
+          if (cachedFiles) {
+            return cachedFiles;
+          }
+
           const payload = decodePayload();
           if (!payload) {
-            return [];
+            cachedFiles = [];
+            return cachedFiles;
           }
 
           const files: AtomicalFile[] = [];
@@ -129,6 +131,7 @@ export class AtomicalParserService {
               });
             }
           }
+          cachedFiles = files;
           return files;
         },
       };

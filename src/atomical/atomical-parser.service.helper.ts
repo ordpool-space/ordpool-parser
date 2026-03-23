@@ -1,4 +1,4 @@
-import { hexToBytes, isStringInArrayOfStrings } from '../lib/conversions';
+import { concatUint8Arrays, hexToBytes, isStringInArrayOfStrings } from '../lib/conversions';
 import { OP_ENDIF } from '../lib/op-codes';
 import { readPushdata } from '../lib/reader';
 
@@ -92,52 +92,16 @@ export type AtomicalOperation = 'dft' | 'nft' | 'ft' | 'dmt' | 'mod' | 'evt' | '
  * @returns The operation string, or null if no atomical mark found.
  */
 export function extractAtomicalOperation(raw: Uint8Array): AtomicalOperation | null {
-  // Find the atomical mark
-  for (let i = 0; i <= raw.length - ATOMICAL_MARK.length; i++) {
-    let match = true;
-    for (let j = 0; j < ATOMICAL_MARK.length; j++) {
-      if (raw[i + j] !== ATOMICAL_MARK[j]) {
-        match = false;
-        break;
-      }
-    }
-
-    if (match) {
-      const afterMark = i + ATOMICAL_MARK.length;
-      if (afterMark >= raw.length) {
-        return 'unknown';
-      }
-
-      // Next byte is a pushdata opcode indicating the length of the operation string
-      const pushLen = raw[afterMark];
-
-      // OP_PUSHBYTES_1 through OP_PUSHBYTES_75 push that many bytes
-      if (pushLen >= 1 && pushLen <= 75 && afterMark + pushLen < raw.length) {
-        const opBytes = raw.slice(afterMark + 1, afterMark + 1 + pushLen);
-        const opString = String.fromCharCode(...opBytes);
-
-        // Map known single-char and multi-char operations
-        switch (opString) {
-          case 'nft': return 'nft';
-          case 'ft': return 'ft';
-          case 'dft': return 'dft';
-          case 'dmt': return 'dmt';
-          case 'mod': return 'mod';
-          case 'evt': return 'evt';
-          case 'dat': return 'dat';
-          case 'sl': return 'sl';
-          case 'x': return 'x';
-          case 'y': return 'y';
-          case 'z': return 'z';
-          default: return 'unknown';
-        }
-      }
-
-      return 'unknown';
-    }
+  const afterMark = getNextAtomicalMark(raw, 0);
+  if (afterMark === -1) {
+    return null;
   }
-
-  return null; // no atomical mark found
+  try {
+    const [slice] = readPushdata(raw, afterMark);
+    return mapOperationString(String.fromCharCode(...slice));
+  } catch {
+    return 'unknown';
+  }
 }
 
 /**
@@ -225,14 +189,7 @@ export function extractAtomicalEnvelope(raw: Uint8Array): AtomicalEnvelope | nul
     chunks.push(slice);
   }
 
-  // Concatenate all chunks into a single buffer
-  const totalLength = chunks.reduce((sum, c) => sum + c.length, 0);
-  const payload = new Uint8Array(totalLength);
-  let offset = 0;
-  for (const chunk of chunks) {
-    payload.set(chunk, offset);
-    offset += chunk.length;
-  }
+  const payload = concatUint8Arrays(chunks);
 
   return { operation, payload };
 }

@@ -1,8 +1,7 @@
 import { CBOR } from '../lib/cbor';
-import { bytesToHex, bytesToUnicodeString } from '../lib/conversions';
+import { bytesToHex, bytesToUnicodeString, concatUint8Arrays } from '../lib/conversions';
 import { GalleryItem, InscriptionProperties } from '../types/parsed-inscription';
 import {
-  brotliDecodeUint8Array,
   extractInscriptionId,
   getDecodedContent,
   getKnownFieldValue,
@@ -25,18 +24,7 @@ export async function parseProperties(fields: { tag: number; value: Uint8Array }
     return undefined;
   }
 
-  let propertiesBytes: Uint8Array;
-  if (chunks.length === 1) {
-    propertiesBytes = chunks[0];
-  } else {
-    const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
-    propertiesBytes = new Uint8Array(totalLength);
-    let offset = 0;
-    for (const chunk of chunks) {
-      propertiesBytes.set(chunk, offset);
-      offset += chunk.length;
-    }
-  }
+  let propertiesBytes = concatUint8Arrays(chunks);
 
   // Decompress if tag 19 specifies an encoding (same as inscription content)
   const encodingRaw = getKnownFieldValue(fields, knownFields.property_encoding);
