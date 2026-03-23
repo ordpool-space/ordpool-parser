@@ -139,19 +139,7 @@ export function getNextInscriptionMark(raw: Uint8Array, startPosition: number): 
 export function hasInscription(witness: string[]): boolean {
 
   // OP_FALSE (0x00), OP_IF (0x63), OP_PUSHBYTES_3 (0x03), 'o', 'r', 'd' (0x6f, 0x72, 0x64)
-  // --> nothing more!! no check for OP_ENDIF
   const inscriptionMarkHex = '0063036f7264';
-
-  // note from Johannes: I'm not sure if this is a realistic case.
-  // witness: string[] could be potentially splitted at a super unlucky position?!
-  // if someone is smarter than me, please tell me that I can change this! :-)
-  // --> so is it save to do this?
-  // return witness.some((entry) => entry.includes(inscriptionMarkHex));
-
-  // this would also work, but would join the string, which could result in a lot of memory consumption!
-  // imagine a 4MB inscription! 💀
-  // const witnessJoined = witness.join('');
-  // return witnessJoined.includes(inscriptionMarkHex);
 
   return isStringInArrayOfStrings(inscriptionMarkHex, witness);
 }
@@ -309,7 +297,14 @@ export function measureInscriptionSize(witness: string[]): number | null {
     return null;
   }
 
-  const raw = hexToBytes(witness.join(''));
+  // Find the witness element that contains the inscription (the tapscript)
+  const inscriptionMarkHex = '0063036f7264';
+  const element = witness.find(e => e.includes(inscriptionMarkHex));
+  if (!element) {
+    return null;
+  }
+
+  const raw = hexToBytes(element);
 
   // Find the start of the inscription using the inscription mark
   const startPosition = getNextInscriptionMark(raw, 0);

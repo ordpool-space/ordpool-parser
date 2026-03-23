@@ -275,14 +275,17 @@ describe('extractPointer', () => {
 
 describe('measureInscriptionSize', () => {
 
-  it('should return the correct size for one byte', () => {
+  // Each witness item is an atomic byte array. The inscription envelope
+  // (mark through OP_ENDIF) is always within a single element (the tapscript).
+
+  it('should return the correct size for a simple envelope', () => {
     const witness = [
-      '00', // Placeholder
-      '0063036f7264' + '1122', // OP_FALSE, OP_IF, OP_PUSH "ord" (6 bytes) and 2 extra bytes
-      '68' // OP_ENDIF
+      '00', // Placeholder (signature)
+      '0063036f7264' + '1122' + '68', // OP_FALSE, OP_IF, OP_PUSH "ord" (6 bytes) + 2 extra bytes + OP_ENDIF
+      '00' // Placeholder (control block)
     ];
 
-    const expectedSize = 6 + 2 + 1;
+    const expectedSize = 6 + 2 + 1; // mark + data + OP_ENDIF
 
     expect(measureInscriptionSize(witness)).toBe(expectedSize);
   });
@@ -308,27 +311,25 @@ describe('measureInscriptionSize', () => {
     expect(measureInscriptionSize(witness)).toBeNull();
   });
 
-  it('should return the correct size for a complex inscription with more data', () => {
+  it('should return the correct size with extra data before OP_ENDIF', () => {
     const witness = [
       '00',
-      '0063036f7264', // OP_FALSE, OP_IF, OP_PUSH "ord" --> 6
-      'abcdef123456', // Additional push data --> 6
-      '68' // OP_ENDIF --> 1
+      '0063036f7264' + 'abcdef123456' + '68', // OP_FALSE, OP_IF, OP_PUSH "ord" (6) + additional push data (6) + OP_ENDIF (1)
     ];
 
-    const expectedSize = 7 + 6; // 6 bytes of data + 7 bytes overhead
+    const expectedSize = 6 + 6 + 1; // mark + data + OP_ENDIF
+
     expect(measureInscriptionSize(witness)).toBe(expectedSize);
   });
 
-  it('should return the correct size for multiple OP_ENDIFs', () => {
+  it('should use last OP_ENDIF when multiple exist', () => {
     const witness = [
       '00',
-      '0063036f7264', // OP_FALSE, OP_IF, OP_PUSH "ord"
-      'abcdef123456' +  '68', // Additional data --> 6 + evil OP_ENDIF +1
-      '68' // OP_ENDIF (0x68)
+      '0063036f7264' + 'abcdef123456' + '68' + '68', // mark + data (6) + evil inner OP_ENDIF (1) + real OP_ENDIF (1)
     ];
 
-    const expectedSize = 7 + 7; // 7 bytes of data + 7 bytes overhead
+    const expectedSize = 6 + 6 + 1 + 1; // mark + data + evil OP_ENDIF + real OP_ENDIF
+
     expect(measureInscriptionSize(witness)).toBe(expectedSize);
   });
 });

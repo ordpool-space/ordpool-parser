@@ -131,41 +131,21 @@ export function bigEndianBytesToNumber(byteArray: Uint8Array): number {
 }
 
 /**
- * Checks if a specified string is contained within an array of strings, considering potential splits between array elements.
+ * Checks if a specified string is contained within an array of strings.
  *
- * This code is supposed to be effective, when i comes to large witness scripts to avoid a lot of memory consumption!
- * imagine a 4MB inscription! 💀
- *
- *   const witnessJoined = witness.join(''); // 💀
- *   return witnessJoined.includes(inscriptionMarkHex);
- *
- * Note: I never tested the performance, so I just HOPE that this code works more efficiently than join + include!
+ * Each Bitcoin witness item is an atomic byte array — the data we search for
+ * (inscription marks, atomical marks, rune commitments) is always within a
+ * single witness element (the tapscript). No cross-element boundary checks needed.
  *
  * @param stringToFind - The string to search for within the array.
  * @param arrayOfStrings - The array of strings to be searched.
- * @returns Returns true if the string is found within any individual element or across the boundary of consecutive elements.
+ * @returns Returns true if the string is found within any element.
  */
 export function isStringInArrayOfStrings(stringToFind: string, arrayOfStrings: string[]) {
 
-  const stringToFindLength = stringToFind.length;
-
   for (let i = 0; i < arrayOfStrings.length; i++) {
-
-    // the happy path: check array element for a simple match
     if (arrayOfStrings[i].includes(stringToFind)) {
       return true;
-    }
-
-    // If there's a next element, check for splits across the current and next element
-    if (i < arrayOfStrings.length - 1) {
-      const checkLength = stringToFindLength - 1; // Length to check overlap, -1 because at least 1 char must be in the next element
-      for (let j = 1; j <= checkLength; j++) {
-        const endCurrent = arrayOfStrings[i].slice(-j); // Last j characters of the current element
-        const startNext = arrayOfStrings[i + 1].slice(0, stringToFindLength - j); // First (stringToFindLength - j) characters of the next element
-        if ((endCurrent + startNext).includes(stringToFind)) {
-          return true;
-        }
-      }
     }
   }
 
