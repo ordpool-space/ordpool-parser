@@ -423,6 +423,10 @@ export class DigitalArtifactAnalyserService {
         flags |= OrdpoolTransactionFlags.ordpool_atomical;
         break;
 
+      case DigitalArtifactType.Labitbu:
+        flags |= OrdpoolTransactionFlags.ordpool_labitbu;
+        break;
+
       case DigitalArtifactType.Inscription:
         const inscription = artifact as ParsedInscription;
         flags |= OrdpoolTransactionFlags.ordpool_inscription;
@@ -522,6 +526,7 @@ export class DigitalArtifactAnalyserService {
     return isFlagSetOnTransaction(tx, OrdpoolTransactionFlags.ordpool_atomical) ||
       isFlagSetOnTransaction(tx, OrdpoolTransactionFlags.ordpool_cat21) ||
       isFlagSetOnTransaction(tx, OrdpoolTransactionFlags.ordpool_inscription) ||
+      isFlagSetOnTransaction(tx, OrdpoolTransactionFlags.ordpool_labitbu) ||
       isFlagSetOnTransaction(tx, OrdpoolTransactionFlags.ordpool_rune) ||
       isFlagSetOnTransaction(tx, OrdpoolTransactionFlags.ordpool_brc20) ||
       isFlagSetOnTransaction(tx, OrdpoolTransactionFlags.ordpool_src20);
