@@ -18,11 +18,10 @@ describe('InscriptionParserService — Rune commitment (tag 13)', () => {
     expect(inscriptions.length).toBe(1);
     const inscription = inscriptions[0];
 
-    const rune = inscription.getRune();
-    expect(rune).toBeDefined();
     // Commitment = rune's u128 value as little-endian bytes, trailing zeros stripped
     // Matches Rune.fromString('UNCOMMONGOODS').commitment
-    expect(bytesToHex(rune!)).toBe('b530368c74df10a303');
+    const rune = inscription.getRune()!;
+    expect(bytesToHex(rune)).toBe('b530368c74df10a303');
   });
 
   it('should return undefined rune for an inscription without tag 13', () => {

@@ -12,19 +12,19 @@ describe('onError callback', () => {
     it('Cat21ParserService.parse returns result without onError', () => {
       const txn = readTransaction('98316dcb21daaa221865208fe0323616ee6dd84e6020b78bc6908e914ac03892');
       const result = Cat21ParserService.parse(txn);
-      expect(result).not.toBeNull();
+      expect(result!.type).toBe('Cat21');
     });
 
     it('InscriptionParserService.parse returns result without onError', () => {
       const txn = readTransaction('2740d27e3017da44ee439792f6f60449e43992fddffd9387685b14d21b725ff0');
       const result = InscriptionParserService.parse(txn);
-      expect(result.length).toBeGreaterThan(0);
+      expect(result.length).toBe(2000);
     });
 
     it('RuneParserService.parse returns result without onError', () => {
       const txn = readTransaction('2bb85f4b004be6da54f766c17c1e855187327112c231ef2ff35ebad0ea67c69e');
       const result = RuneParserService.parse(txn);
-      expect(result).not.toBeNull();
+      expect(result!.type).toBe('Runestone');
     });
 
     it('Src20ParserService.parse returns null for non-SRC20 without onError', () => {
