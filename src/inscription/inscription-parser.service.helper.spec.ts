@@ -275,16 +275,15 @@ describe('extractPointer', () => {
 
 describe('measureInscriptionSize', () => {
 
-  it('should return the correct size for one byte', () => {
+  // All witness data is in a single element (the tapscript), matching real Bitcoin witness structure.
+
+  it('should return the correct size for a simple envelope', () => {
     const witness = [
-      '00', // Placeholder
-      '0063036f7264' + '1122', // OP_FALSE, OP_IF, OP_PUSH "ord" (6 bytes) and 2 extra bytes
-      '68' // OP_ENDIF
+      '00',                            // signature placeholder
+      '0063036f7264' + '1122' + '68',  // tapscript: mark (6) + data (2) + OP_ENDIF (1)
+      '00'                             // control block placeholder
     ];
-
-    const expectedSize = 6 + 2 + 1;
-
-    expect(measureInscriptionSize(witness)).toBe(expectedSize);
+    expect(measureInscriptionSize(witness)).toBe(6 + 2 + 1);
   });
 
   it('should return null if the witness is empty', () => {
@@ -293,43 +292,34 @@ describe('measureInscriptionSize', () => {
   });
 
   it('should return null if the witness does not contain an inscription mark', () => {
-    const witness = [
-      '00',
-      'abcd1234' // No inscription mark
-    ];
+    const witness = ['00', 'abcd1234'];
     expect(measureInscriptionSize(witness)).toBeNull();
   });
 
   it('should return null if OP_ENDIF is missing', () => {
     const witness = [
-      '00', // Placeholder
-      '0063036f7264' // OP_FALSE, OP_IF, OP_PUSH "ord", but no OP_ENDIF
+      '00',
+      '0063036f7264'  // mark but no OP_ENDIF
     ];
     expect(measureInscriptionSize(witness)).toBeNull();
   });
 
-  it('should return the correct size for a complex inscription with more data', () => {
+  it('should return the correct size with extra data before OP_ENDIF', () => {
     const witness = [
       '00',
-      '0063036f7264', // OP_FALSE, OP_IF, OP_PUSH "ord" --> 6
-      'abcdef123456', // Additional push data --> 6
-      '68' // OP_ENDIF --> 1
+      '0063036f7264' + 'abcdef123456' + '68',  // mark (6) + data (6) + OP_ENDIF (1)
+      '00'
     ];
-
-    const expectedSize = 7 + 6; // 6 bytes of data + 7 bytes overhead
-    expect(measureInscriptionSize(witness)).toBe(expectedSize);
+    expect(measureInscriptionSize(witness)).toBe(6 + 6 + 1);
   });
 
-  it('should return the correct size for multiple OP_ENDIFs', () => {
+  it('should use last OP_ENDIF when multiple exist', () => {
     const witness = [
       '00',
-      '0063036f7264', // OP_FALSE, OP_IF, OP_PUSH "ord"
-      'abcdef123456' +  '68', // Additional data --> 6 + evil OP_ENDIF +1
-      '68' // OP_ENDIF (0x68)
+      '0063036f7264' + 'abcdef123456' + '68' + '68',  // mark (6) + data (6) + evil OP_ENDIF (1) + real OP_ENDIF (1)
+      '00'
     ];
-
-    const expectedSize = 7 + 7; // 7 bytes of data + 7 bytes overhead
-    expect(measureInscriptionSize(witness)).toBe(expectedSize);
+    expect(measureInscriptionSize(witness)).toBe(6 + 6 + 1 + 1);
   });
 });
 
