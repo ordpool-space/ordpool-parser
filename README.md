@@ -1,6 +1,6 @@
 # ordpool-parser
 
-Yes, Bitcoin is money. Everything else is an attack on Bitcoin. We get it. [OP_RETURN](https://github.com/bitcoin/bips/blob/master/bip-0110.mediawiki) will fix this.
+Yes, Bitcoin is money. Everything else is an attack on Bitcoin. We get it. [BIP 110](https://github.com/bitcoin/bips/blob/master/bip-0110.mediawiki) will fix this.
 
 But you still want to know what's inside your blocks, don't you? Know your enemy! ;-)
 
