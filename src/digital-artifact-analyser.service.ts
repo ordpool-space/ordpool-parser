@@ -3,6 +3,7 @@ import { Cat21ParserService } from './cat21/cat21-parser.service';
 import { convertToActivities, contructRuneEtchAttempt, isFlagSetOnTransaction, parseJsonObject, constructCat21Mint } from './digital-artifact-analyser.service.helper';
 import { DigitalArtifactsParserService } from './digital-artifacts-parser.service';
 import { InscriptionParserService } from './inscription/inscription-parser.service';
+import { LabitbuParserService } from './labitbu/labitbu-parser.service';
 import { RuneParserService } from './rune/rune-parser.service';
 import { isUncommonGoodsMint } from './rune/rune-parser.service.helper';
 import { Src20ParserService } from './src20/src20-parser.service';
@@ -550,6 +551,10 @@ export class DigitalArtifactAnalyserService {
 
     if (AtomicalParserService.hasAtomical(tx)) {
       flags |= OrdpoolTransactionFlags.ordpool_atomical;
+    }
+
+    if (LabitbuParserService.hasLabitbu(tx)) {
+      flags |= OrdpoolTransactionFlags.ordpool_labitbu;
     }
 
     if (Cat21ParserService.hasCat21(tx)) {
