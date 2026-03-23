@@ -107,21 +107,30 @@ export class InscriptionParserService {
   private static parseInscriptionsWithinWitness(witness: string[]): ParsedInscription[] | null {
 
     const inscriptions: ParsedInscription[] = [];
-    const raw = hexToBytes(witness.join(''));
-    let startPosition = 0;
+    const inscriptionMarkHex = '0063036f7264';
 
-    while (true) {
-      const pointer = getNextInscriptionMark(raw, startPosition);
-      if (pointer === -1) break; // No more inscriptions found
-
-      // Parse the inscription at the current position
-      const inscription = InscriptionParserService.extractInscriptionData(raw, pointer);
-      if (inscription) {
-        inscriptions.push(inscription);
+    // Only convert witness elements that contain the inscription mark.
+    // This avoids hexToBytes on the signature and control block elements,
+    // which is significant for large inscriptions (up to 4MB).
+    for (const element of witness) {
+      if (!element.includes(inscriptionMarkHex)) {
+        continue;
       }
 
-      // Update startPosition for the next iteration
-      startPosition = pointer;
+      const raw = hexToBytes(element);
+      let startPosition = 0;
+
+      while (true) {
+        const pointer = getNextInscriptionMark(raw, startPosition);
+        if (pointer === -1) break;
+
+        const inscription = InscriptionParserService.extractInscriptionData(raw, pointer);
+        if (inscription) {
+          inscriptions.push(inscription);
+        }
+
+        startPosition = pointer;
+      }
     }
 
     return inscriptions.length > 0 ? inscriptions : null;
