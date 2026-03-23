@@ -86,9 +86,8 @@ describe('LabitbuParserService', () => {
 
     it('extractLabitbuImage should return the WebP bytes', () => {
       const txn = readTransaction(LABITBU_TXID);
-      const image = extractLabitbuImage(txn.vin[0].witness!);
-      expect(image).not.toBeNull();
-      expect(image!.length).toBe(4096);
+      const image = extractLabitbuImage(txn.vin[0].witness!)!;
+      expect(image.length).toBe(4096);
     });
 
     it('extractLabitbuImage should return null for non-Labitbu witness', () => {
