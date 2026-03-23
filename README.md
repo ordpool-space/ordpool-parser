@@ -1,6 +1,10 @@
 # ordpool-parser
 
-Zero-dependency TypeScript parser for Bitcoin digital artifacts. Detects and extracts **Inscriptions**, **Runes**, **BRC-20**, **SRC-20 Stamps**, **CAT-21**, **Atomicals**, and **Labitbu** from raw transaction data.
+Yes, Bitcoin is money. Everything else is an attack on Bitcoin. We get it. [OP_RETURN](https://github.com/bitcoin/bips/blob/master/bip-0110.mediawiki) will fix this.
+
+But you still want to know what's inside your blocks, don't you? Know your enemy! ;-)
+
+**ordpool-parser** is a zero-dependency TypeScript parser that detects and extracts digital artifacts from raw Bitcoin transactions: **Inscriptions**, **Runes**, **BRC-20**, **SRC-20 Stamps**, **CAT-21**, **Atomicals**, and **Labitbu**.
 
 Works in **Node.js** and **browsers** out of the box. Used by [ordpool.space](https://ordpool.space).
 
