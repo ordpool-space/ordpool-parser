@@ -101,7 +101,7 @@ describe('Cat21ParserService', () => {
   });
 
 
-  xit('should render the first historic cats', async () => {
+  xit('SLOW: should render the first historic cats', async () => {
 
     // these are real values from mainnet
     const txIdsAndBlockIdsAndFeeRate: [string, string, number][] = [
@@ -139,7 +139,7 @@ describe('Cat21ParserService', () => {
     fs.writeFileSync('testdist/cat-historic-testdrive.html', testdriveHtml.replace('CATS!', svgContent));
   });
 
-  xit('should render a wide range of feeRate values', async () => {
+  xit('SLOW: should render a wide range of feeRate values', async () => {
 
     const feeRates = [
       1, 5, 8, 10, 12, 15, 20, 24, 27, 30, 33, 36, 40, 43,
@@ -171,7 +171,7 @@ describe('Cat21ParserService', () => {
     fs.writeFileSync('testdist/cat-fees-testdrive.html', testdriveHtml.replace('CATS!', svgContent));
   });
 
-  xit('should render all potential cats of a block!', async () => {
+  xit('SLOW: should render all potential cats of a block!', async () => {
 
     const blockId = '000000000000000000018e3ea447b11385e3330348010e1b2418d0d8ae4e0ac7';
 
@@ -192,7 +192,7 @@ describe('Cat21ParserService', () => {
     fs.writeFileSync('testdist/cat-block-testdrive.html', testdriveHtml.replace('CATS!', svgContent));
   });
 
-  xit('should generate examples with laser eyes in all the possible palettes', () => {
+  xit('SLOW: should generate examples with laser eyes in all the possible palettes', () => {
 
     // const steps = [0, 28, 56, 84, 112, 140, 168, 196, 224, 255];
     const steps = [0, 51, 102, 153, 204, 255];
@@ -239,7 +239,7 @@ describe('Cat21ParserService', () => {
     fs.writeFileSync('testdist/cat-lasereye-palettes-testdrive.html', testdriveHtml.replace('CATS!', svgContent));
   });
 
-  xit('should generate examples with laser eyes in all poses', () => {
+  xit('SLOW: should generate examples with laser eyes in all poses', () => {
 
     const laserEyesByte = 204;
     const backgroundByte = 100;
@@ -272,7 +272,7 @@ describe('Cat21ParserService', () => {
     fs.writeFileSync('testdist/cat-lasereye-poses-testdrive.html', testdriveHtml.replace('CATS!', svgContent));
   });
 
-  xit('should generate 4 different backgrounds', () => {
+  xit('SLOW: should generate 4 different backgrounds', () => {
 
     const steps = [0, 64, 128, 192];
     const feeRate = 20; // change this value to test other colors!

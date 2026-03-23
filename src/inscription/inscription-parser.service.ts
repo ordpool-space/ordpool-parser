@@ -1,19 +1,28 @@
+import { CBOR } from '../lib/cbor';
 import {
-  brotliDecodeUint8Array,
+  binaryStringToBase64,
+  bytesToBinaryString,
+  bytesToUnicodeString,
+  concatUint8Arrays,
+  hexToBytes,
+  littleEndianBytesToNumber,
+} from '../lib/conversions';
+import { OP_0, OP_ENDIF } from '../lib/op-codes';
+import { readPushdata } from '../lib/reader';
+import { DigitalArtifactType } from '../types/digital-artifact';
+import { ParsedInscription } from '../types/parsed-inscription';
+import { OnParseError } from '../types/parser-options';
+import {
   extractInscriptionId,
   extractPointer,
+  getDecodedContent,
   getKnownFieldValue,
   getKnownFieldValues,
   getNextInscriptionMark,
   hasInscription,
-  knownFields
+  knownFields,
 } from './inscription-parser.service.helper';
-import { CBOR } from '../lib/cbor';
-import { binaryStringToBase64, bytesToBinaryString, bytesToUnicodeString, hexToBytes, littleEndianBytesToNumber } from '../lib/conversions';
-import { readPushdata } from '../lib/reader';
-import { DigitalArtifactType } from '../types/digital-artifact';
-import { ParsedInscription } from '../types/parsed-inscription';
-import { OP_0, OP_ENDIF } from '../lib/op-codes';
+import { parseProperties } from './inscription-parser.service.properties.helper';
 
 /**
  * Extracts all Ordinal inscriptions from a Bitcoin transaction.
@@ -27,7 +36,7 @@ export class InscriptionParserService {
   static parse(transaction: {
     txid: string;
     vin: { witness?: string[] }[]
-  }): ParsedInscription[] {
+  }, onError?: OnParseError): ParsedInscription[] {
 
     try {
 
@@ -61,7 +70,7 @@ export class InscriptionParserService {
       return inscriptions;
 
     } catch (ex) {
-      // console.error(ex);
+      onError?.(ex);
       return [];
     }
   }
@@ -98,21 +107,33 @@ export class InscriptionParserService {
   private static parseInscriptionsWithinWitness(witness: string[]): ParsedInscription[] | null {
 
     const inscriptions: ParsedInscription[] = [];
-    const raw = hexToBytes(witness.join(''));
-    let startPosition = 0;
+    // OP_FALSE (0x00), OP_IF (0x63), OP_PUSHBYTES_3 (0x03), 'o', 'r', 'd' (0x6f, 0x72, 0x64)
+    const inscriptionMarkHex = '0063036f7264';
 
-    while (true) {
-      const pointer = getNextInscriptionMark(raw, startPosition);
-      if (pointer === -1) break; // No more inscriptions found
-
-      // Parse the inscription at the current position
-      const inscription = InscriptionParserService.extractInscriptionData(raw, pointer);
-      if (inscription) {
-        inscriptions.push(inscription);
+    // Only convert witness elements that contain the inscription mark.
+    // This avoids hexToBytes on the signature and control block elements,
+    // which is significant for large inscriptions (up to 4MB).
+    for (const element of witness) {
+      if (!element.includes(inscriptionMarkHex)) {
+        continue;
       }
 
-      // Update startPosition for the next iteration
-      startPosition = pointer;
+      const raw = hexToBytes(element);
+      let startPosition = 0;
+
+      while (true) {
+        const pointer = getNextInscriptionMark(raw, startPosition);
+        if (pointer === -1) break; // No more inscriptions found
+
+        // Parse the inscription at the current position
+        const inscription = InscriptionParserService.extractInscriptionData(raw, pointer);
+        if (inscription) {
+          inscriptions.push(inscription);
+        }
+
+        // Update startPosition for the next iteration
+        startPosition = pointer;
+      }
     }
 
     return inscriptions.length > 0 ? inscriptions : null;
@@ -154,7 +175,8 @@ export class InscriptionParserService {
   }
 
   /**
-   * Extracts inscription data starting from the current pointer.
+   * Extracts inscription data (starting from the current pointer) and calculates the envelope size.
+   *
    * @param raw - The raw data to read.
    * @param pointer - The current pointer where the reading starts.
    * @returns The parsed inscription or nullx
@@ -166,6 +188,9 @@ export class InscriptionParserService {
       let fields: { tag: number; value: Uint8Array }[];
       let newPointer: number;
       let slice: Uint8Array;
+
+      // Store the starting pointer (this is where the envelope starts)
+      const initialPointer = pointer;
 
       [fields, newPointer] = InscriptionParserService.extractFields(raw, pointer);
 
@@ -182,42 +207,30 @@ export class InscriptionParserService {
         data.push(slice);
       }
 
-      const combinedLengthOfAllArrays = data.reduce((acc, curr) => acc + curr.length, 0);
-      let combinedData = new Uint8Array(combinedLengthOfAllArrays);
+      // +6 for OP_FALSE (1 byte) + OP_IF (1 byte) + OP_PUSH (1 byte) + "ord" (3 bytes)
+      // +1 for the OP_ENDIF
+      const envelopeSize = newPointer - initialPointer + 7;
 
-      // Copy all segments from data into combinedData, forming a single contiguous Uint8Array
-      let idx = 0;
-      for (const segment of data) {
-        combinedData.set(segment, idx);
-        idx += segment.length;
-      }
+      let combinedData = concatUint8Arrays(data);
 
       const contentTypeRaw = getKnownFieldValue(fields, knownFields.content_type);
-      let contentType: string;
-      let contentEncoding: string | undefined = undefined;
+      let contentType: string | undefined = undefined;
 
-      // an inscriptions without a contentType, probably a delegate
-      if (!contentTypeRaw) {
-
-        contentType = 'undefined';
-
-      } else {
-
+      // an inscriptions with no contentType is most probably a delegate
+      if (contentTypeRaw) {
         // strings are (always) UTF-8, according to https://github.com/ordinals/ord/issues/2505
         contentType = bytesToUnicodeString(contentTypeRaw);
-
-        // figure out if the body is encoded via brotli
-        const contentEncodingRaw = getKnownFieldValue(fields, knownFields.content_encoding);
-        if (contentEncodingRaw) {
-          contentEncoding = bytesToUnicodeString(contentEncodingRaw);
-        }
-
-        if (contentEncoding === 'br') {
-          combinedData = brotliDecodeUint8Array(combinedData);
-        }
-
-        // TODO: add support for gzip
       }
+
+      // figure out if the body is encoded via brotli or gzip
+      const contentEncodingRaw = getKnownFieldValue(fields, knownFields.content_encoding);
+      let contentEncoding: string | undefined = undefined;
+
+      if (contentEncodingRaw) {
+        contentEncoding = bytesToUnicodeString(contentEncodingRaw);
+      }
+
+      let cachedProperties: ReturnType<typeof parseProperties> | undefined;
 
       return {
 
@@ -231,19 +244,26 @@ export class InscriptionParserService {
 
         fields,
 
-        getContent() {
-          return bytesToUnicodeString(combinedData) + ''; // never return undefined here
+        getContent: async (): Promise<string> => {
+          const decodedData = await getDecodedContent(contentEncoding, combinedData);
+          return bytesToUnicodeString(decodedData) + ''; // never return undefined here
         },
 
-        getData: (): string => {
-          const content = bytesToBinaryString(combinedData);
+        getData: async (): Promise<string> => {
+          const decodedData = await getDecodedContent(contentEncoding, combinedData);
+          const content = bytesToBinaryString(decodedData);
           return binaryStringToBase64(content);
         },
 
-        getDataUri: (): string => {
-          const content = bytesToBinaryString(combinedData);
+        getDataUri: async(): Promise<string> => {
+          const decodedData = await getDecodedContent(contentEncoding, combinedData);
+          const content = bytesToBinaryString(decodedData);
           const fullBase64Data = binaryStringToBase64(content);
           return `data:${contentType};base64,${fullBase64Data}`;
+        },
+
+        getDataRaw: (): Uint8Array => {
+          return combinedData;
         },
 
         getPointer: (): number | undefined => {
@@ -257,13 +277,17 @@ export class InscriptionParserService {
         },
 
         getMetadata: (): string | undefined => {
-          const metadataRaw = getKnownFieldValue(fields, knownFields.metadata);
+          const metadataChunks = getKnownFieldValues(fields, knownFields.metadata);
 
-          if (!metadataRaw) {
+          if (metadataChunks.length === 0) {
             return undefined;
           }
 
-          return CBOR.decode(metadataRaw);
+          if (metadataChunks.length === 1) {
+            return CBOR.decode(metadataChunks[0]);
+          }
+
+          return CBOR.decode(concatUint8Arrays(metadataChunks));
         },
 
         getMetaprotocol: (): string | undefined => {
@@ -283,6 +307,20 @@ export class InscriptionParserService {
           const delegatesRaw = getKnownFieldValues(fields, knownFields.delegate);
           return delegatesRaw.map(parentRaw => extractInscriptionId(parentRaw));
         },
+
+        getRune: (): Uint8Array | undefined => {
+          return getKnownFieldValue(fields, knownFields.rune);
+        },
+
+        getProperties: () => {
+          if (!cachedProperties) {
+            cachedProperties = parseProperties(fields);
+          }
+          return cachedProperties;
+        },
+
+        envelopeSize, // The size of the envelope including the entire script
+        contentSize: combinedData.length // The size of the content (the body of the inscription)
       };
 
     } catch (ex) {

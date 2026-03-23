@@ -1,12 +1,11 @@
 import { MAX_DECOMPRESSED_SIZE_MESSAGE, brotliDecode } from "../lib/brotli-decode";
-import { isStringInArrayOfStrings, littleEndianBytesToNumber } from "../lib/conversions";
+import { hexToBytes, isStringInArrayOfStrings, littleEndianBytesToNumber } from "../lib/conversions";
 import { bytesToHex } from "../lib/conversions";
-import { OP_FALSE, OP_IF, OP_PUSHBYTES_3 } from "../lib/op-codes";
+import { OP_ENDIF, OP_FALSE, OP_IF, OP_PUSHBYTES_3 } from "../lib/op-codes";
 
 
 /**
  * Inscriptions may include fields before an optional body. Each field consists of two data pushes, a tag and a value.
- * Currently, there are six defined fields:
  */
 export const knownFields = {
   // content_type, with a tag of 1, whose value is the MIME type of the body.
@@ -28,7 +27,34 @@ export const knownFields = {
   content_encoding: 0x09,
 
   // delegate, with a tag of 11, see delegate docs: https://docs.ordinals.com/inscriptions/delegate.html
-  delegate: 0xb
+  delegate: 0x0b,
+
+  // rune, with a tag of 13 — rune etching commitment.
+  //
+  // When etching a new rune, the rune name must be "committed to" in an inscription
+  // before the etching transaction. This prevents front-running (someone seeing your
+  // etching in the mempool and stealing the rune name).
+  //
+  // The commitment is the rune's u128 value encoded as little-endian bytes with trailing
+  // zeros stripped. For example, rune "UNCOMMON•GOODS" (u128 value) becomes a few bytes.
+  // This commitment is stored as tag 13 in the inscription envelope.
+  //
+  // The etching transaction then spends the inscription's UTXO as an input. ord's indexer
+  // verifies: (1) the commitment bytes match the rune being etched, (2) the committed
+  // inscription was in a taproot output, and (3) at least 6 blocks have passed since the
+  // commitment (COMMIT_CONFIRMATIONS = 6).
+  //
+  // Our rune parser already handles commitment validation — see findCommitment() in
+  // rune-parser.service.helper.findCommitment.ts and Rune.commitment in rune/src/rune.ts.
+  rune: 0x0d,
+
+  // properties, with a tag of 17 — CBOR-encoded gallery items + attributes (chunked like metadata)
+  // see https://docs.ordinals.com/inscriptions/properties.html
+  properties: 0x11,
+
+  // property_encoding, with a tag of 19 — "br" for brotli compression of properties.
+  // ord only supports brotli. Our parser additionally supports "gzip" for completeness.
+  property_encoding: 0x13,
 }
 
 /**
@@ -112,19 +138,7 @@ export function getNextInscriptionMark(raw: Uint8Array, startPosition: number): 
 export function hasInscription(witness: string[]): boolean {
 
   // OP_FALSE (0x00), OP_IF (0x63), OP_PUSHBYTES_3 (0x03), 'o', 'r', 'd' (0x6f, 0x72, 0x64)
-  // --> nothing more!! no check for OP_ENDIF
   const inscriptionMarkHex = '0063036f7264';
-
-  // note from Johannes: I'm not sure if this is a realistic case.
-  // witness: string[] could be potentially splitted at a super unlucky position?!
-  // if someone is smarter than me, please tell me that I can change this! :-)
-  // --> so is it save to do this?
-  // return witness.some((entry) => entry.includes(inscriptionMarkHex));
-
-  // this would also work, but would join the string, which could result in a lot of memory consumption!
-  // imagine a 4MB inscription! 💀
-  // const witnessJoined = witness.join('');
-  // return witnessJoined.includes(inscriptionMarkHex);
 
   return isStringInArrayOfStrings(inscriptionMarkHex, witness);
 }
@@ -145,6 +159,23 @@ export function extractPointer(value: Uint8Array | undefined): number | undefine
   // Interpret the pointerField value as a little-endian integer
   return littleEndianBytesToNumber(value);
 }
+
+export async function getDecodedContent(contentEncoding: string | undefined, combinedData: Uint8Array): Promise<Uint8Array> {
+
+  if (!contentEncoding) {
+    return combinedData;
+  }
+
+  if (contentEncoding === 'br') {
+    return brotliDecodeUint8Array(combinedData);
+  }
+  if (contentEncoding === 'gzip') {
+    return await gzipDecode(combinedData);
+  }
+
+  return new TextEncoder().encode('Error: unknown content encoding!');
+}
+
 
 /**
  * Decompresses a Uint8Array using the Brotli algorithm.
@@ -184,6 +215,48 @@ export function brotliDecodeUint8Array(bytes: Uint8Array): Uint8Array {
   }
 }
 
+export async function gzipDecode(bytes: Uint8Array): Promise<Uint8Array> {
+  if (typeof DecompressionStream !== 'undefined') {
+    // Create a DecompressionStream for "gzip"
+    const ds = new DecompressionStream('gzip');
+
+    // Write the input bytes to the stream
+    const writer = ds.writable.getWriter();
+    writer.write(bytes);
+    writer.close();
+
+    // Read and concatenate the output bytes
+    const reader = ds.readable.getReader();
+    const chunks: Uint8Array[] = [];
+    let totalSize = 0;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      if (value) {
+        chunks.push(value);
+        totalSize += value.byteLength;
+      }
+    }
+
+    // Combine chunks into a single Uint8Array
+    const result = new Uint8Array(totalSize);
+    let offset = 0;
+    for (const chunk of chunks) {
+      result.set(chunk, offset);
+      offset += chunk.length;
+    }
+
+    return result;
+  } else {
+    throw new Error(
+      'gzip decoding is not supported in this environment. For Node.js, upgrade to version 18 or higher.'
+    );
+  }
+}
+
+
 /**
  * Extracts an inscription ID from a field in an inscription.
  * (used for parent instriptions and for delegate inscriptions)
@@ -207,3 +280,62 @@ export function extractInscriptionId(value: Uint8Array): string {
   return txIdHex + 'i' + index;
 }
 
+/**
+ * Measures the size of the inscription in witness data (used for testing only!).
+ * Starts at the inscription mark and stops at the last OP_ENDIF.
+ *
+ * This only works for simple scenarios, this won't work for multiple inscriptions in one witness.
+ * Or for some additional data with an OP_ENDIF after the envelope.
+ *
+ * @param witness - The witness data as an array of strings.
+ * @returns The size of the inscription (including the envelope) or null if OP_ENDIF is not found.
+ */
+export function measureInscriptionSize(witness: string[]): number | null {
+
+  if (!witness) {
+    return null;
+  }
+
+  // Find the witness element that contains the inscription (the tapscript)
+  // OP_FALSE (0x00), OP_IF (0x63), OP_PUSHBYTES_3 (0x03), 'o', 'r', 'd' (0x6f, 0x72, 0x64)
+  const inscriptionMarkHex = '0063036f7264';
+  const element = witness.find(e => e.includes(inscriptionMarkHex));
+  if (!element) {
+    return null;
+  }
+
+  const raw = hexToBytes(element);
+
+  // Find the start of the inscription using the inscription mark
+  const startPosition = getNextInscriptionMark(raw, 0);
+
+  if (startPosition === -1) {
+    return null; // Inscription mark not found
+  }
+
+  // Find the position of last OP_ENDIF (0x68)
+  const opEndIfIndex = raw.lastIndexOf(OP_ENDIF, raw.length);
+
+  if (opEndIfIndex === -1) {
+    return null; // OP_ENDIF not found
+  }
+
+  // The size of the inscription is from the start position to the last OP_ENDIF
+  const inscriptionSize = opEndIfIndex - startPosition;
+
+  // Add the size of the inscription mark (6 bytes) + OP_ENDIF (1 byte)
+  return inscriptionSize + 7;
+}
+
+/**
+ * Validates whether a given string is a valid inscription ID.
+ *
+ * Inscription IDs are of the form TXIDiN, where TXID is the transaction ID of the reveal transaction,
+ * and N is the index of the inscription in the reveal transaction.
+ *
+ * @param id - The string to validate as an inscription ID.
+ * @returns `true` if the input is a valid inscription ID, otherwise `false`.
+ */
+export function isValidInscriptionId(id: string): boolean {
+  return /^[a-f0-9]{64}i\d{1,}$/.test(id);
+}

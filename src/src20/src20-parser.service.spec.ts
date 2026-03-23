@@ -31,7 +31,7 @@ describe('SRC20 parser', () => {
     expect(content).toEqual('{"p":"src-20","op":"deploy","tick":"DODO","lim":"69696969696969696969696969696969", "max":"420420420420420420420420420"}')
   });
 
-  fit('should be able to detect an SRC-20 transaction even if blockstream sends `unknown` as scriptpubkey_type', () => {
+  it('should be able to detect an SRC-20 transaction even if blockstream sends `unknown` as scriptpubkey_type', () => {
 
     const txn = readTransaction('8403958bb654e732acf49abd11ec0bcfe589c54eef3a8a02dbfffaf50633bbfe-mempool');
     const content = Src20ParserService.parse(txn)?.getContent();

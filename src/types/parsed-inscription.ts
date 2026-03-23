@@ -1,27 +1,65 @@
 import { DigitalArtifact } from "./digital-artifact";
 
+/**
+ * A single item in a gallery. References another inscription by ID,
+ * with optional title and traits.
+ */
+export interface GalleryItem {
+  inscriptionId: string;
+  title?: string;
+  traits?: Record<string, boolean | number | string | null>;
+}
+
+/**
+ * Structured properties from an inscription's tag 17 field.
+ * Contains gallery items (a curated list of inscription IDs) and
+ * inscription-level attributes (title, traits).
+ *
+ * Galleries are permissionless — anyone can create a gallery referencing
+ * any inscriptions. Inclusion in a gallery does not imply provenance.
+ *
+ * see https://docs.ordinals.com/inscriptions/properties.html
+ */
+export interface InscriptionProperties {
+  gallery: GalleryItem[];
+  title?: string;
+  traits?: Record<string, boolean | number | string | null>;
+}
+
 export interface ParsedInscription extends DigitalArtifact {
 
   inscriptionId: string;
 
-  contentType: string;
+  /**
+   * Delegates do not need a contentType, the parser will return undefined
+   */
+  contentType: string | undefined;
 
   fields: { tag: number; value: Uint8Array }[];
 
   /**
    * Data as UTF-8 encoded string (not intended for binary content like images or videos)
+   * If the data was compressed (brotli or gzip), it is already decompressed here.
    */
-  getContent: () => string;
+  getContent: () => Promise<string>; // returns an empty string if no data is available
 
   /**
-   * The raw data (base64 encoded)
+   * The data, base64 encoded
+   * If the data was compressed (brotli or gzip), it is already decompressed here.
    */
-  getData: () => string;
+  getData: () => Promise<string>;
 
   /**
    * The raw Base64 encoded data as an URI that can be displayed in an iframe
+   * If the data was compressed (brotli or gzip), it is already decompressed here.
    */
-  getDataUri: () => string;
+  getDataUri: () => Promise<string>;
+
+  /**
+   * The raw data, no changes made
+   * If the data was compressed (brotli or gzip), it is NOT decompressed here.
+   */
+  getDataRaw: () => Uint8Array;
 
   /**
    * Get Pointer, from tag 2
@@ -56,4 +94,36 @@ export interface ParsedInscription extends DigitalArtifact {
    * see delegate docs: https://docs.ordinals.com/inscriptions/delegate.html
    */
   getDelegates: () => string[];
+
+  /**
+   * Get Rune commitment, from tag 13.
+   * Returns the raw commitment bytes (the rune's u128 value as little-endian
+   * bytes with trailing zeros stripped). This links the inscription to a rune
+   * etching — the etching transaction must spend this inscription's UTXO.
+   *
+   * Note: tag 13 is only one way to commit to a rune. The rune protocol also
+   * accepts bare tapscript pushes (no inscription needed). For the full
+   * commitment search, see findCommitment() in the rune parser.
+   */
+  getRune: () => Uint8Array | undefined;
+
+  /**
+   * Get Properties, from tag 17 (with optional decompression via tag 19)
+   * Supports brotli ("br") and gzip ("gzip") compression.
+   * Contains gallery items and structured attributes.
+   * see https://docs.ordinals.com/inscriptions/properties.html
+   */
+  getProperties: () => Promise<InscriptionProperties | undefined>;
+
+  /**
+   * The size in bytes of the envelope including the entire script
+   */
+  envelopeSize: number;
+
+  /**
+   * The size in bytes of the content (the body of the inscription).
+   * For compressed content, the unpacked size is not taken into account,
+   * only the size that was actually saved is considered.
+   */
+  contentSize: number;
 }

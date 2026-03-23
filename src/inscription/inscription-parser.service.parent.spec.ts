@@ -1,5 +1,6 @@
 import { InscriptionParserService } from './inscription-parser.service';
 import { readTransaction } from '../../testdata/test.helper';
+import { measureInscriptionSize } from './inscription-parser.service.helper';
 
 describe('Inscription parser', () => {
 
@@ -51,7 +52,7 @@ describe('Inscription parser', () => {
    *
    * see: https://docs.ordinals.com/inscriptions/delegate.html
    */
-  it('should parse inscriptions with just a delegate (no content!)', () => {
+  it('should parse inscriptions with just a delegate (no content!)', async () => {
 
     const txn = readTransaction('6b6f65ba4bc2cbb8cec1e1ca5e1d426e442a05729cdbac6009cca185f7d95bab');
 
@@ -61,10 +62,14 @@ describe('Inscription parser', () => {
     expect(delegates.length).toBe(1);
     expect(delegates[0]).toBe('4c83f2e1d12d6f71e9f69159aff48f7946ce04c5ffcc3a3feee4080bac343722i0');
 
-    expect(inscription.getContent()).toBe('');
-    expect(inscription.getData()).toBe('');
-    expect(inscription.getData()).toBe('');
-    expect(inscription.getDataUri()).toBe('data:undefined;base64,');
+    expect(await inscription.getContent()).toBe('');
+    expect(await inscription.getData()).toBe('');
+    expect(await inscription.getDataUri()).toBe('data:undefined;base64,');
+    expect(inscription.contentType).toBe(undefined);
     expect(inscription.getContentEncoding()).toBe(undefined);
+
+    const expectedEnvelopeSize = measureInscriptionSize(txn.vin[0].witness!); // 63
+    expect(inscription.envelopeSize).toEqual(expectedEnvelopeSize);
+    expect(inscription.contentSize).toBe(0);
   });
 });

@@ -1,4 +1,4 @@
-import { extractInscriptionId, extractPointer, getKnownFieldValue, getKnownFieldValues, getNextInscriptionMark } from './inscription-parser.service.helper';
+import { extractInscriptionId, extractPointer, getKnownFieldValue, getKnownFieldValues, getNextInscriptionMark, isValidInscriptionId, measureInscriptionSize } from './inscription-parser.service.helper';
 import { hexToBytes } from '../lib/conversions';
 
 describe('getKnownFieldValue', () => {
@@ -269,5 +269,98 @@ describe('extractPointer', () => {
 
   it('should return undefined for undefined pointer value', () => {
     expect(extractPointer(undefined)).toBeUndefined();
+  });
+});
+
+
+describe('measureInscriptionSize', () => {
+
+  // Each witness item is an atomic byte array. The inscription envelope
+  // (mark through OP_ENDIF) is always within a single element (the tapscript).
+
+  it('should return the correct size for a simple envelope', () => {
+    const witness = [
+      '00', // Placeholder (signature)
+      '0063036f7264' + '1122' + '68', // OP_FALSE, OP_IF, OP_PUSH "ord" (6 bytes) + 2 extra bytes + OP_ENDIF
+      '00' // Placeholder (control block)
+    ];
+
+    const expectedSize = 6 + 2 + 1; // mark + data + OP_ENDIF
+
+    expect(measureInscriptionSize(witness)).toBe(expectedSize);
+  });
+
+  it('should return null if the witness is empty', () => {
+    const witness: string[] = [];
+    expect(measureInscriptionSize(witness)).toBeNull();
+  });
+
+  it('should return null if the witness does not contain an inscription mark', () => {
+    const witness = [
+      '00',
+      'abcd1234' // No inscription mark
+    ];
+    expect(measureInscriptionSize(witness)).toBeNull();
+  });
+
+  it('should return null if OP_ENDIF is missing', () => {
+    const witness = [
+      '00', // Placeholder
+      '0063036f7264' // OP_FALSE, OP_IF, OP_PUSH "ord", but no OP_ENDIF
+    ];
+    expect(measureInscriptionSize(witness)).toBeNull();
+  });
+
+  it('should return the correct size with extra data before OP_ENDIF', () => {
+    const witness = [
+      '00',
+      '0063036f7264' + 'abcdef123456' + '68', // OP_FALSE, OP_IF, OP_PUSH "ord" (6) + additional push data (6) + OP_ENDIF (1)
+    ];
+
+    const expectedSize = 6 + 6 + 1; // mark + data + OP_ENDIF
+
+    expect(measureInscriptionSize(witness)).toBe(expectedSize);
+  });
+
+  it('should use last OP_ENDIF when multiple exist', () => {
+    const witness = [
+      '00',
+      '0063036f7264' + 'abcdef123456' + '68' + '68', // mark + data (6) + evil inner OP_ENDIF (1) + real OP_ENDIF (1)
+    ];
+
+    const expectedSize = 6 + 6 + 1 + 1; // mark + data + evil OP_ENDIF + real OP_ENDIF
+
+    expect(measureInscriptionSize(witness)).toBe(expectedSize);
+  });
+});
+
+describe('isValidInscriptionId', () => {
+  it('should return true for a valid inscription ID', () => {
+    const validId = "521f8eccffa4c41a3a7728dd012ea5a4a02feed81f41159231251ecf1e5c79dai0";
+    expect(isValidInscriptionId(validId)).toBe(true);
+  });
+
+  it('should return false for an invalid inscription ID with incorrect TXID length', () => {
+    const invalidId = "521f8eccffa4c41ai0"; // Short TXID
+    expect(isValidInscriptionId(invalidId)).toBe(false);
+  });
+
+  it('should return false for an invalid inscription ID with uppercase hex characters', () => {
+    const invalidId = "521F8ECCFFA4C41A3A7728DD012EA5A4A02FEED81F41159231251ECF1E5C79DAI0";
+    expect(isValidInscriptionId(invalidId)).toBe(false);
+  });
+
+  it('should return false for an invalid inscription ID without the "i" separator', () => {
+    const invalidId = "521f8eccffa4c41a3a7728dd012ea5a4a02feed81f41159231251ecf1e5c79da0";
+    expect(isValidInscriptionId(invalidId)).toBe(false);
+  });
+
+  it('should return false for an invalid inscription ID without an index', () => {
+    const invalidId = "521f8eccffa4c41a3a7728dd012ea5a4a02feed81f41159231251ecf1e5c79dai";
+    expect(isValidInscriptionId(invalidId)).toBe(false);
+  });
+
+  it('should return false for undefined', () => {
+    expect(isValidInscriptionId(undefined as any)).toBe(false);
   });
 });

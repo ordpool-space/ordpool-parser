@@ -39,7 +39,7 @@ describe('decodeDataURI', () => {
   });
 
   it('should throw an error for data URI with missing Base64 section', () => {
-    const invalidDataURI = 'data:text/plain;base64,';
+    const invalidDataURI = ' text/plain;base64,';
     expect(() => decodeDataURI(invalidDataURI)).toThrow('Invalid data URI format');
   });
 

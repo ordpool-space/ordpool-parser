@@ -1,4 +1,4 @@
-import { OP_1NEGATE, OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4, OP_PUSHNUM_1, OP_PUSHNUM_16, OP_RESERVED } from '../lib/op-codes';
+import { OP_0, OP_1NEGATE, OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4, OP_PUSHNUM_1, OP_PUSHNUM_16, OP_RESERVED } from '../lib/op-codes';
 
 import { littleEndianBytesToNumber } from './conversions';
 
@@ -19,6 +19,14 @@ export function readBytes(raw: Uint8Array, pointer: number, n: number): [Uint8Ar
  * Reads data based on the Bitcoin script push opcode starting from a specified pointer in the raw data.
  * Handles different opcodes and direct push (where the opcode itself signifies the number of bytes to push).
  *
+ * Hint: ord can read minimal data-pushes, but does NOT create inscriptions with them.
+ * But chisel.xyz already supports this feature!
+ *
+ * see https://github.com/ordpool-space/ordpool-parser/pull/2
+ * see https://github.com/ordinals/ord/issues/1403 (Use minimal data-pushes)
+ * see https://github.com/ordinals/ord/issues/2505 (Make docs more precise)
+ * see https://github.com/ordinals/ord/pull/1769 (Correctly parse inscriptions when using minimal opcodes)
+ *
  * @param raw - The raw transaction data as a Uint8Array.
  * @param pointer - The current position in the raw data array.
  * @returns A tuple containing the read data as Uint8Array and the updated pointer position.
@@ -27,6 +35,12 @@ export function readPushdata(raw: Uint8Array, pointer: number): [Uint8Array, num
 
   let [opcodeSlice, newPointer] = readBytes(raw, pointer, 1);
   const opcode = opcodeSlice[0];
+
+  // Handle the special case of OP_0 (0x00) which pushes an empty array (interpreted as zero)
+  // fixes #18
+  if (opcode === OP_0) {
+    return [new Uint8Array(), newPointer];
+  }
 
   // Handle the special case of OP_1NEGATE (-1)
   if (opcode === OP_1NEGATE) {

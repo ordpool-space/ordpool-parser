@@ -2,6 +2,7 @@ import { createCatHash } from './cat21-parser.service.helper';
 import { MooncatParser } from './mooncat-parser';
 import { DigitalArtifactType } from '../types/digital-artifact';
 import { CatTraits, ParsedCat21 } from '../types/parsed-cat21';
+import { OnParseError } from '../types/parser-options';
 
 /**
  * Service to parse CAT-21 transactions.
@@ -23,7 +24,7 @@ export class Cat21ParserService {
     status: {
       block_hash?: string, // undefined, if unconfirmed txn!
     }
-  }): ParsedCat21 | null {
+  }, onError?: OnParseError): ParsedCat21 | null {
 
     try {
 
@@ -63,7 +64,7 @@ export class Cat21ParserService {
       };
 
     } catch (ex) {
-      // console.error(ex);
+      onError?.(ex);
       return null;
     }
 

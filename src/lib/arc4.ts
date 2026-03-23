@@ -62,7 +62,7 @@ export class Arc4 {
     if (typeof key === 'string') {
       const encoder = new TextEncoder();
       this.key = Array.from(encoder.encode(key));
-    } else if (key instanceof Uint8Array) {
+    } else if (ArrayBuffer.isView(key)) {
       this.key = Array.from(key);
     } else {
       throw new Error('Invalid key');

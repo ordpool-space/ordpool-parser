@@ -152,9 +152,10 @@ function encode(value: any): Uint8Array {
           writeTypeAndLength(4, length);
           for (let i = 0; i < length; ++i)
             encodeItem(value[i]);
-        } else if (value instanceof Uint8Array) {
-          writeTypeAndLength(2, value.length);
-          writeUint8Array(value);
+        } else if (ArrayBuffer.isView(value)) {
+          const bytes = new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
+          writeTypeAndLength(2, bytes.length);
+          writeUint8Array(bytes);
         } else {
           const keys = Object.keys(value);
           length = keys.length;
