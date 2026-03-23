@@ -24,10 +24,10 @@ export function hasAtomical(witness: string[]): boolean {
  * 'unknown' is returned for any unrecognized operation string.
  *
  * Verified: 'dft' (tx 1d2f39f5...), 'nft' (tx d8c96e39...)
- * Unverified but known to exist: 'ft', 'mod', 'evt', 'dat', 'sl'
+ * Unverified but known to exist: 'ft', 'dmt', 'mod', 'evt', 'dat', 'sl'
  * Add types here ONLY after adding a real mainnet transaction to testdata/.
  */
-export type AtomicalOperation = 'dft' | 'nft' | 'ft' | 'mod' | 'evt' | 'dat' | 'sl' | 'unknown';
+export type AtomicalOperation = 'dft' | 'nft' | 'ft' | 'dmt' | 'mod' | 'evt' | 'dat' | 'sl' | 'unknown';
 
 /**
  * Finds the atomical mark in raw witness bytes and extracts the operation type.
@@ -69,6 +69,7 @@ export function extractAtomicalOperation(raw: Uint8Array): AtomicalOperation | n
           case 'nft': return 'nft';
           case 'ft': return 'ft';
           case 'dft': return 'dft';
+          case 'dmt': return 'dmt';
           case 'mod': return 'mod';
           case 'evt': return 'evt';
           case 'dat': return 'dat';
@@ -205,6 +206,7 @@ function mapOperationString(opString: string): AtomicalOperation {
     case 'nft': return 'nft';
     case 'ft': return 'ft';
     case 'dft': return 'dft';
+    case 'dmt': return 'dmt';
     case 'mod': return 'mod';
     case 'evt': return 'evt';
     case 'dat': return 'dat';

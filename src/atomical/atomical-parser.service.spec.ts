@@ -14,9 +14,13 @@ import {
 // Atomic ID: 56a8702bab3d2405eb9a356fd0725ca112a93a8efd1ecca06c6085e7278f0341i0 (commit txn, first output)
 const ATOMICAL_DFT_TXID = '1d2f39f54320631d0432fa495a45a4f298a2ca1b18adef8e4356e327d003a694';
 
-// Real mainnet atomical: realm "terafab" (#229861) — uses NFT operation
+// Real mainnet atomical: realm "terafab" (#229861) — uses NFT operation (no file attachments)
 // Found via atomicalmarket.com explorer
 const ATOMICAL_NFT_TXID = 'd8c96e3920f15dfbca4bcb3a3b2fce214484cb913fdca3055dd0f7069387edd3';
+
+// Real mainnet atomical: toothy collection item #7579 — NFT with image file attachment
+// Atomic ID: 1618d2a204f7ecfc5054369a89a86bbadcdd0cdac5313126b004baf7504bddfdi0
+const ATOMICAL_NFT_IMAGE_TXID = '7c8527547cc99b39f9d02fa2e8d963d78a3d60692a05ad378a87b96abed4aab6';
 
 // Real mainnet non-atomical transactions
 const CAT21_GENESIS_TXID = '98316dcb21daaa221865208fe0323616ee6dd84e6020b78bc6908e914ac03892';
@@ -92,6 +96,35 @@ describe('AtomicalParserService', () => {
 
       // Realm has no file attachments
       expect(result!.getFiles()).toEqual([]);
+    });
+
+    it('should parse a real NFT with image file attachment (toothy collection)', () => {
+      const txn = readTransaction(ATOMICAL_NFT_IMAGE_TXID);
+      const result = AtomicalParserService.parse(txn);
+
+      expect(result).not.toBeNull();
+      expect(result!.type).toBe(DigitalArtifactType.Atomical);
+      expect(result!.operation).toBe('nft');
+
+      // Args should reference the main image and dmint container
+      const args = result!.getArgs()!;
+      expect(args).not.toBeNull();
+      expect(args.main).toBe('image.png');
+      expect(args.request_dmitem).toBe('7579');
+
+      // File attachment: raw binary PNG (Format 2 — no $ct/$b wrapper)
+      const files = result!.getFiles();
+      expect(files.length).toBe(1);
+      expect(files[0].name).toBe('image.png');
+      expect(files[0].contentType).toBe('image/png');
+      expect(files[0].data).toBeInstanceOf(Uint8Array);
+      expect(files[0].data.length).toBe(1319);
+
+      // Verify PNG magic bytes (89 50 4E 47 = \x89PNG)
+      expect(files[0].data[0]).toBe(0x89);
+      expect(files[0].data[1]).toBe(0x50); // P
+      expect(files[0].data[2]).toBe(0x4E); // N
+      expect(files[0].data[3]).toBe(0x47); // G
     });
 
     it('should return null for a non-atomical transaction', () => {

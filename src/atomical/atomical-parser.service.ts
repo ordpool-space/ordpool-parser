@@ -1,4 +1,23 @@
 import { CBOR } from '../lib/cbor';
+
+/**
+ * Guess content type from a filename. Used when the CBOR payload stores raw
+ * binary data directly (no $ct wrapper).
+ */
+function guessContentType(name: string): string {
+  const ext = name.split('.').pop()?.toLowerCase();
+  switch (ext) {
+    case 'png': return 'image/png';
+    case 'jpg': case 'jpeg': return 'image/jpeg';
+    case 'gif': return 'image/gif';
+    case 'svg': return 'image/svg+xml';
+    case 'webp': return 'image/webp';
+    case 'json': return 'application/json';
+    case 'txt': return 'text/plain';
+    case 'html': return 'text/html';
+    default: return 'application/octet-stream';
+  }
+}
 import { DigitalArtifactType } from "../types/digital-artifact";
 import { AtomicalFile, ParsedAtomical } from "../types/parsed-atomical";
 import { OnParseError } from '../types/parser-options';
@@ -92,11 +111,21 @@ export class AtomicalParserService {
               continue;
             }
             const entry = payload[key] as any;
+
+            // Format 1: {$ct: "image/png", $b: <binary>} — used by prepareFilesData (old path)
             if (entry && entry.$ct && entry.$b instanceof Uint8Array) {
               files.push({
                 name: key,
                 contentType: entry.$ct,
                 data: entry.$b,
+              });
+
+            // Format 2: raw binary directly — used by prepareFilesDataAsObject (newer path)
+            } else if (entry instanceof Uint8Array) {
+              files.push({
+                name: key,
+                contentType: guessContentType(key),
+                data: entry,
               });
             }
           }
