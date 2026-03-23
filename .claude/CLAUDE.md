@@ -251,3 +251,12 @@ getPayloadRaw() // lazy: returns raw CBOR bytes
 - Two CBOR file formats on mainnet: `{$ct, $b}` wrapper (old) and raw binary (new)
 - Lazy API: `getArgs()`, `getFiles()`, `getPayloadRaw()`
 - See `atomical-parser.service.helper.ts` for full documentation of operation types and terminology
+
+### Labitbu
+- 10,000 WebP images stored in Taproot witness control blocks (blocks 908,072–908,196)
+- Detection: witness[2] == 4129 bytes + contains NUMS key (SHA-256 of "Labitbu")
+- Extraction: find RIFF header in control block, take 4096 bytes of WebP data
+- No inscription envelope — data lives in the control block's sibling hashes (128 × 32 bytes)
+- Tracking uses ordinal theory (same as inscriptions) — the image lives on the first sat
+- This approach inspired the CAT-21 fake inscription technique
+- See https://github.com/labitbu/pathologies (ord fork) and https://github.com/stutxo/labitbu-maker
