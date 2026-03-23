@@ -67,8 +67,7 @@ export function hasAtomical(witness: string[]): boolean {
  * - `z`   — "custom-color": set custom coloring/labeling on fungible token outputs
  *
  * Source: `splat-interactive-command.ts`, `split-interactive-command.ts`,
- * `custom-color-interactive-command.ts` in atomicals-js. These are extremely rare
- * on mainnet and invisible in explorers. The single-letter codes are... a choice.
+ * `custom-color-interactive-command.ts` in atomicals-js.
  *
  * ## CBOR payload structure
  *
