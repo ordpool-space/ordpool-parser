@@ -4,6 +4,7 @@ import { GalleryItem, InscriptionProperties } from '../types/parsed-inscription'
 import {
   brotliDecodeUint8Array,
   extractInscriptionId,
+  getDecodedContent,
   getKnownFieldValue,
   getKnownFieldValues,
   knownFields,
@@ -12,12 +13,12 @@ import {
 /**
  * Parses the CBOR properties from tag 17 fields.
  * Handles both inline and packed inscription ID encodings,
- * and optional brotli decompression (tag 19).
+ * and decompression via brotli or gzip (tag 19).
  *
  * Mirrors Properties::from_cbor() in ord's Rust implementation.
  * see https://docs.ordinals.com/inscriptions/properties.html
  */
-export function parseProperties(fields: { tag: number; value: Uint8Array }[]): InscriptionProperties | undefined {
+export async function parseProperties(fields: { tag: number; value: Uint8Array }[]): Promise<InscriptionProperties | undefined> {
   // Collect and concatenate tag 17 chunks (same as metadata)
   const chunks = getKnownFieldValues(fields, knownFields.properties);
   if (chunks.length === 0) {
@@ -37,20 +38,13 @@ export function parseProperties(fields: { tag: number; value: Uint8Array }[]): I
     }
   }
 
-  // Check tag 19 for brotli compression
+  // Decompress if tag 19 specifies an encoding (same as inscription content)
   const encodingRaw = getKnownFieldValue(fields, knownFields.property_encoding);
   if (encodingRaw) {
     const encoding = bytesToUnicodeString(encodingRaw);
-    if (encoding === 'br') {
-      propertiesBytes = brotliDecodeUint8Array(propertiesBytes);
-    } else {
-      // ord only supports brotli for properties (not gzip).
-      // Our brotli decoder is sync (inline implementation), but gzip would require
-      // the async DecompressionStream API — which would make getProperties() async.
-      // If ord ever adds gzip support for properties, we'll need to make this async
-      // (like getContent() already is for inscription bodies).
-      return undefined;
-    }
+    // NOTE: ord only supports brotli ("br") for properties. We additionally
+    // support gzip for robustness — same as we do for inscription content bodies.
+    propertiesBytes = await getDecodedContent(encoding, propertiesBytes);
   }
 
   if (propertiesBytes.length === 0) {

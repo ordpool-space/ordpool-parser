@@ -96,11 +96,12 @@ export interface ParsedInscription extends DigitalArtifact {
   getDelegates: () => string[];
 
   /**
-   * Get Properties, from tag 17 (with optional brotli decompression via tag 19)
+   * Get Properties, from tag 17 (with optional decompression via tag 19)
+   * Supports brotli ("br") and gzip ("gzip") compression.
    * Contains gallery items and structured attributes.
    * see https://docs.ordinals.com/inscriptions/properties.html
    */
-  getProperties: () => InscriptionProperties | undefined;
+  getProperties: () => Promise<InscriptionProperties | undefined>;
 
   /**
    * The size in bytes of the envelope including the entire script

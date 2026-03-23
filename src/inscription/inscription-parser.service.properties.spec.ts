@@ -19,7 +19,7 @@ const ORDILLAS_GALLERY_TXID = '9936fce243d5242a33afc913588ee88a2d3025af722e80d61
 describe('InscriptionParserService — Properties / Galleries', () => {
 
   describe('OrdRain gallery (111 items, no attributes)', () => {
-    it('should parse gallery with exact item count and inscription IDs', () => {
+    it('should parse gallery with exact item count and inscription IDs', async () => {
       const txn = readTransaction(ORDRAIN_GALLERY_TXID);
       const inscriptions = InscriptionParserService.parse(txn);
 
@@ -28,7 +28,7 @@ describe('InscriptionParserService — Properties / Galleries', () => {
       expect(inscription.inscriptionId).toBe(ORDRAIN_GALLERY_TXID + 'i0');
       expect(inscription.contentType).toBe('image/webp');
 
-      const properties = inscription.getProperties()!;
+      const properties = (await inscription.getProperties())!;
       expect(properties.gallery.length).toBe(111);
       expect(properties.title).toBeUndefined();
       expect(properties.traits).toBeUndefined();
@@ -51,14 +51,14 @@ describe('InscriptionParserService — Properties / Galleries', () => {
   });
 
   describe('The Ring gallery (333 items, with traits)', () => {
-    it('should parse gallery with title, description, and per-item rune traits', () => {
+    it('should parse gallery with title, description, and per-item rune traits', async () => {
       const txn = readTransaction(THE_RING_GALLERY_TXID);
       const inscriptions = InscriptionParserService.parse(txn);
 
       expect(inscriptions.length).toBe(1);
       expect(inscriptions[0].inscriptionId).toBe(THE_RING_GALLERY_TXID + 'i0');
 
-      const properties = inscriptions[0].getProperties()!;
+      const properties = (await inscriptions[0].getProperties())!;
       expect(properties.gallery.length).toBe(333);
 
       // Gallery-level attributes
@@ -83,14 +83,14 @@ describe('InscriptionParserService — Properties / Galleries', () => {
   });
 
   describe('Ordillas gallery (2230 items, rich traits, packed encoding)', () => {
-    it('should parse large gallery with packed txids and per-item attributes', () => {
+    it('should parse large gallery with packed txids and per-item attributes', async () => {
       const txn = readTransaction(ORDILLAS_GALLERY_TXID);
       const inscriptions = InscriptionParserService.parse(txn);
 
       expect(inscriptions.length).toBe(1);
       expect(inscriptions[0].inscriptionId).toBe(ORDILLAS_GALLERY_TXID + 'i0');
 
-      const properties = inscriptions[0].getProperties()!;
+      const properties = (await inscriptions[0].getProperties())!;
       expect(properties.gallery.length).toBe(2230);
 
       // Gallery-level attributes
@@ -142,11 +142,11 @@ describe('InscriptionParserService — Properties / Galleries', () => {
       expect(inscriptions.length).toBe(0);
     });
 
-    it('should return undefined properties for a regular inscription without tag 17', () => {
+    it('should return undefined properties for a regular inscription without tag 17', async () => {
       const txn = readTransaction('2740d27e3017da44ee439792f6f60449e43992fddffd9387685b14d21b725ff0');
       const inscriptions = InscriptionParserService.parse(txn);
       expect(inscriptions.length).toBe(2000);
-      expect(inscriptions[0].getProperties()).toBeUndefined();
+      expect(await inscriptions[0].getProperties()).toBeUndefined();
     });
   });
 });

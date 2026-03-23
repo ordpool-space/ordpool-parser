@@ -311,7 +311,7 @@ export class InscriptionParserService {
           return delegatesRaw.map(parentRaw => extractInscriptionId(parentRaw));
         },
 
-        getProperties: () => {
+        getProperties: async () => {
           return parseProperties(fields);
         },
 
