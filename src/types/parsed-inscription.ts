@@ -100,6 +100,10 @@ export interface ParsedInscription extends DigitalArtifact {
    * Returns the raw commitment bytes (the rune's u128 value as little-endian
    * bytes with trailing zeros stripped). This links the inscription to a rune
    * etching — the etching transaction must spend this inscription's UTXO.
+   *
+   * Note: tag 13 is only one way to commit to a rune. The rune protocol also
+   * accepts bare tapscript pushes (no inscription needed). For the full
+   * commitment search, see findCommitment() in the rune parser.
    */
   getRune: () => Uint8Array | undefined;
 
