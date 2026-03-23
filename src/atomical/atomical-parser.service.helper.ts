@@ -19,13 +19,57 @@ export function hasAtomical(witness: string[]): boolean {
 }
 
 /**
- * Known Atomicals operation types.
- * Only types with verified mainnet test data are listed here.
- * 'unknown' is returned for any unrecognized operation string.
+ * Atomicals protocol operation types.
  *
- * Verified: 'dft' (tx 1d2f39f5...), 'nft' (tx d8c96e39...)
- * Unverified but known to exist: 'ft', 'dmt', 'mod', 'evt', 'dat', 'sl'
- * Add types here ONLY after adding a real mainnet transaction to testdata/.
+ * The Atomicals protocol (https://github.com/atomicals/atomicals-js) launched Sep 2023
+ * on Bitcoin mainnet. It uses a commit-reveal scheme similar to Ordinals inscriptions,
+ * but with CBOR-encoded payloads instead of raw content. The envelope marker is "atom"
+ * (4 bytes) vs inscriptions' "ord" (3 bytes).
+ *
+ * ## Terminology cheat sheet (the Atomicals ecosystem has MANY overlapping terms)
+ *
+ * **ARC-20** — The fungible token standard on Atomicals (like BRC-20 is to Ordinals).
+ *   All ARC-20 tokens are created via `dft` (distributed) or `ft` (direct) operations.
+ *   The atomicalmarket.com explorer labels both as "FT".
+ *
+ * **Realm** — A human-readable name registered on Bitcoin (like ENS on Ethereum).
+ *   Created via `nft` operation with `args.request_realm`. Realms are NFTs internally.
+ *   Subrealms (e.g., "sub.realm") are also `nft` operations.
+ *
+ * **Container** — A named collection of NFTs (like an NFT project/PFP collection).
+ *   The container itself is created via `nft` with `args.request_container`.
+ *   Individual items are minted via `nft` with `args.request_dmitem` + `args.parent_container`.
+ *
+ * **dmint** — "Distributed mint" for container items. NOT a separate operation type.
+ *   Uses `nft` operation, identified by `args.request_dmitem` in the CBOR payload.
+ *   The container owner sets mint rules via `mod` operations.
+ *
+ * **dmt** — A newer operation type for distributed minting of NFT collections.
+ *   Found in atomicals-js source but rare on mainnet.
+ *
+ * ## Operation categories
+ *
+ * **Create new atomicals** (appear in explorer):
+ * - `nft`  — Mint an NFT, realm, subrealm, or container item
+ * - `ft`   — Create a direct fungible token (entire supply to creator)
+ * - `dft`  — Deploy a distributed fungible token (anyone can mint)
+ * - `dmt`  — Distributed mint for NFT collections
+ * - `dat`  — Store standalone data on-chain
+ *
+ * **Modify existing atomicals** (do NOT appear in explorer as new entries):
+ * - `mod`  — Update/set/delete data on an existing atomical
+ * - `evt`  — Emit an event log attached to an existing atomical
+ * - `sl`   — Seal a container (make it immutable)
+ *
+ * ## CBOR payload structure
+ *
+ * Every operation carries a CBOR-encoded map. The `args` key is always present.
+ * File attachments use either:
+ * - Format 1: `{ "image.png": { $ct: "image/png", $b: <binary> } }` (old CLI path)
+ * - Format 2: `{ "image.png": <raw binary bytes> }` (newer CLI path)
+ *
+ * Verified with real mainnet data: 'dft' (tx 1d2f39f5...), 'nft' (tx d8c96e39..., 7c852754...)
+ * Known from atomicals-js source but no test data yet: 'ft', 'dmt', 'mod', 'evt', 'dat', 'sl'
  */
 export type AtomicalOperation = 'dft' | 'nft' | 'ft' | 'dmt' | 'mod' | 'evt' | 'dat' | 'sl' | 'unknown';
 
