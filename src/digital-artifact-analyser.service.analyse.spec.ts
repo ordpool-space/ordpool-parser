@@ -26,6 +26,14 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
     );
   });
 
+  it('should return correct flags for Labitbu', async () => {
+    const labitbuArtifact = { type: DigitalArtifactType.Labitbu } as any;
+    const flags = await DigitalArtifactAnalyserService.analyse(labitbuArtifact);
+    expect(flags).toBe(
+      OrdpoolTransactionFlags.ordpool_labitbu
+    );
+  });
+
   it('should return correct flags for Inscription with BRC-20 deploy', async () => {
     const inscriptionArtifact = {
       type: DigitalArtifactType.Inscription,

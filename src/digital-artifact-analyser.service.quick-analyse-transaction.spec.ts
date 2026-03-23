@@ -3,6 +3,7 @@ import { TransactionSimple } from './types/transaction-simple';
 import { AtomicalParserService } from './atomical/atomical-parser.service';
 import { Cat21ParserService } from './cat21/cat21-parser.service';
 import { InscriptionParserService } from './inscription/inscription-parser.service';
+import { LabitbuParserService } from './labitbu/labitbu-parser.service';
 import { RuneParserService } from './rune/rune-parser.service';
 import { Src20ParserService } from './src20/src20-parser.service';
 import { DigitalArtifactAnalyserService } from './digital-artifact-analyser.service';
@@ -12,6 +13,7 @@ import { isFlagSet } from './digital-artifact-analyser.service.helper';
 jest.mock('./atomical/atomical-parser.service');
 jest.mock('./cat21/cat21-parser.service');
 jest.mock('./inscription/inscription-parser.service');
+jest.mock('./labitbu/labitbu-parser.service');
 jest.mock('./rune/rune-parser.service');
 jest.mock('./src20/src20-parser.service');
 
@@ -27,6 +29,12 @@ describe('DigitalArtifactAnalyserService.quickAnalyseTransaction', () => {
     (AtomicalParserService.hasAtomical as jest.Mock).mockReturnValue(true);
     const flags = DigitalArtifactAnalyserService.quickAnalyseTransaction(tx, BigInt(0));
     expect(isFlagSet(Number(flags), OrdpoolTransactionFlags.ordpool_atomical)).toBe(true);
+  });
+
+  it('should set ordpool_labitbu flag when Labitbu is present', () => {
+    (LabitbuParserService.hasLabitbu as jest.Mock).mockReturnValue(true);
+    const flags = DigitalArtifactAnalyserService.quickAnalyseTransaction(tx, BigInt(0));
+    expect(isFlagSet(Number(flags), OrdpoolTransactionFlags.ordpool_labitbu)).toBe(true);
   });
 
   it('should set ordpool_cat21 flag when CAT-21 is present', () => {
