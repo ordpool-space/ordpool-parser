@@ -161,6 +161,8 @@ export interface OrdpoolStats {
     src20Deploy: number;
     src20Mint: number;
     src20Transfer: number;
+
+    labitbu: number;
   },
 
   fees: {
@@ -170,6 +172,7 @@ export interface OrdpoolStats {
     src20Mints: number;
     cat21Mints: number;
     atomicals: number;
+    labitbus: number;
     inscriptionMints: number;
   };
 
@@ -249,6 +252,8 @@ export function getEmptyStats(): OrdpoolStats {
       src20Deploy: 0,
       src20Mint: 0,
       src20Transfer: 0,
+
+      labitbu: 0,
     },
 
     fees: {
@@ -258,6 +263,7 @@ export function getEmptyStats(): OrdpoolStats {
       src20Mints: 0,
       cat21Mints: 0,
       atomicals: 0,
+      labitbus: 0,
       inscriptionMints: 0,
     },
 
@@ -341,5 +347,7 @@ export function getArtifactTypeMap() {
     [OrdpoolTransactionFlags.ordpool_src20_deploy,          'src20Deploy'],
     [OrdpoolTransactionFlags.ordpool_src20_mint,            'src20Mint'],
     [OrdpoolTransactionFlags.ordpool_src20_transfer,        'src20Transfer'],
+
+    [OrdpoolTransactionFlags.ordpool_labitbu,               'labitbu'],
   ]);
 }

@@ -51,7 +51,8 @@ describe('DigitalArtifacts Parser', () => {
       src20: 0,
       src20Deploy: 0,
       src20Mint: 0,
-      src20Transfer: 0
+      src20Transfer: 0,
+      labitbu: 0,
     });
 
     expect(ordpoolStats.runes.runeEtchAttempts.length).toBe(755);
