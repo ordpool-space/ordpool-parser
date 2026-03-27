@@ -251,6 +251,21 @@ getFiles()      // lazy: CBOR-decodes and extracts file attachments
 getPayloadRaw() // lazy: returns raw CBOR bytes
 ```
 
+### Content Serving Pattern (for parsers that return files)
+
+The ordpool backend serves inscription content via `/content/:inscriptionId` and `/preview/:inscriptionId`. These routes use three data access methods, each serving a different purpose:
+
+- **`getDataRaw()`** → `Uint8Array` — Raw bytes, NO decompression. Used by the backend to serve content with `Content-Encoding` header (browser decompresses). This is the main approach for server-side content delivery.
+- **`getContent()`** → `Promise<string>` — UTF-8 string, decompressed. For text-based content (JSON, HTML, SVG, code).
+- **`getDataUri()`** → `Promise<string>` — Base64 data URI, decompressed. For embedding in HTML previews (`<img src="data:image/png;base64,...">`) without a second network request.
+
+**Every parser that returns binary content MUST provide all three access methods:**
+
+1. `getDataRaw()` → `Uint8Array` — raw bytes for server-side content delivery
+2. `getContent()` → `Promise<string>` — UTF-8 string for text-based content
+3. `getDataUri()` → `Promise<string>` — base64 data URI for embedding in HTML previews
+4. `contentType` as a direct property — needed for `Content-Type` header
+
 ## Parser-Specific Notes
 
 ### CAT-21 (FROZEN)
