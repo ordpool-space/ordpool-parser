@@ -45,7 +45,7 @@ describe('DigitalArtifactAnalyserService', () => {
         contentType: 'application/json',
         contentSize: 200,
         envelopeSize: 300,
-        getContent: () => Promise.resolve(JSON.stringify({ p: 'brc-20', op: 'mint', tick: 'BRC20' })),
+        getContent: () => Promise.resolve(JSON.stringify({ p: 'brc-20', op: 'mint', tick: 'BRC20', amt: '1000' })),
       } as ParsedInscription,
     ];
 
@@ -72,7 +72,7 @@ describe('DigitalArtifactAnalyserService', () => {
 
     const mockSrc20: ParsedSrc20 = {
       type: DigitalArtifactType.Src20,
-      getContent: () => JSON.stringify({ p: 'src-20', op: 'mint', tick: 'SRC20' }),
+      getContent: () => JSON.stringify({ p: 'src-20', op: 'mint', tick: 'SRC20', amt: '500' }),
     } as ParsedSrc20;
 
     (DigitalArtifactsParserService.parse as jest.Mock).mockImplementation((tx: TransactionSimplePlus) => {

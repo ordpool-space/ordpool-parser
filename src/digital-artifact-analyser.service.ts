@@ -1,6 +1,6 @@
 import { AtomicalParserService } from './atomical/atomical-parser.service';
 import { Cat21ParserService } from './cat21/cat21-parser.service';
-import { convertToActivities, contructRuneEtchAttempt, isFlagSetOnTransaction, parseJsonObject, constructCat21Mint } from './digital-artifact-analyser.service.helper';
+import { convertToActivities, contructRuneEtchAttempt, isFlagSetOnTransaction, constructCat21Mint } from './digital-artifact-analyser.service.helper';
 import { DigitalArtifactsParserService } from './digital-artifacts-parser.service';
 import { InscriptionParserService } from './inscription/inscription-parser.service';
 import { LabitbuParserService } from './labitbu/labitbu-parser.service';
@@ -13,8 +13,8 @@ import { OrdpoolTransactionFlags } from './types/ordpool-transaction-flags';
 import { ParsedCat21 } from './types/parsed-cat21';
 import { ParsedInscription } from './types/parsed-inscription';
 import { ParsedRunestone } from './types/parsed-runestone';
-import { BrC20Parsed, parseBrc20Content } from './types/parsed-brc20';
-import { ParsedSrc20 } from './types/parsed-src20';
+import { BrC20Parsed, getBrc20Flaws, parseBrc20Content } from './types/parsed-brc20';
+import { getSrc20Flaws, ParsedSrc20, parseSrc20Content, Src20Parsed } from './types/parsed-src20';
 import { TransactionSimple, TransactionSimplePlus } from './types/transaction-simple';
 
 
@@ -71,7 +71,7 @@ import { TransactionSimple, TransactionSimplePlus } from './types/transaction-si
 export interface AnalyseResult {
   flags: bigint;
   brc20?: BrC20Parsed;
-  src20Content?: any;
+  src20Content?: Src20Parsed;
 }
 
 export class DigitalArtifactAnalyserService {
@@ -418,13 +418,18 @@ export class DigitalArtifactAnalyserService {
 
             flags |= OrdpoolTransactionFlags.ordpool_brc20;
 
-            // Check for specific BRC-20 operations
-            if (brc20.op === 'deploy') {
-              flags |= OrdpoolTransactionFlags.ordpool_brc20_deploy;
-            } else if (brc20.op === 'mint') {
-              flags |= OrdpoolTransactionFlags.ordpool_brc20_mint;
-            } else if (brc20.op === 'transfer') {
-              flags |= OrdpoolTransactionFlags.ordpool_brc20_transfer;
+            // Validate BRC-20 content -- skip operation flags for invalid BRC-20 (garbage JSON).
+            // Invalid BRC-20 still gets the top-level ordpool_brc20 flag (it IS a BRC-20 attempt),
+            // but without operation flags it won't pollute deploy/mint/transfer stats or DB inserts.
+            const brc20Flaws = getBrc20Flaws(brc20);
+            if (brc20Flaws.length === 0) {
+              if (brc20.op === 'deploy') {
+                flags |= OrdpoolTransactionFlags.ordpool_brc20_deploy;
+              } else if (brc20.op === 'mint') {
+                flags |= OrdpoolTransactionFlags.ordpool_brc20_mint;
+              } else if (brc20.op === 'transfer') {
+                flags |= OrdpoolTransactionFlags.ordpool_brc20_transfer;
+              }
             }
           }
         }
@@ -455,21 +460,24 @@ export class DigitalArtifactAnalyserService {
       case DigitalArtifactType.Src20:
         const src20 = artifact as ParsedSrc20;
 
-        src20Content = parseJsonObject(src20.getContent());
-        if (src20Content && src20Content.p === 'src-20') {
+        src20Content = parseSrc20Content(src20.getContent()) ?? undefined;
+        if (src20Content) {
 
           flags |= OrdpoolTransactionFlags.ordpool_src20;
 
-          // Check for SRC-20 operations
-          if (src20Content.op === 'deploy') {
-            flags |= OrdpoolTransactionFlags.ordpool_src20_deploy;
-          } else if (src20Content.op === 'mint') {
-            flags |= OrdpoolTransactionFlags.ordpool_src20_mint;
-          } else if (src20Content.op === 'transfer') {
-            flags |= OrdpoolTransactionFlags.ordpool_src20_transfer;
+          // Validate SRC-20 content -- skip operation flags for invalid SRC-20 (garbage JSON).
+          // Same pattern as BRC-20: invalid SRC-20 still gets the top-level flag,
+          // but without operation flags it won't pollute stats or DB inserts.
+          const src20Flaws = getSrc20Flaws(src20Content);
+          if (src20Flaws.length === 0) {
+            if (src20Content.op === 'deploy') {
+              flags |= OrdpoolTransactionFlags.ordpool_src20_deploy;
+            } else if (src20Content.op === 'mint') {
+              flags |= OrdpoolTransactionFlags.ordpool_src20_mint;
+            } else if (src20Content.op === 'transfer') {
+              flags |= OrdpoolTransactionFlags.ordpool_src20_transfer;
+            }
           }
-        } else {
-          src20Content = undefined;
         }
         break;
 

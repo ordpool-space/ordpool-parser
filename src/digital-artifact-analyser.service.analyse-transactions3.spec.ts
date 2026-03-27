@@ -132,7 +132,7 @@ describe('DigitalArtifactAnalyserService.analyseTransactions - Advanced Test Cas
         contentType: 'application/json',
         contentSize: 100,
         envelopeSize: 150,
-        getContent: () => Promise.resolve(JSON.stringify({ p: 'brc-20', op: 'mint', tick: 'BRC20' })),
+        getContent: () => Promise.resolve(JSON.stringify({ p: 'brc-20', op: 'mint', tick: 'BRC20', amt: '1000' })),
       } as ParsedInscription,
       {
         type: DigitalArtifactType.Runestone,
@@ -215,7 +215,7 @@ describe('DigitalArtifactAnalyserService.analyseTransactions - Advanced Test Cas
       contentType: 'application/json',
       contentSize: 100,
       envelopeSize: 150,
-      getContent: () => Promise.resolve(JSON.stringify({ p: 'brc-20', op: 'mint', tick: 'AAA' })),
+      getContent: () => Promise.resolve(JSON.stringify({ p: 'brc-20', op: 'mint', tick: 'AAA', amt: '100' })),
     } as ParsedInscription;
 
     const brc20Mint2: ParsedInscription = {
@@ -224,7 +224,7 @@ describe('DigitalArtifactAnalyserService.analyseTransactions - Advanced Test Cas
       contentType: 'application/json',
       contentSize: 100,
       envelopeSize: 150,
-      getContent: () => Promise.resolve(JSON.stringify({ p: 'brc-20', op: 'mint', tick: 'AAA' })),
+      getContent: () => Promise.resolve(JSON.stringify({ p: 'brc-20', op: 'mint', tick: 'AAA', amt: '100' })),
     } as ParsedInscription;
 
     const brc20Mint3: ParsedInscription = {
@@ -233,7 +233,7 @@ describe('DigitalArtifactAnalyserService.analyseTransactions - Advanced Test Cas
       contentType: 'application/json',
       contentSize: 100,
       envelopeSize: 150,
-      getContent: () => Promise.resolve(JSON.stringify({ p: 'brc-20', op: 'mint', tick: 'BBB' })),
+      getContent: () => Promise.resolve(JSON.stringify({ p: 'brc-20', op: 'mint', tick: 'BBB', amt: '100' })),
     } as ParsedInscription;
 
     (DigitalArtifactsParserService.parse as jest.Mock)
@@ -264,7 +264,7 @@ describe('DigitalArtifactAnalyserService.analyseTransactions - Advanced Test Cas
   it('should correctly track most active SRC-20 mint', async () => {
     const src20Mint: ParsedSrc20 = {
       type: DigitalArtifactType.Src20,
-      getContent: () => JSON.stringify({ p: 'src-20', op: 'mint', tick: 'SRC' }),
+      getContent: () => JSON.stringify({ p: 'src-20', op: 'mint', tick: 'SRC', amt: '100' }),
     } as ParsedSrc20;
 
     (DigitalArtifactsParserService.parse as jest.Mock).mockReturnValue([src20Mint]);
@@ -304,7 +304,7 @@ describe('DigitalArtifactAnalyserService.analyseTransactions - Advanced Test Cas
       contentType: 'application/json',
       contentSize: 100,
       envelopeSize: 150,
-      getContent: () => Promise.resolve(JSON.stringify({ p: 'brc-20', op: 'mint', tick: 'XYZ' })),
+      getContent: () => Promise.resolve(JSON.stringify({ p: 'brc-20', op: 'mint', tick: 'XYZ', amt: '100' })),
     } as ParsedInscription;
 
     (DigitalArtifactsParserService.parse as jest.Mock).mockReturnValue([combinedArtifact]);
@@ -333,7 +333,7 @@ describe('DigitalArtifactAnalyserService.analyseTransactions - Advanced Test Cas
       contentType: 'application/json',
       contentSize: 100,
       envelopeSize: 150,
-      getContent: () => Promise.resolve(JSON.stringify({ p: 'brc-20', op: 'mint', tick: 'AAA' })),
+      getContent: () => Promise.resolve(JSON.stringify({ p: 'brc-20', op: 'mint', tick: 'AAA', amt: '100' })),
     } as ParsedInscription;
 
     const brc20Mint2: ParsedInscription = {
@@ -342,7 +342,7 @@ describe('DigitalArtifactAnalyserService.analyseTransactions - Advanced Test Cas
       contentType: 'application/json',
       contentSize: 200,
       envelopeSize: 300,
-      getContent: () => Promise.resolve(JSON.stringify({ p: 'brc-20', op: 'mint', tick: 'BBB' })),
+      getContent: () => Promise.resolve(JSON.stringify({ p: 'brc-20', op: 'mint', tick: 'BBB', amt: '100' })),
     } as ParsedInscription;
 
     const cat21Mint: ParsedCat21 = {

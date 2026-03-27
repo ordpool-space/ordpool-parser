@@ -34,11 +34,11 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
     );
   });
 
-  it('should return correct flags for Inscription with BRC-20 deploy', async () => {
+  it('should return correct flags for Inscription with valid BRC-20 deploy', async () => {
     const inscriptionArtifact = {
       type: DigitalArtifactType.Inscription,
       contentType: 'application/json',
-      getContent: () => Promise.resolve(JSON.stringify({ p: 'brc-20', op: 'deploy' })),
+      getContent: () => Promise.resolve(JSON.stringify({ p: 'brc-20', op: 'deploy', tick: 'ordi', max: '21000000' })),
     } as ParsedInscription;
     const { flags } = await DigitalArtifactAnalyserService.analyse(inscriptionArtifact);
     expect(flags).toBe(
@@ -49,11 +49,11 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
     );
   });
 
-  it('should return correct flags for Inscription with BRC-20 mint', async () => {
+  it('should return correct flags for Inscription with valid BRC-20 mint', async () => {
     const inscriptionArtifact = {
       type: DigitalArtifactType.Inscription,
       contentType: 'application/json',
-      getContent: () => Promise.resolve(JSON.stringify({ p: 'brc-20', op: 'mint' })),
+      getContent: () => Promise.resolve(JSON.stringify({ p: 'brc-20', op: 'mint', tick: 'ordi', amt: '1000' })),
     } as ParsedInscription;
     const { flags } = await DigitalArtifactAnalyserService.analyse(inscriptionArtifact);
     expect(flags).toBe(
@@ -64,11 +64,11 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
     );
   });
 
-  it('should return correct flags for Inscription with BRC-20 transfer', async () => {
+  it('should return correct flags for Inscription with valid BRC-20 transfer', async () => {
     const inscriptionArtifact = {
       type: DigitalArtifactType.Inscription,
       contentType: 'application/json',
-      getContent: () => Promise.resolve(JSON.stringify({ p: 'brc-20', op: 'transfer' })),
+      getContent: () => Promise.resolve(JSON.stringify({ p: 'brc-20', op: 'transfer', tick: 'ordi', amt: '500' })),
     } as ParsedInscription;
     const { flags } = await DigitalArtifactAnalyserService.analyse(inscriptionArtifact);
     expect(flags).toBe(
@@ -76,6 +76,53 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
       OrdpoolTransactionFlags.ordpool_inscription_mint |
       OrdpoolTransactionFlags.ordpool_brc20 |
       OrdpoolTransactionFlags.ordpool_brc20_transfer
+    );
+  });
+
+  // -- Invalid BRC-20: operation flags are skipped, only top-level brc20 flag is set --
+
+  it('should skip deploy flag for BRC-20 with missing ticker (the block 790,148 bug)', async () => {
+    const inscriptionArtifact = {
+      type: DigitalArtifactType.Inscription,
+      contentType: 'application/json',
+      getContent: () => Promise.resolve(JSON.stringify({ p: 'brc-20', op: 'deploy', max: '1000' })),
+    } as ParsedInscription;
+    const { flags } = await DigitalArtifactAnalyserService.analyse(inscriptionArtifact);
+    expect(flags).toBe(
+      OrdpoolTransactionFlags.ordpool_inscription |
+      OrdpoolTransactionFlags.ordpool_inscription_mint |
+      OrdpoolTransactionFlags.ordpool_brc20
+      // NO ordpool_brc20_deploy -- invalid BRC-20 is silently skipped
+    );
+  });
+
+  it('should skip mint flag for BRC-20 with missing ticker and amount', async () => {
+    const inscriptionArtifact = {
+      type: DigitalArtifactType.Inscription,
+      contentType: 'application/json',
+      getContent: () => Promise.resolve(JSON.stringify({ p: 'brc-20', op: 'mint' })),
+    } as ParsedInscription;
+    const { flags } = await DigitalArtifactAnalyserService.analyse(inscriptionArtifact);
+    expect(flags).toBe(
+      OrdpoolTransactionFlags.ordpool_inscription |
+      OrdpoolTransactionFlags.ordpool_inscription_mint |
+      OrdpoolTransactionFlags.ordpool_brc20
+      // NO ordpool_brc20_mint -- invalid BRC-20 is silently skipped
+    );
+  });
+
+  it('should skip transfer flag for BRC-20 with missing amount', async () => {
+    const inscriptionArtifact = {
+      type: DigitalArtifactType.Inscription,
+      contentType: 'application/json',
+      getContent: () => Promise.resolve(JSON.stringify({ p: 'brc-20', op: 'transfer', tick: 'ordi' })),
+    } as ParsedInscription;
+    const { flags } = await DigitalArtifactAnalyserService.analyse(inscriptionArtifact);
+    expect(flags).toBe(
+      OrdpoolTransactionFlags.ordpool_inscription |
+      OrdpoolTransactionFlags.ordpool_inscription_mint |
+      OrdpoolTransactionFlags.ordpool_brc20
+      // NO ordpool_brc20_transfer -- missing amt
     );
   });
 
@@ -156,10 +203,10 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
     );
   });
 
-  it('should return correct flags for SRC-20 with deploy', async () => {
+  it('should return correct flags for valid SRC-20 deploy', async () => {
     const src20Artifact = {
       type: DigitalArtifactType.Src20,
-      getContent: () => JSON.stringify({ p: 'src-20', op: 'deploy' }),
+      getContent: () => JSON.stringify({ p: 'src-20', op: 'deploy', tick: 'STAMP', max: '21000', lim: '100' }),
     } as ParsedSrc20;
     const { flags } = await DigitalArtifactAnalyserService.analyse(src20Artifact);
     expect(flags).toBe(
@@ -168,10 +215,10 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
     );
   });
 
-  it('should return correct flags for SRC-20 with mint', async () => {
+  it('should return correct flags for valid SRC-20 mint', async () => {
     const src20Artifact = {
       type: DigitalArtifactType.Src20,
-      getContent: () => JSON.stringify({ p: 'src-20', op: 'mint' }),
+      getContent: () => JSON.stringify({ p: 'src-20', op: 'mint', tick: 'STAMP', amt: '100' }),
     } as ParsedSrc20;
     const { flags } = await DigitalArtifactAnalyserService.analyse(src20Artifact);
     expect(flags).toBe(
@@ -180,10 +227,10 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
     );
   });
 
-  it('should return correct flags for SRC-20 with transfer', async () => {
+  it('should return correct flags for valid SRC-20 transfer', async () => {
     const src20Artifact = {
       type: DigitalArtifactType.Src20,
-      getContent: () => JSON.stringify({ p: 'src-20', op: 'transfer' }),
+      getContent: () => JSON.stringify({ p: 'src-20', op: 'transfer', tick: 'STAMP', amt: '50' }),
     } as ParsedSrc20;
     const { flags } = await DigitalArtifactAnalyserService.analyse(src20Artifact);
     expect(flags).toBe(
@@ -199,5 +246,43 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
     } as ParsedSrc20;
     const { flags } = await DigitalArtifactAnalyserService.analyse(src20Artifact);
     expect(flags).toBe(0n);
+  });
+
+  // -- Invalid SRC-20: operation flags are skipped, only top-level src20 flag is set --
+
+  it('should skip deploy flag for SRC-20 with missing ticker', async () => {
+    const src20Artifact = {
+      type: DigitalArtifactType.Src20,
+      getContent: () => JSON.stringify({ p: 'src-20', op: 'deploy', max: '21000', lim: '100' }),
+    } as ParsedSrc20;
+    const { flags } = await DigitalArtifactAnalyserService.analyse(src20Artifact);
+    expect(flags).toBe(
+      OrdpoolTransactionFlags.ordpool_src20
+      // NO ordpool_src20_deploy -- invalid SRC-20 is silently skipped
+    );
+  });
+
+  it('should skip deploy flag for SRC-20 with missing lim (required for SRC-20)', async () => {
+    const src20Artifact = {
+      type: DigitalArtifactType.Src20,
+      getContent: () => JSON.stringify({ p: 'src-20', op: 'deploy', tick: 'STAMP', max: '21000' }),
+    } as ParsedSrc20;
+    const { flags } = await DigitalArtifactAnalyserService.analyse(src20Artifact);
+    expect(flags).toBe(
+      OrdpoolTransactionFlags.ordpool_src20
+      // NO ordpool_src20_deploy -- missing lim
+    );
+  });
+
+  it('should skip mint flag for SRC-20 with missing amount', async () => {
+    const src20Artifact = {
+      type: DigitalArtifactType.Src20,
+      getContent: () => JSON.stringify({ p: 'src-20', op: 'mint', tick: 'STAMP' }),
+    } as ParsedSrc20;
+    const { flags } = await DigitalArtifactAnalyserService.analyse(src20Artifact);
+    expect(flags).toBe(
+      OrdpoolTransactionFlags.ordpool_src20
+      // NO ordpool_src20_mint -- missing amt
+    );
   });
 });
