@@ -21,6 +21,22 @@ npm run fetch-tx-testdata   # download raw tx JSON for testing
 npm run create-link         # build + npm link for local development
 ```
 
+## Releasing
+
+Every npm publish must have a matching git tag and GitHub release to keep npm and GitHub in sync.
+
+```bash
+# 1. Bump version in package.json
+# 2. Commit: "v2.0.x: <summary>"
+# 3. Push to main
+# 4. Tag and push tag
+git tag v2.0.x && git push origin v2.0.x
+# 5. Create GitHub release
+gh release create v2.0.x --title "v2.0.x" --notes "..."
+# 6. Publish to npm (requires OTP from authenticator)
+npm publish --otp=<code>
+```
+
 ## ABSOLUTE RULE: Never Change CAT-21 Output
 
 **This is the most important rule in this entire codebase.**
