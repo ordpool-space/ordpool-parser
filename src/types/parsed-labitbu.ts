@@ -22,4 +22,21 @@ export interface ParsedLabitbu extends DigitalArtifact {
    * The raw 4096-byte WebP image extracted from the control block.
    */
   getDataRaw: () => Uint8Array;
+
+  /**
+   * The image data as a UTF-8 encoded string.
+   * (Not useful for binary WebP — use getData() or getDataUri() instead.)
+   */
+  getContent: () => string;
+
+  /**
+   * The image data, base64 encoded.
+   */
+  getData: () => string;
+
+  /**
+   * Base64 data URI that can be displayed in an img tag or iframe.
+   * Example: 'data:image/webp;base64,...'
+   */
+  getDataUri: () => string;
 }

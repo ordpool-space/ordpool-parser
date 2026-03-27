@@ -66,6 +66,14 @@ describe('LabitbuParserService', () => {
       // Byte-for-byte comparison with saved reference image
       const expectedImage = readBinaryFileAsUint8Array('labitbu_5a15dabc.webp');
       expect(image).toEqual(expectedImage);
+
+      // getData() returns base64 encoded string
+      const base64 = result.getData();
+      expect(base64.length).toBe(5464); // 4096 bytes → 5464 base64 chars
+
+      // getDataUri() returns embeddable data URI
+      const dataUri = result.getDataUri();
+      expect(dataUri).toBe(`data:image/webp;base64,${base64}`);
     });
 
     it('should return null for a non-Labitbu transaction', () => {

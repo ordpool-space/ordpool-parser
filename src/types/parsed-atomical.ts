@@ -9,6 +9,15 @@ export interface AtomicalFile {
   name: string;
   contentType: string;
   data: Uint8Array;
+
+  /** The file data as a UTF-8 encoded string. */
+  getContent: () => string;
+
+  /** The file data, base64 encoded. */
+  getData: () => string;
+
+  /** Base64 data URI, e.g. 'data:image/png;base64,...' */
+  getDataUri: () => string;
 }
 
 export interface ParsedAtomical extends DigitalArtifact {

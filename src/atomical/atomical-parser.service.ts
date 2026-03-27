@@ -1,4 +1,5 @@
 import { CBOR } from '../lib/cbor';
+import { binaryStringToBase64, bytesToBinaryString, bytesToUnicodeString } from '../lib/conversions';
 import { DigitalArtifactType } from "../types/digital-artifact";
 import { AtomicalFile, ParsedAtomical } from "../types/parsed-atomical";
 import { OnParseError } from '../types/parser-options';
@@ -21,6 +22,20 @@ function guessContentType(name: string): string {
     case 'html': return 'text/html';
     default: return 'application/octet-stream';
   }
+}
+
+/**
+ * Builds an AtomicalFile with content access methods.
+ */
+function buildFile(name: string, contentType: string, data: Uint8Array): AtomicalFile {
+  return {
+    name,
+    contentType,
+    data,
+    getContent: () => bytesToUnicodeString(data),
+    getData: () => binaryStringToBase64(bytesToBinaryString(data)),
+    getDataUri: () => `data:${contentType};base64,${binaryStringToBase64(bytesToBinaryString(data))}`,
+  };
 }
 
 /**
@@ -116,19 +131,19 @@ export class AtomicalParserService {
 
             // Format 1: {$ct: "image/png", $b: <binary>} — used by prepareFilesData (old path)
             if (entry && entry.$ct && ArrayBuffer.isView(entry.$b)) {
-              files.push({
-                name: key,
-                contentType: entry.$ct,
-                data: new Uint8Array(entry.$b.buffer, entry.$b.byteOffset, entry.$b.byteLength),
-              });
+              files.push(buildFile(
+                key,
+                entry.$ct,
+                new Uint8Array(entry.$b.buffer, entry.$b.byteOffset, entry.$b.byteLength),
+              ));
 
             // Format 2: raw binary directly — used by prepareFilesDataAsObject (newer path)
             } else if (ArrayBuffer.isView(entry)) {
-              files.push({
-                name: key,
-                contentType: guessContentType(key),
-                data: new Uint8Array(entry.buffer, entry.byteOffset, entry.byteLength),
-              });
+              files.push(buildFile(
+                key,
+                guessContentType(key),
+                new Uint8Array(entry.buffer, entry.byteOffset, entry.byteLength),
+              ));
             }
           }
           cachedFiles = files;

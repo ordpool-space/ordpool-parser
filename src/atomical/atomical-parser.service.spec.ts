@@ -89,6 +89,11 @@ describe('AtomicalParserService', () => {
       // Byte-for-byte comparison with saved reference image
       const expectedImage = readBinaryFileAsUint8Array('atomical_dft_atom_image.png');
       expect(files[0].data).toEqual(expectedImage);
+
+      // Content access methods on AtomicalFile
+      const dataUri = files[0].getDataUri();
+      expect(dataUri.startsWith('data:image/png;base64,')).toBe(true);
+      expect(files[0].getData().length).toBe(11328); // 8496 bytes → 11328 base64 chars
     });
 
     it('should parse a real NFT atomical (realm terafab) with args', () => {
@@ -146,6 +151,11 @@ describe('AtomicalParserService', () => {
       // Byte-for-byte comparison with saved reference image
       const expectedImage = readBinaryFileAsUint8Array('atomical_nft_toothy_7579_image.png');
       expect(files[0].data).toEqual(expectedImage);
+
+      // Content access methods on AtomicalFile (Format 2)
+      const dataUri = files[0].getDataUri();
+      expect(dataUri.startsWith('data:image/png;base64,')).toBe(true);
+      expect(files[0].getData().length).toBe(1760); // 1319 bytes → 1760 base64 chars
     });
 
     it('should return null for a non-atomical transaction', () => {
