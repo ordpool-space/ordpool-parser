@@ -8,6 +8,7 @@ import { RuneParserService } from './rune/rune-parser.service';
 import { isUncommonGoodsMint } from './rune/rune-parser.service.helper';
 import { Src20ParserService } from './src20/src20-parser.service';
 import { DigitalArtifact, DigitalArtifactType } from './types/digital-artifact';
+import { ParsedAtomical } from './types/parsed-atomical';
 import { Brc20DeployAttempt, Cat21Mint, getArtifactTypeMap, getEmptyStats, OrdpoolStats, RuneEtchAttempt, Src20DeployAttempt } from './types/ordpool-stats';
 import { OrdpoolTransactionFlags } from './types/ordpool-transaction-flags';
 import { ParsedCat21 } from './types/parsed-cat21';
@@ -18,9 +19,15 @@ import { getSrc20Flaws, ParsedSrc20, parseSrc20Content, Src20Parsed } from './ty
 import { TransactionSimple, TransactionSimplePlus } from './types/transaction-simple';
 
 
+/** Flags for the artifact, plus any already-parsed BRC-20 / SRC-20 content. */
+export interface AnalyseResult {
+  flags: bigint;
+  brc20?: BrC20Parsed;
+  src20Content?: Src20Parsed;
+}
+
 /**
- * Returns the corresponding ordpool flags for the given digital asset.
- * This function does an intensive check, with intensive parsing for all supported protocols.
+ * Analyses digital artifacts and returns ordpool transaction flags.
  *
  * Specification for version 1:
  *
@@ -30,6 +37,8 @@ import { TransactionSimple, TransactionSimplePlus } from './types/transaction-si
  *
  * if the asset is an Atomical
  * -> it should return ordpool_atomical
+ * -> if the operation creates a new atomical (nft, ft, dft, dmt, dat) -> ordpool_atomical_mint
+ * -> if the operation modifies an existing atomical (mod, evt, sl) -> ordpool_atomical_update
  *
  * if the asset is a Labitbu
  * -> it should return ordpool_labitbu
@@ -59,21 +68,11 @@ import { TransactionSimple, TransactionSimplePlus } from './types/transaction-si
  *
  *
  * Not supported right now (requires ordinal tracking, which is outside the parser's scope):
- * - ordpool_atomical_mint / ordpool_atomical_transfer / ordpool_atomical_update
+ * - ordpool_atomical_transfer (x/y/z operations — needs sat tracking for complete numbers)
  * - ordpool_cat21_transfer
  * - ordpool_inscription_transfer / ordpool_inscription_burn
  * - ordpool_rune_transfer / ordpool_rune_burn
  */
-/**
- * Result of analysing a single artifact. Carries both the flags and any
- * parsed intermediate data (BRC-20, SRC-20) so callers don't re-parse.
- */
-export interface AnalyseResult {
-  flags: bigint;
-  brc20?: BrC20Parsed;
-  src20Content?: Src20Parsed;
-}
-
 export class DigitalArtifactAnalyserService {
 
   static readonly version = 1;
@@ -407,6 +406,28 @@ export class DigitalArtifactAnalyserService {
 
       case DigitalArtifactType.Atomical:
         flags |= OrdpoolTransactionFlags.ordpool_atomical;
+
+        // Distinguish mints from updates based on the operation type
+        const atomical = artifact as ParsedAtomical;
+        switch (atomical.operation) {
+          // Create new atomicals — these are mints
+          case 'nft':
+          case 'ft':
+          case 'dft':
+          case 'dmt':
+          case 'dat':
+            flags |= OrdpoolTransactionFlags.ordpool_atomical_mint;
+            break;
+
+          // Modify existing atomicals — these are updates
+          case 'mod':
+          case 'evt':
+          case 'sl':
+            flags |= OrdpoolTransactionFlags.ordpool_atomical_update;
+            break;
+
+          // x/y/z are FT UTXO transfers — skipped (needs sat tracking for complete numbers)
+        }
         break;
 
       case DigitalArtifactType.Labitbu:
@@ -505,7 +526,7 @@ export class DigitalArtifactAnalyserService {
    * The transaction must have already been analysed - otherwise the flags property is null and false will be returned.
    *
    * Since only the top-level ordpool flags are considered,
-   * it works with the results from `analyseTransactions` as well as `quickAnalyseTransaction`.
+   * it works with the results from `analyseTransactions` as well as `analyseTransaction`.
    *
    * Used by the BlockOverviewTooltipComponent:
    * - ordpool: frontend/src/app/components/block-overview-tooltip/block-overview-tooltip.component.ts
@@ -528,54 +549,6 @@ export class DigitalArtifactAnalyserService {
       isFlagSetOnTransaction(tx, OrdpoolTransactionFlags.ordpool_src20);
   }
 
-
-  /**
-   * Computes and returns the transaction flags for the given transaction.
-   * This function ONLY performs a quick check for the general presence of a protocol and attempts to exit early.
-   * False-positive matches are possible!
-   * It does NOT analyse the artifacts in detail – only our own top-level `OrdpoolTransactionFlags` are set!
-   *
-   * This function only checks if at least one digital artifacts of any kind
-   * (e.g., Atomical, CAT-21, Inscription, Rune, SRC-20 but NOT BRC-20 (since it's already an inscription))
-   * is present in the transaction and sets the corresponding flag(s) in the `flags` variable.
-   *
-   * Previously used in:
-   * - ordpool: backend/src/api/common.ts
-   * - ordpool: frontend/src/app/shared/transaction.utils.ts
-   *
-   * @param tx - The transaction to be evaluated for digital artifacts.
-   * @param flags - The existing flags to which new flags will be added.
-   * @return The updated flags with the appropriate ordpool transaction flags set.
-   * @deprecated It's faster, but can have false positive results. It also ignores BRC-20
-   */
-  static quickAnalyseTransaction(tx: TransactionSimple, flags: bigint): bigint {
-
-    if (AtomicalParserService.hasAtomical(tx)) {
-      flags |= OrdpoolTransactionFlags.ordpool_atomical;
-    }
-
-    if (LabitbuParserService.hasLabitbu(tx)) {
-      flags |= OrdpoolTransactionFlags.ordpool_labitbu;
-    }
-
-    if (Cat21ParserService.hasCat21(tx)) {
-      flags |= OrdpoolTransactionFlags.ordpool_cat21;
-    }
-
-    if (InscriptionParserService.hasInscription(tx)) {
-      flags |= OrdpoolTransactionFlags.ordpool_inscription;
-    }
-
-    if (RuneParserService.hasRunestone(tx)) {
-      flags |= OrdpoolTransactionFlags.ordpool_rune;
-    }
-
-    if (Src20ParserService.hasSrc20(tx)) {
-      flags |= OrdpoolTransactionFlags.ordpool_src20;
-    }
-
-    return flags;
-  }
 
   /**
    * Computes and returns the transaction flags for the given transaction.

@@ -132,9 +132,9 @@ export interface OrdpoolStats {
 
   amounts: {
     atomical: number;
-    atomicalMint: number;        // unused, for now
-    atomicalTransfer: number;    // unused, for now
-    atomicalUpdate: number;      // unused, for now
+    atomicalMint: number;
+    atomicalTransfer: number;    // unused — needs sat tracking for complete numbers
+    atomicalUpdate: number;
 
     cat21: number;
     cat21Mint: number;
@@ -320,7 +320,7 @@ export function getArtifactTypeMap() {
     [OrdpoolTransactionFlags.ordpool_atomical,              'atomical'],
     [OrdpoolTransactionFlags.ordpool_atomical_mint,         'atomicalMint'],
     [OrdpoolTransactionFlags.ordpool_atomical_transfer,     'atomicalTransfer'],
-    [OrdpoolTransactionFlags.ordpool_atomcial_update,       'atomicalUpdate'],
+    [OrdpoolTransactionFlags.ordpool_atomical_update,       'atomicalUpdate'],
 
     [OrdpoolTransactionFlags.ordpool_cat21,                 'cat21'],
     [OrdpoolTransactionFlags.ordpool_cat21_mint,            'cat21Mint'],

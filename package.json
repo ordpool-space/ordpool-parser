@@ -1,6 +1,6 @@
 {
   "name": "ordpool-parser",
-  "version": "2.0.0",
+  "version": "2.0.2",
   "description": "Zero-dependency TypeScript parser for Bitcoin digital artifacts: Inscriptions, Runes, BRC-20, SRC-20, CAT-21, Atomicals, and Labitbu. Works in Node.js and browsers.",
   "repository": {
     "type": "git",
