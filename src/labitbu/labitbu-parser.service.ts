@@ -1,4 +1,4 @@
-import { binaryStringToBase64, bytesToBinaryString, bytesToUnicodeString } from '../lib/conversions';
+import { bytesToBase64, bytesToDataUri, bytesToUnicodeString } from '../lib/conversions';
 import { DigitalArtifactType } from '../types/digital-artifact';
 import { ParsedLabitbu } from '../types/parsed-labitbu';
 import { OnParseError } from '../types/parser-options';
@@ -55,11 +55,11 @@ export class LabitbuParserService {
         },
 
         getData: (): string => {
-          return binaryStringToBase64(bytesToBinaryString(data));
+          return bytesToBase64(data);
         },
 
         getDataUri: (): string => {
-          return `data:image/webp;base64,${binaryStringToBase64(bytesToBinaryString(data))}`;
+          return bytesToDataUri(data, 'image/webp');
         },
       };
     } catch (ex) {

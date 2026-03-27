@@ -68,6 +68,22 @@ export function bytesToBinaryString(bytes: Uint8Array): string {
 }
 
 /**
+ * Converts raw bytes directly to a base64 string.
+ * Combines bytesToBinaryString + binaryStringToBase64 into one call.
+ */
+export function bytesToBase64(bytes: Uint8Array): string {
+  return binaryStringToBase64(bytesToBinaryString(bytes));
+}
+
+/**
+ * Builds a base64 data URI from raw bytes and a MIME type.
+ * Example: bytesToDataUri(pngBytes, 'image/png') → 'data:image/png;base64,iVBOR...'
+ */
+export function bytesToDataUri(bytes: Uint8Array, contentType: string): string {
+  return `data:${contentType};base64,${bytesToBase64(bytes)}`;
+}
+
+/**
  * Converts a hexadecimal string to a Uint8Array.
  *
  * @param hex - A string of hexadecimal characters.

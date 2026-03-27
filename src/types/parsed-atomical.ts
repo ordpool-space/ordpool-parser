@@ -10,7 +10,8 @@ export interface AtomicalFile {
   contentType: string;
   data: Uint8Array;
 
-  /** The file data as a UTF-8 encoded string. */
+  /** The file data as a UTF-8 encoded string.
+   * (Not useful for binary content like images — use getData() or getDataUri() instead.) */
   getContent: () => string;
 
   /** The file data, base64 encoded. */

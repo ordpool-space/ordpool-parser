@@ -1,5 +1,5 @@
 import { CBOR } from '../lib/cbor';
-import { binaryStringToBase64, bytesToBinaryString, bytesToUnicodeString } from '../lib/conversions';
+import { bytesToBase64, bytesToDataUri, bytesToUnicodeString } from '../lib/conversions';
 import { DigitalArtifactType } from "../types/digital-artifact";
 import { AtomicalFile, ParsedAtomical } from "../types/parsed-atomical";
 import { OnParseError } from '../types/parser-options';
@@ -33,8 +33,8 @@ function buildFile(name: string, contentType: string, data: Uint8Array): Atomica
     contentType,
     data,
     getContent: () => bytesToUnicodeString(data),
-    getData: () => binaryStringToBase64(bytesToBinaryString(data)),
-    getDataUri: () => `data:${contentType};base64,${binaryStringToBase64(bytesToBinaryString(data))}`,
+    getData: () => bytesToBase64(data),
+    getDataUri: () => bytesToDataUri(data, contentType),
   };
 }
 
