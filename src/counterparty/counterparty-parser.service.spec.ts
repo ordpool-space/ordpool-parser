@@ -215,5 +215,88 @@ describe('CounterpartyParserService', () => {
       // CBOR-encoded fairminter payload (97 bytes, first byte was the type ID)
       expect(result.getMessageData().length).toBe(97);
     });
+
+    // !! FAKE TRANSACTION -- NOT FROM MAINNET OR ANY TESTNET !!
+    //
+    // The "ord" inscription envelope (OP_FALSE OP_IF "ord" [7] "xcp" ... OP_ENDIF)
+    // is used when composing with inscription=true (opt-in, defaults to false).
+    // As of March 2026, zero transactions on mainnet, testnet3, or testnet4 use
+    // this format. The Counterparty team confirmed inscription defaults to false
+    // (GitHub issue #3179). No public testnet API is available to search.
+    //
+    // The envelope script below is constructed from the official Counterparty
+    // composer unit test: counterparty-core/test/units/api/composertaproot_test.py
+    // The CBOR metadata and content bytes are taken verbatim from that test.
+    //
+    // TODO: Replace with a real mainnet/testnet transaction when one exists.
+    it('should parse an ord inscription envelope (FAKE -- from Counterparty regtest test data)', () => {
+      const txn = readTransaction('counterparty_regtest_ord_envelope_fairminter');
+      const result = CounterpartyParserService.parse(txn)!;
+
+      expect(result.type).toBe(DigitalArtifactType.Counterparty);
+      expect(result.encoding).toBe('p2tr');
+      expect(result.messageTypeId).toBe(90);
+      expect(result.messageType).toBe('fairminter');
+
+      // The re-encoded CBOR contains: fairminter fields + "text/plain" + content bytes
+      expect(result.getMessageData().length).toBe(77);
+    });
+  });
+
+  // ===========================================================================
+  // 4-byte message type ID (pre-short_tx_type_id, before block 489,956)
+  // ===========================================================================
+
+  describe('parse — 4-byte message type ID', () => {
+    // Classic send (ID 0) via OP_RETURN -- uses 4-byte big-endian encoding (00 00 00 00)
+    // Block 489,000 (before short_tx_type_id activation at 489,956)
+    // Sends 2,100,000,000 TRIGGERS
+    const CLASSIC_SEND_TXID = '6335eefb68f5e57eddb95b329c368615e53cf5efe346be14d271c88a63b5461e';
+
+    it('should parse a classic send (ID 0, 4-byte encoding) via OP_RETURN', () => {
+      const txn = readTransaction(CLASSIC_SEND_TXID);
+      const result = CounterpartyParserService.parse(txn)!;
+
+      expect(result.encoding).toBe('opreturn');
+      expect(result.messageTypeId).toBe(0);
+      expect(result.messageType).toBe('send');
+
+      // Classic send payload: asset_id (8 bytes BE) + quantity (8 bytes BE) = 16 bytes
+      // API raw data: 20 bytes = 4 bytes type ID (00000000) + 16 bytes payload
+      expect(result.getMessageData().length).toBe(16);
+    });
+
+    it('should parse a broadcast (ID 30, 4-byte encoding) via multisig (OLGA)', () => {
+      // OLGA predates short_tx_type_id -- uses 4-byte encoding even for ID 30
+      // API raw data: 9136 bytes = 4 bytes type ID (0000001e) + 9132 bytes payload
+      const txn = readTransaction(OLGA_MULTISIG_TXID);
+      const result = CounterpartyParserService.parse(txn)!;
+
+      expect(result.messageTypeId).toBe(30);
+      expect(result.getMessageData().length).toBe(9132);
+    });
+  });
+
+  // ===========================================================================
+  // Early exit correctness — reject non-Counterparty OP_RETURN transactions
+  // ===========================================================================
+
+  describe('early exits', () => {
+    // Rune OP_RETURN starts with 6a5d (OP_RETURN + OP_PUSHNUM_13)
+    // Our code rejects byte[1] > 0x4e before ARC4 decryption
+    const RUNE_TXID = '1af2a846befbfac4091bf540adad4fd1a86604c26c004066077d5fe22510e99b';
+
+    // Short OP_RETURN (8 hex chars = 4 bytes, below our 22 hex char minimum)
+    const SHORT_OP_RETURN_TXID = '28baf9374797230174803b0c3f63fd39e22bb1972a25cc2af4e791ca8fc89dae';
+
+    it('should reject a Rune transaction (OP_PUSHNUM_13 early exit)', () => {
+      const txn = readTransaction(RUNE_TXID);
+      expect(CounterpartyParserService.parse(txn)).toBeNull();
+    });
+
+    it('should reject a short OP_RETURN transaction (< 22 hex chars)', () => {
+      const txn = readTransaction(SHORT_OP_RETURN_TXID);
+      expect(CounterpartyParserService.parse(txn)).toBeNull();
+    });
   });
 });
