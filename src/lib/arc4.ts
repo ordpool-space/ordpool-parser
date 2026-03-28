@@ -97,7 +97,7 @@ export class Arc4 {
    * @param bytes - The byte array to be processed.
    * @return The processed byte array.
    */
-  private processBytes(bytes: Uint8Array): Uint8Array {
+  processBytes(bytes: Uint8Array): Uint8Array {
     return this.body(bytes, this.ksa!, new Uint8Array(bytes.length), bytes.length);
   }
 

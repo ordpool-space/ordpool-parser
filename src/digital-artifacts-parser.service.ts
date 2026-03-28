@@ -1,5 +1,6 @@
 import { AtomicalParserService } from './atomical/atomical-parser.service';
 import { Cat21ParserService } from './cat21/cat21-parser.service';
+import { CounterpartyParserService } from './counterparty/counterparty-parser.service';
 import { InscriptionParserService } from './inscription/inscription-parser.service';
 import { LabitbuParserService } from './labitbu/labitbu-parser.service';
 import { RuneParserService } from './rune/rune-parser.service';
@@ -28,6 +29,7 @@ export class DigitalArtifactsParserService {
     const parsedInscriptions = InscriptionParserService.parse(transaction, onError);
     const parsedAtomical = AtomicalParserService.parse(transaction, onError);
     const parsedLabitbu = LabitbuParserService.parse(transaction, onError);
+    const parsedCounterparty = CounterpartyParserService.parse(transaction, onError);
     const parsedSrc20 = Src20ParserService.parse(transaction, onError);
 
 
@@ -50,6 +52,10 @@ export class DigitalArtifactsParserService {
 
     if (parsedLabitbu) {
       artifacts.push(parsedLabitbu);
+    }
+
+    if (parsedCounterparty) {
+      artifacts.push(parsedCounterparty);
     }
 
     if (parsedSrc20) {

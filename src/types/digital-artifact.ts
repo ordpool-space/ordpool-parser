@@ -5,6 +5,7 @@ export enum DigitalArtifactType {
   Runestone = 'Runestone',
   Atomical = 'Atomical',
   Labitbu = 'Labitbu',
+  Counterparty = 'Counterparty',
 }
 
 /**
