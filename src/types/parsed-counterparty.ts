@@ -12,13 +12,16 @@ import { DigitalArtifact } from "./digital-artifact";
  * with "CNTRPRTY" (0x434e545250525459). The message type ID follows.
  */
 export type CounterpartyMessageType =
-  | 'send'               // 0 — Classic send (v1, uses 4-byte ID)
-  | 'enhanced_send'      // 1 — Send with memo
+  | 'send'               // 0 — Classic send (v1, uses 4-byte ID encoding)
+  | 'enhanced_send'      // 2 — Send with memo
+  | 'mpma'               // 3 — Multi-Peer Multi-Asset send
+  | 'sweep'              // 4 — Transfer all assets from one address to another
   | 'order'              // 10 — DEX order
   | 'btcpay'             // 11 — BTC payment for DEX match
   | 'dispenser'          // 12 — Vending machine for tokens
-  | 'issuance'           // 20 — Create/modify asset
-  | 'issuance_subasset'  // 21 — Create subasset
+  | 'dispense'           // 13 — Auto-triggered dispense (DISPENSE_ID)
+  | 'issuance'           // 20, 22 — Create/modify asset (22 = lock/reset)
+  | 'issuance_subasset'  // 21, 23 — Create subasset (23 = lock/reset)
   | 'broadcast'          // 30 — Publish data/oracle feed
   | 'bet'                // 40 — Betting contract
   | 'dividend'           // 50 — Pay dividends to holders
@@ -27,7 +30,10 @@ export type CounterpartyMessageType =
   | 'rps'                // 80 — Rock-Paper-Scissors
   | 'rps_resolve'        // 81 — Reveal RPS choice
   | 'fairminter'         // 90 — Create fair mint token
-  | 'utxo'               // 100 — UTXO attach/detach
+  | 'fairmint'           // 91 — Mint from fair minter
+  | 'utxo'               // 100 — UTXO attach/detach (legacy)
+  | 'attach'             // 101 — Bind token to UTXO
+  | 'detach'             // 102 — Unbind token from UTXO
   | 'destroy'            // 110 — Permanently destroy tokens
   | 'unknown';
 

@@ -11,8 +11,7 @@ import { littleEndianBytesToNumber } from './conversions';
  * @returns A tuple containing the read bytes as Uint8Array and the updated pointer position.
  */
 export function readBytes(raw: Uint8Array, pointer: number, n: number): [Uint8Array, number] {
-  const slice = raw.slice(pointer, pointer + n);
-  return [slice, pointer + n];
+  return [raw.subarray(pointer, pointer + n), pointer + n];
 }
 
 /**

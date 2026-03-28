@@ -3,9 +3,9 @@ import { DigitalArtifactType } from '../types/digital-artifact';
 import { ParsedCounterparty } from '../types/parsed-counterparty';
 import { OnParseError } from '../types/parser-options';
 import {
-  hasCounterparty,
   tryDecryptMultisig,
   tryDecryptOpReturn,
+  tryExtractP2tr,
 } from './counterparty-parser.service.helper';
 
 /**
@@ -16,19 +16,19 @@ import {
  * using vin[0].txid as key, prefixed with "CNTRPRTY".
  *
  * Three encoding methods:
- * 1. OP_RETURN — for messages ≤80 bytes (most common since 2017+)
- * 2. Multisig — for larger data (legacy, same format as SRC-20/Stamps)
- * 3. P2TR — Taproot witness envelope with metaprotocol "xcp" (v11+, 2024)
+ * 1. OP_RETURN -- for messages <=80 bytes (most common since 2017+)
+ * 2. Multisig -- for larger data (legacy, same format as SRC-20/Stamps)
+ * 3. P2TR -- Taproot witness envelope (v11+, block 902,000)
  */
 export class CounterpartyParserService {
 
   /**
    * Parses a transaction and returns a ParsedCounterparty if Counterparty data is found.
    *
-   * Detection order (fast → slow):
-   * 1. OP_RETURN — decrypt ≤80 bytes, check CNTRPRTY prefix (fast)
-   * 2. Multisig — extract pubkeys, decrypt, check prefix (expensive)
-   * 3. P2TR — TODO: check inscription metaprotocol "xcp" (requires inscription parsing)
+   * Detection order (cheapest first):
+   * 1. P2TR -- literal "CNTRPRTY" OP_RETURN + witness envelope (no decryption)
+   * 2. OP_RETURN -- ARC4 decrypt <=80 bytes, check CNTRPRTY prefix
+   * 3. Multisig -- extract pubkeys per output, decrypt, check prefix (expensive)
    */
   static parse(transaction: {
     txid: string,
@@ -41,18 +41,44 @@ export class CounterpartyParserService {
         return null;
       }
 
-      // ARC4 key = TXID of first input's previous output
-      const arc4Key = hexToBytes(transaction.vin[0].txid);
-
-      // 1. Try OP_RETURN (fast)
-      let result = tryDecryptOpReturn(transaction.vout, arc4Key);
-
-      // 2. Try Multisig (expensive, only if OP_RETURN didn't match)
-      if (!result) {
-        result = tryDecryptMultisig(transaction.vout, arc4Key);
+      // Single pass over vout: classify output types for early exit decisions
+      let hasOpReturn = false;
+      let hasMultisig = false;
+      let hasLiteralCntrprty = false;
+      for (const v of transaction.vout) {
+        if (v.scriptpubkey_type === 'op_return') {
+          hasOpReturn = true;
+          // P2TR reveal tx has literal "CNTRPRTY" OP_RETURN (hex: 6a08434e545250525459)
+          if (v.scriptpubkey === '6a08434e545250525459') {
+            hasLiteralCntrprty = true;
+          }
+        } else if (v.scriptpubkey_type === 'multisig' || v.scriptpubkey_type === 'unknown') {
+          hasMultisig = true;
+        }
       }
 
-      // 3. TODO: Try P2TR (check inscription metaprotocol "xcp")
+      if (!hasOpReturn && !hasMultisig) {
+        return null;
+      }
+
+      // 1. P2TR (cheapest -- no decryption, just check literal marker + witness envelope)
+      let result = hasLiteralCntrprty
+        ? tryExtractP2tr(transaction.vin, transaction.vout)
+        : null;
+
+      // 2. OP_RETURN with ARC4 decryption (fast, <=80 bytes)
+      if (!result && hasOpReturn && !hasLiteralCntrprty) {
+        const arc4Key = hexToBytes(transaction.vin[0].txid);
+        result = tryDecryptOpReturn(transaction.vout, arc4Key);
+      }
+
+      // 3. Multisig (expensive -- decrypt each output independently)
+      // Note: pre-fork Stamps (before block 796,000) ARE Counterparty transactions
+      // with key burn addresses. We must NOT skip based on burn keys.
+      if (!result && hasMultisig) {
+        const arc4Key = hexToBytes(transaction.vin[0].txid);
+        result = tryDecryptMultisig(transaction.vout, arc4Key);
+      }
 
       if (!result) {
         return null;
@@ -79,20 +105,14 @@ export class CounterpartyParserService {
   }
 
   /**
-   * Quick check: returns true if a Counterparty message is found.
-   *
-   * For performance, only checks OP_RETURN (fast decrypt ≤80 bytes).
-   * Multisig and P2TR are not checked here — those are deferred to parse().
+   * Returns true if a Counterparty message is found in the transaction.
+   * Checks all three encodings (P2TR, OP_RETURN, Multisig).
    */
   static hasCounterparty(transaction: {
-    vin: { txid: string }[],
+    txid: string,
+    vin: { txid: string, witness?: string[] }[],
     vout: { scriptpubkey: string, scriptpubkey_type: string }[]
   }): boolean {
-
-    try {
-      return hasCounterparty(transaction);
-    } catch {
-      return false;
-    }
+    return CounterpartyParserService.parse(transaction) !== null;
   }
 }

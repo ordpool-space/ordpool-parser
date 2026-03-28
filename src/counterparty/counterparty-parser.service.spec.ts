@@ -1,26 +1,73 @@
 import { readTransaction } from '../../testdata/test.helper';
-import { bytesToHex } from '../lib/conversions';
 import { DigitalArtifactType } from '../types/digital-artifact';
 import { CounterpartyParserService } from './counterparty-parser.service';
+
+// =============================================================================
+// OP_RETURN encoding — ARC4-encrypted, ≤80 bytes (most common since 2017+)
+// =============================================================================
 
 // Real mainnet Counterparty dispenser transaction (OP_RETURN encoding)
 // Dispenser: 26 XCP at 0.00029 BTC per unit
 // From: https://jpjanssen.com/how-to-reverse-engineer-counterparty-txs/
-const COUNTERPARTY_DISPENSER_TXID = '98c2165a58f7d62201f6264a91db38424a24b4d71ce25ee63c50497646092cfa';
+const DISPENSER_TXID = '98c2165a58f7d62201f6264a91db38424a24b4d71ce25ee63c50497646092cfa';
+
+// Enhanced send (type 2) — sends THEFAKERARE to 1EMvVadz...
+const ENHANCED_SEND_TXID = 'f3981dac3d2d43abf6c3bb059fbd998bcd8f76c4174fd1e2668599b9713649c9';
+
+// Issuance lock/reset (type 22) ��� FRONTPEPE asset
+const ISSUANCE_TXID = '4366a0871759d7c720f34984883848f6a806ef3ceba8c1e614b9cfe8f7e164a4';
+
+// Order (type 10) — DEX order
+const ORDER_TXID = '22077e8e1a6c109309c01f891073969fcaf396a8c4ba163f4a7e1d5a5795a77d';
+
+// Destroy (type 110) — permanently destroy tokens
+const DESTROY_TXID = 'a23ea1acd8fd775789e43c5b244b727f16649f66ad3e9527a853aee481e989bc';
+
+// Cancel (type 70) — cancel open order
+const CANCEL_TXID = '7e4bc190548fc55ff8cfa35b51a15bd503bfebd584573ae5e6b448b6aba59706';
+
+// =============================================================================
+// Multisig encoding — 1-of-3 bare multisig with fake pubkeys (legacy, large data)
+// =============================================================================
 
 // Real mainnet Counterparty multisig transaction — OLGA image (173 multisig outputs!)
 // One of the earliest NFT-style assets on Counterparty
-const COUNTERPARTY_OLGA_TXID = '627ae48d6b4cffb2ea734be1016dedef4cee3f8ffefaea5602dd58c696de6b74';
+const OLGA_MULTISIG_TXID = '627ae48d6b4cffb2ea734be1016dedef4cee3f8ffefaea5602dd58c696de6b74';
 
-// Non-Counterparty transactions
+// =============================================================================
+// P2TR encoding — Taproot witness envelope (v11+, block 902,000)
+// =============================================================================
+
+// Real mainnet P2TR Counterparty fairminter — THERAREONES asset
+// Uses generic envelope: OP_FALSE OP_IF <data> OP_ENDIF <pubkey> OP_CHECKSIG
+// The OP_RETURN contains literal "CNTRPRTY" (NOT encrypted)
+const P2TR_FAIRMINTER_TXID = 'dee5acb8d9a859c731ea32a1b5defbc744450effd7fd53bd12791f21dc4b149f';
+
+// =============================================================================
+// Non-Counterparty transactions (negative tests)
+// =============================================================================
 const CAT21_GENESIS_TXID = '98316dcb21daaa221865208fe0323616ee6dd84e6020b78bc6908e914ac03892';
 const INSCRIPTION_TXID = '2740d27e3017da44ee439792f6f60449e43992fddffd9387685b14d21b725ff0';
 
 describe('CounterpartyParserService', () => {
 
+  // ===========================================================================
+  // hasCounterparty -- detects all three encodings
+  // ===========================================================================
+
   describe('hasCounterparty', () => {
-    it('should detect Counterparty in a real OP_RETURN transaction', () => {
-      const txn = readTransaction(COUNTERPARTY_DISPENSER_TXID);
+    it('should detect OP_RETURN encoding', () => {
+      const txn = readTransaction(DISPENSER_TXID);
+      expect(CounterpartyParserService.hasCounterparty(txn)).toBe(true);
+    });
+
+    it('should detect P2TR encoding', () => {
+      const txn = readTransaction(P2TR_FAIRMINTER_TXID);
+      expect(CounterpartyParserService.hasCounterparty(txn)).toBe(true);
+    });
+
+    it('should detect multisig encoding', () => {
+      const txn = readTransaction(OLGA_MULTISIG_TXID);
       expect(CounterpartyParserService.hasCounterparty(txn)).toBe(true);
     });
 
@@ -35,23 +82,27 @@ describe('CounterpartyParserService', () => {
     });
   });
 
+  // ===========================================================================
+  // parse — OP_RETURN encoding (ARC4-encrypted)
+  // ===========================================================================
+
   describe('parse — OP_RETURN encoding', () => {
-    it('should parse a real Counterparty dispenser (OP_RETURN)', () => {
-      const txn = readTransaction(COUNTERPARTY_DISPENSER_TXID);
+
+    it('should parse a dispenser (type 12)', () => {
+      const txn = readTransaction(DISPENSER_TXID);
       const result = CounterpartyParserService.parse(txn)!;
 
       expect(result.type).toBe(DigitalArtifactType.Counterparty);
-      expect(result.uniqueId).toBe(`${DigitalArtifactType.Counterparty}-${COUNTERPARTY_DISPENSER_TXID}`);
-      expect(result.transactionId).toBe(COUNTERPARTY_DISPENSER_TXID);
+      expect(result.uniqueId).toBe(`${DigitalArtifactType.Counterparty}-${DISPENSER_TXID}`);
+      expect(result.transactionId).toBe(DISPENSER_TXID);
       expect(result.encoding).toBe('opreturn');
-
-      // Message type 12 = Dispenser
       expect(result.messageTypeId).toBe(12);
       expect(result.messageType).toBe('dispenser');
 
       // Dispenser payload: asset_id (8 bytes BE) + give_quantity (8 bytes BE) +
       // escrow_quantity (8 bytes BE) + mainchainrate (8 bytes BE) + status (1 byte)
       const data = result.getMessageData();
+      expect(data.length).toBe(33);
       const view = new DataView(data.buffer, data.byteOffset);
 
       // Asset ID 1 = XCP (the native Counterparty token)
@@ -67,31 +118,102 @@ describe('CounterpartyParserService', () => {
       expect(view.getBigUint64(24)).toBe(29000n);
     });
 
+    it('should parse an enhanced send (type 2)', () => {
+      const txn = readTransaction(ENHANCED_SEND_TXID);
+      const result = CounterpartyParserService.parse(txn)!;
+
+      expect(result.encoding).toBe('opreturn');
+      expect(result.messageTypeId).toBe(2);
+      expect(result.messageType).toBe('enhanced_send');
+      expect(result.getMessageData().length).toBe(34);
+    });
+
+    it('should parse an issuance (type 22 — lock/reset)', () => {
+      const txn = readTransaction(ISSUANCE_TXID);
+      const result = CounterpartyParserService.parse(txn)!;
+
+      expect(result.encoding).toBe('opreturn');
+      expect(result.messageTypeId).toBe(22);
+      expect(result.messageType).toBe('issuance');
+      expect(result.getMessageData().length).toBe(36);
+    });
+
+    it('should parse an order (type 10)', () => {
+      const txn = readTransaction(ORDER_TXID);
+      const result = CounterpartyParserService.parse(txn)!;
+
+      expect(result.encoding).toBe('opreturn');
+      expect(result.messageTypeId).toBe(10);
+      expect(result.messageType).toBe('order');
+      expect(result.getMessageData().length).toBe(42);
+    });
+
+    it('should parse a destroy (type 110)', () => {
+      const txn = readTransaction(DESTROY_TXID);
+      const result = CounterpartyParserService.parse(txn)!;
+
+      expect(result.encoding).toBe('opreturn');
+      expect(result.messageTypeId).toBe(110);
+      expect(result.messageType).toBe('destroy');
+      expect(result.getMessageData().length).toBe(27);
+    });
+
+    it('should parse a cancel (type 70)', () => {
+      const txn = readTransaction(CANCEL_TXID);
+      const result = CounterpartyParserService.parse(txn)!;
+
+      expect(result.encoding).toBe('opreturn');
+      expect(result.messageTypeId).toBe(70);
+      expect(result.messageType).toBe('cancel');
+      expect(result.getMessageData().length).toBe(32);
+    });
+
     it('should return null for a non-Counterparty transaction', () => {
       const txn = readTransaction(CAT21_GENESIS_TXID);
       expect(CounterpartyParserService.parse(txn)).toBeNull();
     });
   });
 
+  // ===========================================================================
+  // parse — Multisig encoding (ARC4-encrypted, 1-of-3 bare multisig)
+  // ===========================================================================
+
   describe('parse — Multisig encoding', () => {
-    it('should parse a real Counterparty multisig transaction (OLGA image)', () => {
-      const txn = readTransaction(COUNTERPARTY_OLGA_TXID);
+    it('should parse a broadcast via multisig (OLGA image, 173 outputs)', () => {
+      const txn = readTransaction(OLGA_MULTISIG_TXID);
       const result = CounterpartyParserService.parse(txn)!;
 
       expect(result.type).toBe(DigitalArtifactType.Counterparty);
-      expect(result.transactionId).toBe(COUNTERPARTY_OLGA_TXID);
+      expect(result.transactionId).toBe(OLGA_MULTISIG_TXID);
       expect(result.encoding).toBe('multisig');
-
-      // OLGA image was broadcast as data (message type 30 = broadcast)
-      expect(result.messageType).toBe('broadcast');
       expect(result.messageTypeId).toBe(30);
+      expect(result.messageType).toBe('broadcast');
 
-      // The message data should contain the asset data
-      const data = result.getMessageData();
-      expect(data.length).toBeGreaterThan(0);
+      // The message data is 9132 bytes (broadcast payload from 173 multisig outputs)
+      // Note: OLGA predates the short_tx_type_id protocol change, so it uses 4-byte type ID
+      expect(result.getMessageData().length).toBe(9132);
+    });
+  });
 
-      console.log('OLGA message data length:', data.length, 'bytes');
-      console.log('OLGA message type:', result.messageType);
+  // ===========================================================================
+  // parse — P2TR encoding (Taproot witness envelope, v11+, block 902,000)
+  // ===========================================================================
+
+  describe('parse — P2TR encoding', () => {
+    it('should parse a fairminter via P2TR (THERAREONES)', () => {
+      const txn = readTransaction(P2TR_FAIRMINTER_TXID);
+      const result = CounterpartyParserService.parse(txn)!;
+
+      expect(result.type).toBe(DigitalArtifactType.Counterparty);
+      expect(result.transactionId).toBe(P2TR_FAIRMINTER_TXID);
+      expect(result.encoding).toBe('p2tr');
+
+      // Fairminter = message type 90
+      expect(result.messageTypeId).toBe(90);
+      expect(result.messageType).toBe('fairminter');
+
+      // CBOR-encoded fairminter payload (97 bytes, first byte was the type ID)
+      expect(result.getMessageData().length).toBe(97);
     });
   });
 });
