@@ -216,30 +216,23 @@ describe('CounterpartyParserService', () => {
       expect(result.getMessageData().length).toBe(97);
     });
 
-    // !! FAKE TRANSACTION -- NOT FROM MAINNET OR ANY TESTNET !!
-    //
-    // The "ord" inscription envelope (OP_FALSE OP_IF "ord" [7] "xcp" ... OP_ENDIF)
-    // is used when composing with inscription=true (opt-in, defaults to false).
-    // As of March 2026, zero transactions on mainnet, testnet3, or testnet4 use
-    // this format. The Counterparty team confirmed inscription defaults to false
-    // (GitHub issue #3179). No public testnet API is available to search.
-    //
-    // The envelope script below is constructed from the official Counterparty
-    // composer unit test: counterparty-core/test/units/api/composertaproot_test.py
-    // The CBOR metadata and content bytes are taken verbatim from that test.
-    //
-    // TODO: Replace with a real mainnet/testnet transaction when one exists.
-    it('should parse an ord inscription envelope (FAKE -- from Counterparty regtest test data)', () => {
-      const txn = readTransaction('counterparty_regtest_ord_envelope_fairminter');
+    // Real mainnet P2TR issuance using the "ord" inscription envelope
+    // (OP_FALSE OP_IF "ord" [7] "xcp" [1] "image/jpeg" [5] <CBOR metadata> [0] <JPEG content> OP_ENDIF)
+    // ORDINALMINT asset with embedded JPEG image, block 933,916
+    // Composed with inscription=true (opt-in parameter, defaults to false)
+    const P2TR_ORD_ISSUANCE_TXID = 'e6ecd07a48178c363e61a2bf109a5d1dc5e44e9b31afff096074311fb51ca01d';
+
+    it('should parse an ord inscription envelope (ORDINALMINT issuance with JPEG)', () => {
+      const txn = readTransaction(P2TR_ORD_ISSUANCE_TXID);
       const result = CounterpartyParserService.parse(txn)!;
 
       expect(result.type).toBe(DigitalArtifactType.Counterparty);
       expect(result.encoding).toBe('p2tr');
-      expect(result.messageTypeId).toBe(90);
-      expect(result.messageType).toBe('fairminter');
+      expect(result.messageTypeId).toBe(22);
+      expect(result.messageType).toBe('issuance');
 
-      // The re-encoded CBOR contains: fairminter fields + "text/plain" + content bytes
-      expect(result.getMessageData().length).toBe(77);
+      // Re-encoded CBOR contains: issuance fields + "image/jpeg" + JPEG content bytes
+      expect(result.getMessageData().length).toBe(7458);
     });
   });
 
