@@ -90,9 +90,12 @@ function parseMessageTypeId(data: Uint8Array): { messageTypeId: number, messageD
     return null;
   }
 
-  // Classic send (ID 0) uses 4-byte encoding: 00 00 00 00
-  // All other IDs < 256 use 1-byte encoding
-  if (data[0] === 0 && data.length >= 4) {
+  // ID 0 (classic send) uses 4-byte big-endian encoding.
+  // All other IDs (1-255) use 1-byte encoding.
+  if (data[0] === 0) {
+    if (data.length < 5) {
+      return null; // truncated -- Counterparty rejects this too
+    }
     return {
       messageTypeId: bigEndianBytesToNumber(data.subarray(0, 4)),
       messageData: data.subarray(4),
