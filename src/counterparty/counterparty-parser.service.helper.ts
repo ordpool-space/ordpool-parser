@@ -46,9 +46,14 @@ export function extractOpReturnData(scriptpubkey: string): Uint8Array | null {
 
   const bytes = hexToBytes(scriptpubkey);
 
-  // Skip the 0x6a opcode, read the pushdata
+  // Counterparty requires EXACTLY [OP_RETURN, PushBytes(data)] -- two instructions, no more.
+  // Parity with: bitcoin_client.rs parse_vout(), pattern [Ok(Op(OP_RETURN)), Ok(PushBytes(pb))]
+  // We read the single pushdata, then verify no trailing data exists.
   try {
-    const [data] = readPushdata(bytes, 1);
+    const [data, nextPointer] = readPushdata(bytes, 1);
+    if (nextPointer !== bytes.length) {
+      return null; // trailing data after pushdata -- not a valid Counterparty OP_RETURN
+    }
     return data;
   } catch {
     return null;
@@ -219,15 +224,16 @@ export function tryDecryptMultisig(
     }
 
     // Collect data from all pubkeys EXCEPT the last (sender's real pubkey)
-    // Strip first byte (0x02/0x03 curve prefix) and last byte (nonce/padding)
+    // Strip first byte (curve prefix) and last byte (nonce/padding) from each.
+    // Parity with: bitcoin_client.rs line 311: chunk[1..chunk.len()-1]
+    // We accept any pubkey size (not just 33 bytes) to match the Rust code exactly.
     const dataChunks: Uint8Array[] = [];
     for (let i = 0; i < pubkeys.length - 1; i++) {
       const pubkey = pubkeys[i];
-      if (pubkey.length !== 33) {
-        continue; // Not a valid compressed pubkey
+      if (pubkey.length < 2) {
+        continue; // too short to strip first+last byte (matches Rust's chunk.len() < 2 guard)
       }
-      // Strip first byte (curve prefix) and last byte (padding) -> 31 data bytes
-      dataChunks.push(pubkey.subarray(1, 32));
+      dataChunks.push(pubkey.subarray(1, pubkey.length - 1));
     }
 
     if (dataChunks.length === 0) {

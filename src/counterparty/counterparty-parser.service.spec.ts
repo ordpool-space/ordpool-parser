@@ -168,6 +168,78 @@ describe('CounterpartyParserService', () => {
       expect(result.getMessageData().length).toBe(32);
     });
 
+    it('should parse a btcpay (type 11)', () => {
+      const txn = readTransaction('838e1b0726a2c7f87e9eb5e3cca86947f19298b7bbb50c4b2f94d42f3f758e8f');
+      const result = CounterpartyParserService.parse(txn)!;
+      expect(result.messageTypeId).toBe(11);
+      expect(result.messageType).toBe('btcpay');
+      expect(result.getMessageData().length).toBe(64);
+    });
+
+    it('should parse a standard issuance (type 20)', () => {
+      const txn = readTransaction('64e52c9e087a88652dd02d68333392fa16c16ddd60c247b0c1f45976769cc691');
+      const result = CounterpartyParserService.parse(txn)!;
+      expect(result.messageTypeId).toBe(20);
+      expect(result.messageType).toBe('issuance');
+      expect(result.getMessageData().length).toBe(70);
+    });
+
+    it('should parse a dividend (type 50)', () => {
+      const txn = readTransaction('6ea9cecabdabf1774345eef042d73d5f48e5d7c6f05f610deb246619522b74e1');
+      const result = CounterpartyParserService.parse(txn)!;
+      expect(result.messageTypeId).toBe(50);
+      expect(result.messageType).toBe('dividend');
+      expect(result.getMessageData().length).toBe(24);
+    });
+
+    it('should parse a sweep (type 4)', () => {
+      const txn = readTransaction('c3e9e1a8b37bb2dc6e18fe5ff6e85d17819ee9deea14c4be8b69db51551a17aa');
+      const result = CounterpartyParserService.parse(txn)!;
+      expect(result.messageTypeId).toBe(4);
+      expect(result.messageType).toBe('sweep');
+      expect(result.getMessageData().length).toBe(25);
+    });
+
+    it('should parse an mpma send (type 3)', () => {
+      const txn = readTransaction('6dda21d218ce41ba97c2e27ff2d1811a327725da470ed8a333c9b7e5a0fbd572');
+      const result = CounterpartyParserService.parse(txn)!;
+      expect(result.messageTypeId).toBe(3);
+      expect(result.messageType).toBe('mpma');
+      expect(result.getMessageData().length).toBe(154);
+    });
+
+    it('should parse a dispense (type 13)', () => {
+      const txn = readTransaction('f6962ec64b432c29f825af51e64365bd16cfcb988c7dec1bca26d765a23820a0');
+      const result = CounterpartyParserService.parse(txn)!;
+      expect(result.messageTypeId).toBe(13);
+      expect(result.messageType).toBe('dispense');
+      expect(result.getMessageData().length).toBe(1);
+    });
+
+    it('should parse an attach (type 101)', () => {
+      const txn = readTransaction('936c44a1d8cdb61eacce626fb8d4dd339fb3ca87458e3a81e2431d9050fe5e87');
+      const result = CounterpartyParserService.parse(txn)!;
+      expect(result.messageTypeId).toBe(101);
+      expect(result.messageType).toBe('attach');
+      expect(result.getMessageData().length).toBe(22);
+    });
+
+    it('should parse a detach (type 102)', () => {
+      const txn = readTransaction('923ed79399ab7de8798eb8d38a56938c8b8409dc27d72193433dd3312051794f');
+      const result = CounterpartyParserService.parse(txn)!;
+      expect(result.messageTypeId).toBe(102);
+      expect(result.messageType).toBe('detach');
+      expect(result.getMessageData().length).toBe(1);
+    });
+
+    it('should parse a fairmint (type 91)', () => {
+      const txn = readTransaction('b0006503a44154ec53e6b8ff1222f6d9c5c6df4cfe3fa93755a2d9e5027d6b26');
+      const result = CounterpartyParserService.parse(txn)!;
+      expect(result.messageTypeId).toBe(91);
+      expect(result.messageType).toBe('fairmint');
+      expect(result.getMessageData().length).toBe(11);
+    });
+
     it('should return null for a non-Counterparty transaction', () => {
       const txn = readTransaction(CAT21_GENESIS_TXID);
       expect(CounterpartyParserService.parse(txn)).toBeNull();
