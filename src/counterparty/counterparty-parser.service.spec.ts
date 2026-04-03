@@ -1,4 +1,5 @@
 import { readTransaction } from '../../testdata/test.helper';
+import { bytesToHex } from '../lib/conversions';
 import { DigitalArtifactType } from '../types/digital-artifact';
 import { CounterpartyParserService } from './counterparty-parser.service';
 
@@ -168,38 +169,66 @@ describe('CounterpartyParserService', () => {
       expect(result.getMessageData().length).toBe(32);
     });
 
+    // BTCPay: BTC payment settling a DEX order match
+    // Payload = tx0_hash (32 bytes) + tx1_hash (32 bytes) = two order txids
     it('should parse a btcpay (type 11)', () => {
       const txn = readTransaction('838e1b0726a2c7f87e9eb5e3cca86947f19298b7bbb50c4b2f94d42f3f758e8f');
       const result = CounterpartyParserService.parse(txn)!;
       expect(result.messageTypeId).toBe(11);
       expect(result.messageType).toBe('btcpay');
-      expect(result.getMessageData().length).toBe(64);
+      const data = result.getMessageData();
+      expect(data.length).toBe(64);
+
+      // First 32 bytes = tx0_hash, second 32 bytes = tx1_hash (the matched order pair)
+      expect(bytesToHex(data.subarray(0, 32))).toBe('e303ecbaddbf71a0b0a7e77e0138bdb0557433fe9c02329026df335b677862aa');
+      expect(bytesToHex(data.subarray(32, 64))).toBe('3970379861d05776754e20ab6417c7347d0854be2c129340cc022f7c1cc73b58');
     });
 
+    // Standard issuance: RAREPIXELS, 100 units, non-divisible, locked
     it('should parse a standard issuance (type 20)', () => {
       const txn = readTransaction('64e52c9e087a88652dd02d68333392fa16c16ddd60c247b0c1f45976769cc691');
       const result = CounterpartyParserService.parse(txn)!;
       expect(result.messageTypeId).toBe(20);
       expect(result.messageType).toBe('issuance');
-      expect(result.getMessageData().length).toBe(70);
+      const data = result.getMessageData();
+      expect(data.length).toBe(70);
+
+      // asset_id (8 bytes BE) + quantity (8 bytes BE)
+      const view = new DataView(data.buffer, data.byteOffset);
+      expect(view.getBigUint64(0)).toBe(92439521262392n);   // RAREPIXELS asset ID
+      expect(view.getBigUint64(8)).toBe(100n);              // 100 units
     });
 
+    // Dividend: pay 1 PIGEONSTEVE per unit of RAREPIGEON held
     it('should parse a dividend (type 50)', () => {
       const txn = readTransaction('6ea9cecabdabf1774345eef042d73d5f48e5d7c6f05f610deb246619522b74e1');
       const result = CounterpartyParserService.parse(txn)!;
       expect(result.messageTypeId).toBe(50);
       expect(result.messageType).toBe('dividend');
-      expect(result.getMessageData().length).toBe(24);
+      const data = result.getMessageData();
+      expect(data.length).toBe(24);
+
+      // quantity_per_unit (8 bytes BE) + asset_id (8 bytes BE) + dividend_asset_id (8 bytes BE)
+      const view = new DataView(data.buffer, data.byteOffset);
+      expect(view.getBigUint64(0)).toBe(1n); // 1 unit per holding
     });
 
+    // Sweep: transfer all assets from one address to another, flags=3
     it('should parse a sweep (type 4)', () => {
       const txn = readTransaction('c3e9e1a8b37bb2dc6e18fe5ff6e85d17819ee9deea14c4be8b69db51551a17aa');
       const result = CounterpartyParserService.parse(txn)!;
       expect(result.messageTypeId).toBe(4);
       expect(result.messageType).toBe('sweep');
-      expect(result.getMessageData().length).toBe(25);
+      const data = result.getMessageData();
+      expect(data.length).toBe(25);
+
+      // CBOR-encoded in v11+: [destination_hash (20 bytes), flags (1 byte), ...]
+      // Flags byte at offset 24: 0x03 = transfer tokens + rights + ownership
+      // The value 0x40 at the end is CBOR encoding overhead
+      expect(data[23]).toBe(0x03);
     });
 
+    // MPMA: Multi-Peer Multi-Asset send (BITCORNBILL + BITCORNGOLD to same destination)
     it('should parse an mpma send (type 3)', () => {
       const txn = readTransaction('6dda21d218ce41ba97c2e27ff2d1811a327725da470ed8a333c9b7e5a0fbd572');
       const result = CounterpartyParserService.parse(txn)!;
@@ -208,22 +237,33 @@ describe('CounterpartyParserService', () => {
       expect(result.getMessageData().length).toBe(154);
     });
 
+    // Dispense: auto-triggered when BTC is sent to a dispenser address
+    // Payload is minimal (1 byte: 0x00)
     it('should parse a dispense (type 13)', () => {
       const txn = readTransaction('f6962ec64b432c29f825af51e64365bd16cfcb988c7dec1bca26d765a23820a0');
       const result = CounterpartyParserService.parse(txn)!;
       expect(result.messageTypeId).toBe(13);
       expect(result.messageType).toBe('dispense');
       expect(result.getMessageData().length).toBe(1);
+      expect(result.getMessageData()[0]).toBe(0x00);
     });
 
+    // Attach: bind 300,000,000,000,000 UAUSD to a UTXO
+    // v10+ CBOR format: asset name + quantity as pipe-delimited string
     it('should parse an attach (type 101)', () => {
       const txn = readTransaction('936c44a1d8cdb61eacce626fb8d4dd339fb3ca87458e3a81e2431d9050fe5e87');
       const result = CounterpartyParserService.parse(txn)!;
       expect(result.messageTypeId).toBe(101);
       expect(result.messageType).toBe('attach');
-      expect(result.getMessageData().length).toBe(22);
+      const data = result.getMessageData();
+      expect(data.length).toBe(22);
+
+      // v10+ attach uses a pipe-delimited string: "UAUSD|300000000000000|"
+      const text = new TextDecoder().decode(data);
+      expect(text).toBe('UAUSD|300000000000000|');
     });
 
+    // Detach: unbind token from UTXO (minimal payload)
     it('should parse a detach (type 102)', () => {
       const txn = readTransaction('923ed79399ab7de8798eb8d38a56938c8b8409dc27d72193433dd3312051794f');
       const result = CounterpartyParserService.parse(txn)!;
@@ -232,6 +272,7 @@ describe('CounterpartyParserService', () => {
       expect(result.getMessageData().length).toBe(1);
     });
 
+    // Fairmint: mint from THERAREONES fairminter
     it('should parse a fairmint (type 91)', () => {
       const txn = readTransaction('b0006503a44154ec53e6b8ff1222f6d9c5c6df4cfe3fa93755a2d9e5027d6b26');
       const result = CounterpartyParserService.parse(txn)!;
