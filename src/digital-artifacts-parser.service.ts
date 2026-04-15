@@ -5,6 +5,7 @@ import { InscriptionParserService } from './inscription/inscription-parser.servi
 import { LabitbuParserService } from './labitbu/labitbu-parser.service';
 import { RuneParserService } from './rune/rune-parser.service';
 import { Src20ParserService } from './src20/src20-parser.service';
+import { StampParserService } from './stamp/stamp-parser.service';
 import { DigitalArtifact } from './types/digital-artifact';
 import { OnParseError } from './types/parser-options';
 import { TransactionSimple } from './types/transaction-simple';
@@ -60,6 +61,11 @@ export class DigitalArtifactsParserService {
 
     if (parsedSrc20) {
       artifacts.push(parsedSrc20);
+    }
+
+    const parsedStamp = StampParserService.parse(transaction, onError);
+    if (parsedStamp) {
+      artifacts.push(parsedStamp);
     }
 
     return artifacts;

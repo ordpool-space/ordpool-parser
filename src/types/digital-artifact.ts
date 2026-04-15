@@ -1,6 +1,9 @@
 export enum DigitalArtifactType {
   Inscription = 'Inscription',
   Src20 = 'Src20',
+  Stamp = 'Stamp',
+  Src721 = 'Src721',
+  Src101 = 'Src101',
   Cat21 = 'Cat21',
   Runestone = 'Runestone',
   Atomical = 'Atomical',
