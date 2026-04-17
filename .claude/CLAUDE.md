@@ -62,6 +62,12 @@ The only safe changes to CAT-21 code:
 
 **Before touching any CAT-21 file**: Run the full test suite and verify ALL existing cat images match their snapshots byte-for-byte.
 
+## ABSOLUTE RULE: Never Delete Support Without User Consent
+
+**NEVER remove code, types, enum values, flags, or protocol support because you couldn't find a test transaction.** If you're struggling to find on-chain evidence, TELL THE USER. We will find a solution together. Deleting working code is never the answer.
+
+If a /simplify agent suggests removing "dead code" that represents protocol support (types, enum values, routing logic, flags), **push back**. The code is not dead -- it's waiting for its first transaction. The right response is to search harder for test data, not to delete the support.
+
 ## General Rules
 
 - **Never brag with arbitrary numbers.** Don't write "436 tests" or "39 test suites" or "63,000 cats" in documentation or comments — these numbers change constantly and get stale. Anyone can run `npm test` and see the actual count.
