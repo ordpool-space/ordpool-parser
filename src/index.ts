@@ -46,6 +46,7 @@ export * from './types/parsed-runestone';
 export * from './types/parsed-src20';
 export * from './types/parsed-stamp';
 export * from './types/parsed-src721';
+export * from './types/parsed-src101';
 export * from './types/parser-options';
 export * from './types/bitcoin-rpc';
 export * from './types/transaction-simple';
