@@ -48,25 +48,19 @@ export function extractOlgaData(
   }
 
   const allBytes = concatUint8Arrays(chunks);
-
-  // Strip trailing zeros (padding)
-  let end = allBytes.length;
-  while (end > 0 && allBytes[end - 1] === 0) {
-    end--;
-  }
-  if (end < 2) {
+  if (allBytes.length < 2) {
     return null;
   }
-  const trimmed = allBytes.subarray(0, end);
 
-  // First 2 bytes = big-endian file length
-  const fileLength = bigEndianBytesToNumber(trimmed.subarray(0, 2));
-  if (fileLength === 0 || fileLength > trimmed.length - 2) {
+  // First 2 bytes = big-endian file length. Read BEFORE stripping trailing zeros,
+  // because the file data itself can end with zero bytes (e.g., WebP images).
+  const fileLength = bigEndianBytesToNumber(allBytes.subarray(0, 2));
+  if (fileLength === 0 || fileLength > allBytes.length - 2) {
     return null;
   }
 
   // Extract the file data (skip 2-byte length prefix)
-  const fileData = trimmed.subarray(2, 2 + fileLength);
+  const fileData = allBytes.subarray(2, 2 + fileLength);
 
   // Check for "stamp:" prefix (0x7374616d703a) -- used by SRC-20/SRC-101 OLGA
   // Counterparty-issued OLGA stamps do NOT have this prefix.
@@ -114,9 +108,16 @@ export function detectMimeType(data: Uint8Array): string | null {
     return 'image/jpeg';
   }
 
-  // BMP: 42 4d (BM)
-  if (data[0] === 0x42 && data[1] === 0x4d) {
+  // BMP: 42 4d (BM) + file size at bytes 2-5 (LE) + reserved zeros at 6-9
+  // Stricter than just "BM" to avoid false positives (e.g., BMN audio format)
+  if (data[0] === 0x42 && data[1] === 0x4d && data.length >= 14 &&
+      data[6] === 0x00 && data[7] === 0x00 && data[8] === 0x00 && data[9] === 0x00) {
     return 'image/bmp';
+  }
+
+  // Gzip: 1f 8b (used for compressed SVG stamps)
+  if (data[0] === 0x1f && data[1] === 0x8b) {
+    return 'application/gzip';
   }
 
   // Text-based formats: check as UTF-8
