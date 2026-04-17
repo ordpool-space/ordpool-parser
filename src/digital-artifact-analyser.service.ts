@@ -446,10 +446,6 @@ export class DigitalArtifactAnalyserService {
         flags |= OrdpoolTransactionFlags.ordpool_src721;
         break;
 
-      case DigitalArtifactType.Src101:
-        flags |= OrdpoolTransactionFlags.ordpool_src101;
-        break;
-
       case DigitalArtifactType.Inscription:
         const inscription = artifact as ParsedInscription;
         flags |= OrdpoolTransactionFlags.ordpool_inscription;
@@ -565,8 +561,7 @@ export class DigitalArtifactAnalyserService {
       isFlagSetOnTransaction(tx, OrdpoolTransactionFlags.ordpool_brc20) ||
       isFlagSetOnTransaction(tx, OrdpoolTransactionFlags.ordpool_src20) ||
       isFlagSetOnTransaction(tx, OrdpoolTransactionFlags.ordpool_stamp) ||
-      isFlagSetOnTransaction(tx, OrdpoolTransactionFlags.ordpool_src721) ||
-      isFlagSetOnTransaction(tx, OrdpoolTransactionFlags.ordpool_src101);
+      isFlagSetOnTransaction(tx, OrdpoolTransactionFlags.ordpool_src721);
   }
 
 

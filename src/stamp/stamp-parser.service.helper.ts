@@ -1,5 +1,8 @@
 import { bigEndianBytesToNumber, hexToBytes, concatUint8Arrays } from '../lib/conversions';
 
+// "stamp:" in ASCII (hex: 7374616d703a) -- used by SRC-20/SRC-101 OLGA encoding
+const STAMP_PREFIX = new Uint8Array([0x73, 0x74, 0x61, 0x6d, 0x70, 0x3a]);
+
 /**
  * Extracts raw file data from OLGA P2WSH outputs.
  *
@@ -62,12 +65,12 @@ export function extractOlgaData(
   // Extract the file data (skip 2-byte length prefix)
   const fileData = allBytes.subarray(2, 2 + fileLength);
 
-  // Check for "stamp:" prefix (0x7374616d703a) -- used by SRC-20/SRC-101 OLGA
+  // Check for "stamp:" prefix -- used by SRC-20/SRC-101 OLGA encoding.
   // Counterparty-issued OLGA stamps do NOT have this prefix.
-  const STAMP_PREFIX = new Uint8Array([0x73, 0x74, 0x61, 0x6d, 0x70, 0x3a]); // "stamp:"
   if (fileData.length > STAMP_PREFIX.length &&
-      fileData[0] === 0x73 && fileData[1] === 0x74 && fileData[2] === 0x61 &&
-      fileData[3] === 0x6d && fileData[4] === 0x70 && fileData[5] === 0x3a) {
+      fileData[0] === STAMP_PREFIX[0] && fileData[1] === STAMP_PREFIX[1] &&
+      fileData[2] === STAMP_PREFIX[2] && fileData[3] === STAMP_PREFIX[3] &&
+      fileData[4] === STAMP_PREFIX[4] && fileData[5] === STAMP_PREFIX[5]) {
     // Strip the stamp: prefix
     return fileData.subarray(STAMP_PREFIX.length);
   }
