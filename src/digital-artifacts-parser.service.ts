@@ -63,9 +63,14 @@ export class DigitalArtifactsParserService {
       artifacts.push(parsedSrc20);
     }
 
-    const parsedStamp = StampParserService.parse(transaction, onError);
-    if (parsedStamp) {
-      artifacts.push(parsedStamp);
+    // StampParserService detects Stamps (images), SRC-721, SRC-101, and SRC-20 OLGA.
+    // Skip if Src20ParserService already found an SRC-20 via multisig -- avoids
+    // double ARC4 decryption and duplicate ParsedSrc20 artifacts.
+    if (!parsedSrc20) {
+      const parsedStamp = StampParserService.parse(transaction, onError);
+      if (parsedStamp) {
+        artifacts.push(parsedStamp);
+      }
     }
 
     return artifacts;

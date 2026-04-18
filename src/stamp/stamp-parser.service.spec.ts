@@ -342,6 +342,26 @@ describe('StampParserService', () => {
   });
 
   // ===========================================================================
+  // SRC-20 via ARC4 multisig (same path as SRC-101)
+  // ===========================================================================
+
+  describe('parse -- SRC-20 via ARC4 multisig', () => {
+    it('should parse SRC-20 transfer from multisig key-burn outputs', () => {
+      const txn = readTransaction(SRC20_MULTISIG_TXID);
+      const result = StampParserService.parse(txn) as ParsedSrc20;
+
+      expect(result.type).toBe(DigitalArtifactType.Src20);
+      expect(result.transactionId).toBe(SRC20_MULTISIG_TXID);
+
+      const parsed = JSON.parse(result.getContent());
+      expect(parsed.p).toBe('src-20');
+      expect(parsed.op).toBe('transfer');
+      expect(parsed.tick).toBe('STEVE');
+      expect(parsed.amt).toBe('100000000');
+    });
+  });
+
+  // ===========================================================================
   // Negative tests -- should return null
   // ===========================================================================
 

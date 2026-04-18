@@ -17,10 +17,6 @@ import { extractOlgaData, decryptStampMultisig, detectMimeType } from './stamp-p
  * Note: Pre-OLGA Stamps (before block 833,000) are Counterparty issuances
  * with STAMP:<base64> in the description field. Those are detected by the
  * Counterparty parser as issuance messages.
- *
- * Note: The existing Src20ParserService still works for SRC-20 via multisig.
- * This parser additionally detects SRC-101, SRC-721, and Stamps from
- * both encoding paths.
  */
 export class StampParserService {
 
@@ -59,7 +55,7 @@ export class StampParserService {
       // Path 2: ARC4 multisig -- decrypt stamp content from key-burn multisig outputs
       const content = decryptStampMultisig(transaction);
       if (content) {
-        return StampParserService.routeStampContent(transaction.txid, content);
+        return StampParserService.routeByProtocol(transaction.txid, content);
       }
 
       return null;
@@ -80,60 +76,11 @@ export class StampParserService {
     return StampParserService.parse(transaction) !== null;
   }
 
-  private static parseJsonStamp(
-    txid: string,
-    fileData: Uint8Array
-  ): ParsedSrc20 | ParsedSrc721 | ParsedStamp | null {
-
-    const text = new TextDecoder().decode(fileData);
-
-    let json: any;
-    try {
-      json = JSON.parse(text);
-    } catch {
-      // Detected as JSON by content heuristic but actually invalid JSON.
-      // Fall through to Stamp with JSON content type.
-      return StampParserService.createStamp(txid, fileData, 'application/json');
-    }
-
-    const protocol = (json?.p || json?.P || '').toLowerCase();
-
-    if (protocol === 'src-20') {
-      return {
-        type: DigitalArtifactType.Src20,
-        uniqueId: `${DigitalArtifactType.Src20}-${txid}`,
-        transactionId: txid,
-        getContent: () => text,
-      };
-    }
-
-    if (protocol === 'src-721') {
-      return {
-        type: DigitalArtifactType.Src721,
-        uniqueId: `${DigitalArtifactType.Src721}-${txid}`,
-        transactionId: txid,
-        getContent: () => text,
-      };
-    }
-
-    if (protocol === 'src-101') {
-      return {
-        type: DigitalArtifactType.Src101,
-        uniqueId: `${DigitalArtifactType.Src101}-${txid}`,
-        transactionId: txid,
-        getContent: () => text,
-      };
-    }
-
-    // JSON but not a known stamp protocol -- treat as Stamp
-    return StampParserService.createStamp(txid, fileData, 'application/json');
-  }
-
   /**
-   * Routes decrypted stamp content (string from ARC4 multisig path) to the right type.
-   * The content has already had the "stamp:" prefix stripped.
+   * Routes a JSON content string to the correct protocol type.
+   * Shared by both the OLGA and ARC4 multisig paths.
    */
-  private static routeStampContent(
+  private static routeByProtocol(
     txid: string,
     content: string
   ): ParsedSrc20 | ParsedSrc721 | ParsedSrc101 | null {
@@ -142,41 +89,61 @@ export class StampParserService {
     try {
       json = JSON.parse(content);
     } catch {
-      // Not JSON -- could be base64 Stamp image from multisig description
-      // This path would need further parsing. For now, return null.
       return null;
     }
 
     const protocol = (json?.p || json?.P || '').toLowerCase();
 
     if (protocol === 'src-20') {
-      return {
-        type: DigitalArtifactType.Src20,
-        uniqueId: `${DigitalArtifactType.Src20}-${txid}`,
-        transactionId: txid,
-        getContent: () => content,
-      };
+      return StampParserService.createProtocolArtifact(DigitalArtifactType.Src20, txid, content);
     }
 
     if (protocol === 'src-721') {
-      return {
-        type: DigitalArtifactType.Src721,
-        uniqueId: `${DigitalArtifactType.Src721}-${txid}`,
-        transactionId: txid,
-        getContent: () => content,
-      };
+      return StampParserService.createProtocolArtifact(DigitalArtifactType.Src721, txid, content);
     }
 
     if (protocol === 'src-101') {
-      return {
-        type: DigitalArtifactType.Src101,
-        uniqueId: `${DigitalArtifactType.Src101}-${txid}`,
-        transactionId: txid,
-        getContent: () => content,
-      };
+      return StampParserService.createProtocolArtifact(DigitalArtifactType.Src101, txid, content);
     }
 
     return null;
+  }
+
+  /**
+   * Parses OLGA P2WSH JSON content. Tries protocol routing first,
+   * falls back to a Stamp artifact if the JSON isn't a known protocol.
+   */
+  private static parseJsonStamp(
+    txid: string,
+    fileData: Uint8Array
+  ): ParsedSrc20 | ParsedSrc721 | ParsedSrc101 | ParsedStamp {
+
+    const text = new TextDecoder().decode(fileData);
+
+    // Try protocol routing (SRC-20, SRC-721, SRC-101)
+    const routed = StampParserService.routeByProtocol(txid, text);
+    if (routed) {
+      return routed;
+    }
+
+    // JSON but not a known stamp protocol (or invalid JSON) -- treat as Stamp
+    return StampParserService.createStamp(txid, fileData, 'application/json');
+  }
+
+  /**
+   * Factory for SRC-20/SRC-721/SRC-101 artifacts (all share the same shape).
+   */
+  private static createProtocolArtifact(
+    type: DigitalArtifactType,
+    txid: string,
+    content: string
+  ): ParsedSrc20 | ParsedSrc721 | ParsedSrc101 {
+    return {
+      type,
+      uniqueId: `${type}-${txid}`,
+      transactionId: txid,
+      getContent: () => content,
+    };
   }
 
   private static createStamp(

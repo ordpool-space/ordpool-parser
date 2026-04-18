@@ -131,8 +131,7 @@ export class Src20ParserService {
         getContent: () => content
       }
 
-    } catch (error) {
-      console.log(error);
+    } catch {
       return null;
     }
   }
