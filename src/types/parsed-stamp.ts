@@ -1,9 +1,9 @@
 import { DigitalArtifact } from './digital-artifact';
 
 /**
- * A Classic Stamp -- NFT image stored on Bitcoin L1.
+ * A Stamp -- NFT image stored on Bitcoin L1.
  *
- * Classic Stamps encode images (PNG, GIF, SVG, WebP, HTML) directly in Bitcoin
+ * Stamps encode images (PNG, GIF, SVG, WebP, HTML) directly in Bitcoin
  * transaction outputs. Two encoding methods exist:
  *
  * 1. Pre-OLGA (block 779,652+): Counterparty issuance with STAMP:<base64> in the

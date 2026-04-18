@@ -21,7 +21,7 @@ const STAMP_PREFIX = new Uint8Array([0x73, 0x74, 0x61, 0x6d, 0x70, 0x3a]);
  * 5. Remaining bytes = raw file data
  *
  * Two flavors exist on mainnet:
- * a) Counterparty-issued stamps (Classic Stamps, SRC-721 via CP):
+ * a) Counterparty-issued stamps (Stamps, SRC-721 via CP):
  *    Raw file data directly (PNG, GIF, SVG, JSON). No stamp: prefix.
  * b) Direct Bitcoin stamps (SRC-20 OLGA, SRC-101 OLGA):
  *    Data starts with "stamp:" prefix, followed by the file content.

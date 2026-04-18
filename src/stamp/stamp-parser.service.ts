@@ -10,16 +10,16 @@ import { extractOlgaData, decryptStampMultisig, detectMimeType } from './stamp-p
 /**
  * Unified parser for the Bitcoin Stamps ecosystem.
  *
- * Detects Classic Stamps (images), SRC-20, SRC-721, and SRC-101 from:
+ * Detects Stamps (images), SRC-20, SRC-721, and SRC-101 from:
  * 1. OLGA P2WSH encoding (block 833,000+): raw file data in P2WSH outputs
  * 2. ARC4 multisig encoding (block 793,068+): encrypted data with key burn addresses
  *
- * Note: Pre-OLGA Classic Stamps (before block 833,000) are Counterparty issuances
+ * Note: Pre-OLGA Stamps (before block 833,000) are Counterparty issuances
  * with STAMP:<base64> in the description field. Those are detected by the
  * Counterparty parser as issuance messages.
  *
  * Note: The existing Src20ParserService still works for SRC-20 via multisig.
- * This parser additionally detects SRC-101, SRC-721, and Classic Stamps from
+ * This parser additionally detects SRC-101, SRC-721, and Stamps from
  * both encoding paths.
  */
 export class StampParserService {
@@ -92,7 +92,7 @@ export class StampParserService {
       json = JSON.parse(text);
     } catch {
       // Detected as JSON by content heuristic but actually invalid JSON.
-      // Fall through to Classic Stamp with JSON content type.
+      // Fall through to Stamp with JSON content type.
       return StampParserService.createStamp(txid, fileData, 'application/json');
     }
 
@@ -125,7 +125,7 @@ export class StampParserService {
       };
     }
 
-    // JSON but not a known stamp protocol -- treat as Classic Stamp
+    // JSON but not a known stamp protocol -- treat as Stamp
     return StampParserService.createStamp(txid, fileData, 'application/json');
   }
 
@@ -142,7 +142,7 @@ export class StampParserService {
     try {
       json = JSON.parse(content);
     } catch {
-      // Not JSON -- could be base64 Classic Stamp image from multisig description
+      // Not JSON -- could be base64 Stamp image from multisig description
       // This path would need further parsing. For now, return null.
       return null;
     }

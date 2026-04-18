@@ -7,7 +7,7 @@ import { ParsedStamp } from '../types/parsed-stamp';
 import { StampParserService } from './stamp-parser.service';
 
 // =============================================================================
-// Classic Stamps -- OLGA P2WSH encoding (Counterparty-issued, no stamp: prefix)
+// Stamps -- OLGA P2WSH encoding (Counterparty-issued, no stamp: prefix)
 // =============================================================================
 // The stamp image data is stored directly in v0_p2wsh output scriptpubkeys.
 // Each P2WSH output is 34 bytes: 0020 + 32 bytes of raw data.
@@ -15,19 +15,19 @@ import { StampParserService } from './stamp-parser.service';
 
 // Stamp #1383565 -- PNG pixel art, 44 P2WSH outputs, 1393 bytes
 // Block 933,540, CPID A197900000000002026
-const CLASSIC_STAMP_PNG_TXID = '516e62beeffb26fb37f8e95e809274e5bbde76eb75a28357f6bbcd4eedbfe8ca';
+const STAMP_PNG_TXID = '516e62beeffb26fb37f8e95e809274e5bbde76eb75a28357f6bbcd4eedbfe8ca';
 
 // Stamp #1383556 -- GIF animation, 3 P2WSH outputs, 93 bytes
 // Block 933,536
-const CLASSIC_STAMP_GIF_TXID = '9dbdb2ef0f84f8852f1abc3e0f39f6e223ee64ae1452ecceaea9eaf0a9ae9669';
+const STAMP_GIF_TXID = '9dbdb2ef0f84f8852f1abc3e0f39f6e223ee64ae1452ecceaea9eaf0a9ae9669';
 
 // Stamp #1392451 -- SVG vector art, 8 P2WSH outputs, 240 bytes
 // Block 936,467
-const CLASSIC_STAMP_SVG_TXID = '085e0ccbf674dfd5934eb635d392250afb4b6ce41ceb1347335f6f0e64c2f7d6';
+const STAMP_SVG_TXID = '085e0ccbf674dfd5934eb635d392250afb4b6ce41ceb1347335f6f0e64c2f7d6';
 
 // Stamp #1422105 -- HTML content, 1535 P2WSH outputs, 49,101 bytes
 // Block 943,762 -- the largest HTML stamp we found (stress test)
-const CLASSIC_STAMP_HTML_TXID = '3dfc964777a27da2b93eddbe5a5da06923a1e1c7a80a386e884187dfb88877ff';
+const STAMP_HTML_TXID = '3dfc964777a27da2b93eddbe5a5da06923a1e1c7a80a386e884187dfb88877ff';
 
 // =============================================================================
 // SRC-721 -- OLGA P2WSH encoding (JSON payload)
@@ -49,11 +49,11 @@ const SRC20_OLGA_TXID = '04460b129b970e53de19860f52a276358b5fe7dffc2bb25f7d35cef
 
 // Stamp #1222271 -- JPEG photo, 68 P2WSH outputs, 2162 bytes
 // Block 912,151
-const CLASSIC_STAMP_JPEG_TXID = 'd88d5e4e1adfdc23117b52f35641ef5918812cf32ec3dcec54faa6d2d4dcae2e';
+const STAMP_JPEG_TXID = 'd88d5e4e1adfdc23117b52f35641ef5918812cf32ec3dcec54faa6d2d4dcae2e';
 
 // Stamp #1061571 -- WebP image, 492 P2WSH outputs, 15734 bytes
 // Block 897,731 -- exercises the bug-fixed zero-stripping path (WebP ends with 0x00 bytes)
-const CLASSIC_STAMP_WEBP_TXID = '2825437c2d6cf4250eca8b7bbc487107cc0ee4dfcd765a2dcf33ce31c7db2f45';
+const STAMP_WEBP_TXID = '2825437c2d6cf4250eca8b7bbc487107cc0ee4dfcd765a2dcf33ce31c7db2f45';
 
 // Stamp #1175067 -- gzip-compressed content, 61 P2WSH outputs, 1921 bytes
 // Block 906,705 -- exercises gzip magic byte detection (1f 8b)
@@ -77,7 +77,7 @@ const SRC101_TXID = '5d18994d0981c421c115bf18a1ec0047cf63c06a4c94384a560ab74d6d0
 // =============================================================================
 
 // Existing SRC-20 test tx uses ARC4 multisig with key burn, no P2WSH outputs.
-// StampParserService only handles OLGA -- should return null.
+// StampParserService detects both OLGA and multisig stamps now.
 const SRC20_MULTISIG_TXID = '50aeb77245a9483a5b077e4e7506c331dc2f628c22046e7d2b4c6ad6c6236ae1';
 
 // CAT-21 genesis tx has no P2WSH outputs
@@ -87,18 +87,18 @@ const CAT21_GENESIS_TXID = '98316dcb21daaa221865208fe0323616ee6dd84e6020b78bc690
 describe('StampParserService', () => {
 
   // ===========================================================================
-  // Classic Stamps -- raw file data in P2WSH outputs, no stamp: prefix
+  // Stamps -- raw file data in P2WSH outputs, no stamp: prefix
   // ===========================================================================
 
-  describe('parse -- Classic Stamps via OLGA P2WSH', () => {
+  describe('parse -- Stamps via OLGA P2WSH', () => {
 
     it('should extract a PNG image (stamp #1383565, 44 P2WSH outputs)', () => {
-      const txn = readTransaction(CLASSIC_STAMP_PNG_TXID);
+      const txn = readTransaction(STAMP_PNG_TXID);
       const result = StampParserService.parse(txn) as ParsedStamp;
 
       expect(result.type).toBe(DigitalArtifactType.Stamp);
-      expect(result.transactionId).toBe(CLASSIC_STAMP_PNG_TXID);
-      expect(result.uniqueId).toBe(`${DigitalArtifactType.Stamp}-${CLASSIC_STAMP_PNG_TXID}`);
+      expect(result.transactionId).toBe(STAMP_PNG_TXID);
+      expect(result.uniqueId).toBe(`${DigitalArtifactType.Stamp}-${STAMP_PNG_TXID}`);
       expect(result.contentType).toBe('image/png');
 
       const raw = result.getDataRaw();
@@ -123,7 +123,7 @@ describe('StampParserService', () => {
     });
 
     it('should extract a GIF image (stamp #1383556, 3 P2WSH outputs)', () => {
-      const txn = readTransaction(CLASSIC_STAMP_GIF_TXID);
+      const txn = readTransaction(STAMP_GIF_TXID);
       const result = StampParserService.parse(txn) as ParsedStamp;
 
       expect(result.type).toBe(DigitalArtifactType.Stamp);
@@ -147,7 +147,7 @@ describe('StampParserService', () => {
     });
 
     it('should extract an SVG image (stamp #1392451, 8 P2WSH outputs)', () => {
-      const txn = readTransaction(CLASSIC_STAMP_SVG_TXID);
+      const txn = readTransaction(STAMP_SVG_TXID);
       const result = StampParserService.parse(txn) as ParsedStamp;
 
       expect(result.type).toBe(DigitalArtifactType.Stamp);
@@ -171,7 +171,7 @@ describe('StampParserService', () => {
     });
 
     it('should extract a JPEG image (stamp #1222271, 68 P2WSH outputs)', () => {
-      const txn = readTransaction(CLASSIC_STAMP_JPEG_TXID);
+      const txn = readTransaction(STAMP_JPEG_TXID);
       const result = StampParserService.parse(txn) as ParsedStamp;
 
       expect(result.type).toBe(DigitalArtifactType.Stamp);
@@ -190,7 +190,7 @@ describe('StampParserService', () => {
     });
 
     it('should extract a WebP image (stamp #1061571, 492 P2WSH outputs)', () => {
-      const txn = readTransaction(CLASSIC_STAMP_WEBP_TXID);
+      const txn = readTransaction(STAMP_WEBP_TXID);
       const result = StampParserService.parse(txn) as ParsedStamp;
 
       expect(result.type).toBe(DigitalArtifactType.Stamp);
@@ -250,7 +250,7 @@ describe('StampParserService', () => {
     });
 
     it('should extract HTML content (stamp #1422105, 1535 P2WSH outputs)', () => {
-      const txn = readTransaction(CLASSIC_STAMP_HTML_TXID);
+      const txn = readTransaction(STAMP_HTML_TXID);
       const result = StampParserService.parse(txn) as ParsedStamp;
 
       expect(result.type).toBe(DigitalArtifactType.Stamp);
@@ -357,8 +357,8 @@ describe('StampParserService', () => {
   // ===========================================================================
 
   describe('hasStamp', () => {
-    it('should return true for a Classic Stamp', () => {
-      const txn = readTransaction(CLASSIC_STAMP_PNG_TXID);
+    it('should return true for a Stamp', () => {
+      const txn = readTransaction(STAMP_PNG_TXID);
       expect(StampParserService.hasStamp(txn)).toBe(true);
     });
 
