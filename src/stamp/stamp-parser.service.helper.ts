@@ -217,7 +217,7 @@ export function decryptStampMultisig(transaction: {
 
   // Must contain "stamp:" prefix
   const result = bytesToUnicodeString(data);
-  if (!result || !result.includes('stamp:')) {
+  if (!result || !result.startsWith('stamp:')) {
     return null;
   }
 

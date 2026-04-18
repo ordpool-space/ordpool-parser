@@ -59,18 +59,16 @@ export class DigitalArtifactsParserService {
       artifacts.push(parsedCounterparty);
     }
 
-    if (parsedSrc20) {
+    // StampParserService is the unified parser for ALL stamp protocols
+    // (Stamps, SRC-20 OLGA, SRC-721, SRC-101). It correctly routes each protocol.
+    // Src20ParserService only handles SRC-20 via ARC4 multisig -- it misclassifies
+    // SRC-101/SRC-721 multisig as SRC-20. So prefer StampParserService's result.
+    const parsedStamp = StampParserService.parse(transaction, onError);
+    if (parsedStamp) {
+      artifacts.push(parsedStamp);
+    } else if (parsedSrc20) {
+      // Fallback: Src20ParserService found something StampParserService missed
       artifacts.push(parsedSrc20);
-    }
-
-    // StampParserService detects Stamps (images), SRC-721, SRC-101, and SRC-20 OLGA.
-    // Skip if Src20ParserService already found an SRC-20 via multisig -- avoids
-    // double ARC4 decryption and duplicate ParsedSrc20 artifacts.
-    if (!parsedSrc20) {
-      const parsedStamp = StampParserService.parse(transaction, onError);
-      if (parsedStamp) {
-        artifacts.push(parsedStamp);
-      }
     }
 
     return artifacts;

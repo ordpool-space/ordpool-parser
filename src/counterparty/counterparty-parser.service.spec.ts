@@ -15,7 +15,7 @@ const DISPENSER_TXID = '98c2165a58f7d62201f6264a91db38424a24b4d71ce25ee63c504976
 // Enhanced send (type 2) — sends THEFAKERARE to 1EMvVadz...
 const ENHANCED_SEND_TXID = 'f3981dac3d2d43abf6c3bb059fbd998bcd8f76c4174fd1e2668599b9713649c9';
 
-// Issuance lock/reset (type 22) ��� FRONTPEPE asset
+// Issuance lock/reset (type 22) -- FRONTPEPE asset
 const ISSUANCE_TXID = '4366a0871759d7c720f34984883848f6a806ef3ceba8c1e614b9cfe8f7e164a4';
 
 // Order (type 10) — DEX order

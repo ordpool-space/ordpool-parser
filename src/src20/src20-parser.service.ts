@@ -1,7 +1,7 @@
 import { Arc4 } from "../lib/arc4";
 import { bigEndianBytesToNumber, hexToBytes, unicodeStringToBytes } from "../lib/conversions";
 import { bytesToUnicodeString } from '../lib/conversions';
-import { extractPubkeys, hasKeyBurn, knownKeyBurnAddresses } from './src20-parser.service.helper';
+import { extractPubkeys, hasKeyBurn } from './src20-parser.service.helper';
 import { DigitalArtifactType } from "../types/digital-artifact";
 import { OnParseError } from '../types/parser-options';
 import { ParsedSrc20 } from "../types/parsed-src20";

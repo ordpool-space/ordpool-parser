@@ -40,11 +40,10 @@ export enum RuneFlaw {
  */
 export function isValidRuneName(cleanedRuneName: string): boolean {
 
-  // Try to convert to rune number
-  let rune;
+  // Try to convert to rune number -- if it throws, the name is invalid
   try {
-    rune = Rune.fromString(cleanedRuneName);
-  } catch (error) {
+    Rune.fromString(cleanedRuneName);
+  } catch {
     return false; // Invalid characters or structure or Trying to unwrap None.
   }
 
