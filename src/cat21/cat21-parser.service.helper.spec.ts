@@ -10,7 +10,7 @@ describe('sha256Hash', () => {
     const input = new TextEncoder().encode('Hello, world!');
     const hashed = sha256Hash(input);
 
-    expect(hashed).toBeInstanceOf(Uint8Array);
+    expect(ArrayBuffer.isView(hashed)).toBe(true);
     expect(hashed.length).toBe(32); // SHA-256 hash is always 32 bytes long
 
     const hex = bytesToHex(hashed);

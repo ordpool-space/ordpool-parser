@@ -46,12 +46,10 @@ describe('Cat21ParserService', () => {
   it('should parse a valid CAT-21 transaction', () => {
     const txn = { ...baseTxn };
     const parsedCat = Cat21ParserService.parse(txn);
-    expect(parsedCat).not.toBeNull();
-
     expect(parsedCat?.transactionId).toBe('98316dcb21daaa221865208fe0323616ee6dd84e6020b78bc6908e914ac03892');
     expect(parsedCat?.blockId).toBe('000000000000000000018e3ea447b11385e3330348010e1b2418d0d8ae4e0ac7');
-    expect(parsedCat?.getImage()).toContain('<svg');
-    expect(parsedCat?.getTraits()).not.toBeNull();
+    expect(parsedCat?.getImage().startsWith('<svg')).toBe(true);
+    expect(parsedCat?.getTraits()?.genesis).toBe(true);
   });
 
   it('should return null for transactions with incorrect nLockTime', () => {
@@ -72,7 +70,7 @@ describe('Cat21ParserService', () => {
     expect(parsedCat?.transactionId).toBe('98316dcb21daaa221865208fe0323616ee6dd84e6020b78bc6908e914ac03892');
     expect(parsedCat?.blockId).toBeNull();
 
-    expect(parsedCat?.getImage()).toContain('<svg');
+    expect(parsedCat?.getImage().startsWith('<svg')).toBe(true);
     expect(parsedCat?.getTraits()).toBeNull();
 
     fs.writeFileSync('testdist/placholder-cat.svg', parsedCat?.getImage() || '');
@@ -82,7 +80,7 @@ describe('Cat21ParserService', () => {
 
     const txn = readTransaction('98316dcb21daaa221865208fe0323616ee6dd84e6020b78bc6908e914ac03892');
     const parsedCat = Cat21ParserService.parse(txn);
-    expect(parsedCat?.getImage()).toContain('<svg');
+    expect(parsedCat?.getImage().startsWith('<svg')).toBe(true);
 
     const traits = parsedCat?.getTraits();
 

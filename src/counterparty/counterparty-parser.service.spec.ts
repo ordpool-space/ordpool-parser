@@ -119,6 +119,7 @@ describe('CounterpartyParserService', () => {
       expect(view.getBigUint64(24)).toBe(29000n);
     });
 
+    // Enhanced send: CBOR-encoded [asset_id, quantity, short_address, memo]
     it('should parse an enhanced send (type 2)', () => {
       const txn = readTransaction(ENHANCED_SEND_TXID);
       const result = CounterpartyParserService.parse(txn)!;
@@ -126,19 +127,28 @@ describe('CounterpartyParserService', () => {
       expect(result.encoding).toBe('opreturn');
       expect(result.messageTypeId).toBe(2);
       expect(result.messageType).toBe('enhanced_send');
-      expect(result.getMessageData().length).toBe(34);
+      const data = result.getMessageData();
+      expect(data.length).toBe(34);
+      // First byte 0x84 = CBOR array of 4 elements
+      expect(data[0]).toBe(0x84);
     });
 
-    it('should parse an issuance (type 22 — lock/reset)', () => {
+    // Lock/reset issuance for FRONTPEPE asset
+    it('should parse an issuance (type 22 -- lock/reset)', () => {
       const txn = readTransaction(ISSUANCE_TXID);
       const result = CounterpartyParserService.parse(txn)!;
 
       expect(result.encoding).toBe('opreturn');
       expect(result.messageTypeId).toBe(22);
       expect(result.messageType).toBe('issuance');
-      expect(result.getMessageData().length).toBe(36);
+      const data = result.getMessageData();
+      expect(data.length).toBe(36);
+      // Description at the end: "nardo made me do it " in ASCII
+      const desc = new TextDecoder().decode(data.subarray(data.length - 20));
+      expect(desc).toBe('nardo made me do it ');
     });
 
+    // DEX order: give BTC, get XCP
     it('should parse an order (type 10)', () => {
       const txn = readTransaction(ORDER_TXID);
       const result = CounterpartyParserService.parse(txn)!;
@@ -146,9 +156,15 @@ describe('CounterpartyParserService', () => {
       expect(result.encoding).toBe('opreturn');
       expect(result.messageTypeId).toBe(10);
       expect(result.messageType).toBe('order');
-      expect(result.getMessageData().length).toBe(42);
+      const data = result.getMessageData();
+      expect(data.length).toBe(42);
+      // Binary: give_asset(8) + give_qty(8) + get_asset(8) + get_qty(8) + expiration(2) + fee(8)
+      const view = new DataView(data.buffer, data.byteOffset);
+      expect(view.getBigUint64(0)).toBe(0n);  // give_asset = BTC (asset ID 0)
+      expect(view.getBigUint64(16)).toBe(1n); // get_asset = XCP (asset ID 1)
     });
 
+    // Destroy tokens with memo "OLTRIDER"
     it('should parse a destroy (type 110)', () => {
       const txn = readTransaction(DESTROY_TXID);
       const result = CounterpartyParserService.parse(txn)!;
@@ -156,9 +172,14 @@ describe('CounterpartyParserService', () => {
       expect(result.encoding).toBe('opreturn');
       expect(result.messageTypeId).toBe(110);
       expect(result.messageType).toBe('destroy');
-      expect(result.getMessageData().length).toBe(27);
+      const data = result.getMessageData();
+      expect(data.length).toBe(27);
+      // Tag/memo at the end in ASCII: "OLTRIDER"
+      const memo = new TextDecoder().decode(data.subarray(data.length - 8));
+      expect(memo).toBe('OLTRIDER');
     });
 
+    // Cancel an open DEX order
     it('should parse a cancel (type 70)', () => {
       const txn = readTransaction(CANCEL_TXID);
       const result = CounterpartyParserService.parse(txn)!;
@@ -166,7 +187,9 @@ describe('CounterpartyParserService', () => {
       expect(result.encoding).toBe('opreturn');
       expect(result.messageTypeId).toBe(70);
       expect(result.messageType).toBe('cancel');
-      expect(result.getMessageData().length).toBe(32);
+      const data = result.getMessageData();
+      // Cancel payload = 32-byte offer_hash (the txid of the order being cancelled)
+      expect(data.length).toBe(32);
     });
 
     // BTCPay: BTC payment settling a DEX order match
@@ -263,22 +286,37 @@ describe('CounterpartyParserService', () => {
       expect(text).toBe('UAUSD|300000000000000|');
     });
 
-    // Detach: unbind token from UTXO (minimal payload)
+    // Detach: unbind token from UTXO (minimal 1-byte payload: 0x30 = '0' in ASCII)
     it('should parse a detach (type 102)', () => {
       const txn = readTransaction('923ed79399ab7de8798eb8d38a56938c8b8409dc27d72193433dd3312051794f');
       const result = CounterpartyParserService.parse(txn)!;
       expect(result.messageTypeId).toBe(102);
       expect(result.messageType).toBe('detach');
-      expect(result.getMessageData().length).toBe(1);
+      const data = result.getMessageData();
+      expect(data.length).toBe(1);
+      expect(data[0]).toBe(0x30); // '0'
     });
 
-    // Fairmint: mint from THERAREONES fairminter
+    // Fairmint: mint from THERAREONES fairminter (CBOR: [asset_id, quantity=0])
     it('should parse a fairmint (type 91)', () => {
       const txn = readTransaction('b0006503a44154ec53e6b8ff1222f6d9c5c6df4cfe3fa93755a2d9e5027d6b26');
       const result = CounterpartyParserService.parse(txn)!;
       expect(result.messageTypeId).toBe(91);
       expect(result.messageType).toBe('fairmint');
-      expect(result.getMessageData().length).toBe(11);
+      const data = result.getMessageData();
+      expect(data.length).toBe(11);
+      // First byte 0x82 = CBOR array of 2 elements, last byte 0x00 = quantity 0
+      expect(data[0]).toBe(0x82);
+      expect(data[data.length - 1]).toBe(0x00);
+    });
+
+    // Rock-Paper-Scissors game commitment (3-byte payload: wager + possible_moves + expiration)
+    it('should parse a rps (type 80)', () => {
+      const txn = readTransaction('58de8f604b563904ee76dd784003feacd87256cda014d3ad5e84610f54b2b22c');
+      const result = CounterpartyParserService.parse(txn)!;
+      expect(result.messageTypeId).toBe(80);
+      expect(result.messageType).toBe('rps');
+      expect(result.getMessageData().length).toBe(3);
     });
 
     it('should return null for a non-Counterparty transaction', () => {
@@ -302,9 +340,12 @@ describe('CounterpartyParserService', () => {
       expect(result.messageTypeId).toBe(30);
       expect(result.messageType).toBe('broadcast');
 
-      // The message data is 9132 bytes (broadcast payload from 173 multisig outputs)
-      // Note: OLGA predates the short_tx_type_id protocol change, so it uses 4-byte type ID
-      expect(result.getMessageData().length).toBe(9132);
+      // 9132 bytes from 173 multisig outputs (4-byte type ID, pre-short_tx_type_id)
+      const data = result.getMessageData();
+      expect(data.length).toBe(9132);
+      // Broadcast: timestamp (4 bytes BE) at offset 0
+      const view = new DataView(data.buffer, data.byteOffset);
+      expect(view.getUint32(0)).toBe(0x55ca4a7e); // Unix timestamp 1439303294
     });
   });
 
@@ -325,8 +366,11 @@ describe('CounterpartyParserService', () => {
       expect(result.messageTypeId).toBe(90);
       expect(result.messageType).toBe('fairminter');
 
-      // CBOR-encoded fairminter payload (97 bytes, first byte was the type ID)
-      expect(result.getMessageData().length).toBe(97);
+      // CBOR-encoded fairminter payload
+      const data = result.getMessageData();
+      expect(data.length).toBe(97);
+      // First byte 0x93 = CBOR array of 19 elements
+      expect(data[0]).toBe(0x93);
     });
 
     // Real mainnet P2TR issuance using the "ord" inscription envelope
@@ -344,8 +388,11 @@ describe('CounterpartyParserService', () => {
       expect(result.messageTypeId).toBe(22);
       expect(result.messageType).toBe('issuance');
 
-      // Re-encoded CBOR contains: issuance fields + "image/jpeg" + JPEG content bytes
-      expect(result.getMessageData().length).toBe(7458);
+      // Re-encoded CBOR: issuance fields + "image/jpeg" + JPEG content bytes
+      const data = result.getMessageData();
+      expect(data.length).toBe(7458);
+      // First byte 0x87 = CBOR array of 7 elements
+      expect(data[0]).toBe(0x87);
     });
   });
 
@@ -392,17 +439,23 @@ describe('CounterpartyParserService', () => {
     // Our code rejects byte[1] > 0x4e before ARC4 decryption
     const RUNE_TXID = '1af2a846befbfac4091bf540adad4fd1a86604c26c004066077d5fe22510e99b';
 
-    // Short OP_RETURN (8 hex chars = 4 bytes, below our 22 hex char minimum)
-    const SHORT_OP_RETURN_TXID = '28baf9374797230174803b0c3f63fd39e22bb1972a25cc2af4e791ca8fc89dae';
+    // Another Rune tx (scriptpubkey 6a5d0100 -- byte 0x5d > 0x4e hits same early exit)
+    const SHORT_RUNE_TXID = '28baf9374797230174803b0c3f63fd39e22bb1972a25cc2af4e791ca8fc89dae';
 
     it('should reject a Rune transaction (OP_PUSHNUM_13 early exit)', () => {
       const txn = readTransaction(RUNE_TXID);
       expect(CounterpartyParserService.parse(txn)).toBeNull();
     });
 
-    it('should reject a short OP_RETURN transaction (< 22 hex chars)', () => {
-      const txn = readTransaction(SHORT_OP_RETURN_TXID);
+    it('should reject another Rune transaction (short OP_RETURN, also hits byte > 0x4e)', () => {
+      const txn = readTransaction(SHORT_RUNE_TXID);
       expect(CounterpartyParserService.parse(txn)).toBeNull();
     });
+
+    // Note: the scriptpubkey.length < 22 early exit in extractOpReturnData is a
+    // defensive guard that has no real mainnet test. All known short OP_RETURN
+    // transactions use Rune encoding (0x5d) which hits the byte > 0x4e exit first.
+    // A transaction with a valid push opcode (0x01-0x4e) and < 9 bytes of data
+    // would exercise this path, but none have been found on mainnet.
   });
 });

@@ -52,7 +52,7 @@ describe('Rune parser', () => {
 
     // A rune may have an open mint, allowing anyone to create and allocate units of that rune for themselves.
     // An open mint is subject to terms, which are set upon etching.
-    expect(etching?.terms).toBeTruthy();
+    expect(etching?.terms).toBeDefined(); // terms object exists with amount + cap below
 
     // Each mint transaction creates a fixed amount of new units of a rune.
     expect(etching?.terms?.amount).toBe(100n);
@@ -177,7 +177,7 @@ describe('Rune parser', () => {
     expect(mint?.block).toBe(849635n);
     expect(mint?.tx).toBe(553);
 
-    expect(runestone?.runestone?.edicts).toBeFalsy();
+    expect(runestone?.runestone?.edicts).toBeUndefined();
   });
 
   it('should decode a runestone mint with edict in the same txn',() => {
