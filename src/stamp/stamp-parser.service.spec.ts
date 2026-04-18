@@ -2,6 +2,7 @@ import { readBinaryFileAsUint8Array, readTransaction } from '../../testdata/test
 import { DigitalArtifactType } from '../types/digital-artifact';
 import { ParsedSrc20 } from '../types/parsed-src20';
 import { ParsedSrc721 } from '../types/parsed-src721';
+import { ParsedSrc101 } from '../types/parsed-src101';
 import { ParsedStamp } from '../types/parsed-stamp';
 import { StampParserService } from './stamp-parser.service';
 
@@ -61,6 +62,15 @@ const GZIP_STAMP_TXID = '9660860095ba470a9622b41ad7b594cb53dce5ade3c79cd2b226b27
 // Stamp #1220118 -- unknown format (BMN audio), 59 bytes
 // Block 911,729 -- exercises the application/octet-stream fallback path
 const UNKNOWN_MIME_STAMP_TXID = 'da9f7bc49861d4ab6e0933f539538963ada17c88440048519bf015305c38989d';
+
+// =============================================================================
+// SRC-101 -- ARC4 multisig encoding (key burn, stamp: prefix)
+// =============================================================================
+
+// Real mainnet SRC-101 DEPLOY: BitNameService
+// Block 871,022, 22 multisig outputs, ARC4 encrypted with stamp: prefix
+// stamp:{"p":"src-101","op":"deploy","root":"btc","name":"BitNameService",...}
+const SRC101_TXID = '5d18994d0981c421c115bf18a1ec0047cf63c06a4c94384a560ab74d6d0552f9';
 
 // =============================================================================
 // Non-stamp transactions (negative tests)
@@ -307,15 +317,35 @@ describe('StampParserService', () => {
   });
 
   // ===========================================================================
+  // SRC-101 -- ARC4 multisig encoding (key burn addresses, stamp: prefix)
+  // ===========================================================================
+
+  describe('parse -- SRC-101 via ARC4 multisig', () => {
+    it('should parse SRC-101 DEPLOY (BitNameService, 22 multisig outputs)', () => {
+      const txn = readTransaction(SRC101_TXID);
+      const result = StampParserService.parse(txn) as ParsedSrc101;
+
+      expect(result.type).toBe(DigitalArtifactType.Src101);
+      expect(result.transactionId).toBe(SRC101_TXID);
+      expect(result.uniqueId).toBe(`${DigitalArtifactType.Src101}-${SRC101_TXID}`);
+
+      const content = result.getContent();
+      const parsed = JSON.parse(content);
+
+      expect(parsed.p).toBe('src-101');
+      expect(parsed.op).toBe('deploy');
+      expect(parsed.name).toBe('BitNameService');
+      expect(parsed.root).toBe('btc');
+      expect(parsed.lim).toBe('10');
+      expect(parsed.desc).toBe('Bitname Service powered by BTC stamp.');
+    });
+  });
+
+  // ===========================================================================
   // Negative tests -- should return null
   // ===========================================================================
 
   describe('parse -- negative cases', () => {
-    it('should return null for a transaction without P2WSH outputs (SRC-20 multisig)', () => {
-      const txn = readTransaction(SRC20_MULTISIG_TXID);
-      expect(StampParserService.parse(txn)).toBeNull();
-    });
-
     it('should return null for a CAT-21 transaction', () => {
       const txn = readTransaction(CAT21_GENESIS_TXID);
       expect(StampParserService.parse(txn)).toBeNull();
@@ -339,6 +369,11 @@ describe('StampParserService', () => {
 
     it('should return true for SRC-20 OLGA', () => {
       const txn = readTransaction(SRC20_OLGA_TXID);
+      expect(StampParserService.hasStamp(txn)).toBe(true);
+    });
+
+    it('should return true for SRC-101 multisig', () => {
+      const txn = readTransaction(SRC101_TXID);
       expect(StampParserService.hasStamp(txn)).toBe(true);
     });
 

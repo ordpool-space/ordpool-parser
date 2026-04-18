@@ -1,4 +1,7 @@
-import { bigEndianBytesToNumber, hexToBytes, concatUint8Arrays } from '../lib/conversions';
+import { Arc4 } from '../lib/arc4';
+import { bigEndianBytesToNumber, bytesToUnicodeString, hexToBytes, concatUint8Arrays, unicodeStringToBytes } from '../lib/conversions';
+import { extractPubkeys } from '../lib/script';
+import { hasKeyBurn } from '../src20/src20-parser.service.helper';
 
 // "stamp:" in ASCII (hex: 7374616d703a) -- used by SRC-20/SRC-101 OLGA encoding
 const STAMP_PREFIX = new Uint8Array([0x73, 0x74, 0x61, 0x6d, 0x70, 0x3a]);
@@ -149,4 +152,75 @@ export function detectMimeType(data: Uint8Array): string | null {
   }
 
   return null;
+}
+
+/**
+ * Decrypts stamp content from ARC4-encrypted multisig outputs.
+ *
+ * This is the original stamp encoding (pre-OLGA). Used by SRC-20 (block 793,068+),
+ * SRC-101 (block 870,652+), and potentially other stamp sub-protocols.
+ *
+ * Format:
+ * 1. Transaction must have key burn addresses in multisig outputs
+ * 2. Extract first 2 pubkeys from each multisig output
+ * 3. Strip first byte (curve prefix) and last byte (nonce) from each pubkey
+ * 4. Concatenate all stripped pubkey hex strings
+ * 5. ARC4 decrypt using vin[0].txid as key
+ * 6. First 2 bytes = big-endian content length
+ * 7. Content must start with "stamp:" prefix
+ * 8. Return content after stripping the prefix
+ *
+ * This is the same pipeline as Src20ParserService.decodeSrc20Transaction(),
+ * extracted here so StampParserService can route ALL stamp protocols (not just SRC-20).
+ *
+ * Source: stampchain-io/btc_stamps indexer/src/index_core/transaction_utils.py
+ */
+export function decryptStampMultisig(transaction: {
+  vin: { txid: string }[],
+  vout: { scriptpubkey: string, scriptpubkey_type: string }[]
+}): string | null {
+
+  if (!hasKeyBurn(transaction)) {
+    return null;
+  }
+
+  if (!transaction.vin.length) {
+    return null;
+  }
+
+  // ARC4 key = vin[0].txid (NOT reversed, unlike Counterparty)
+  const arc4Key = hexToBytes(transaction.vin[0].txid);
+
+  // Extract first 2 pubkeys from each multisig output, strip sign + nonce bytes
+  const concatenatedPubkeys = transaction.vout
+    .filter(vout => vout.scriptpubkey_type === 'multisig' || vout.scriptpubkey_type === 'unknown')
+    .map(vout => {
+      const pubkeys = extractPubkeys(vout.scriptpubkey);
+      return [pubkeys[0], pubkeys[1]];
+    })
+    .flat()
+    .map(key => key.substring(2, 64))
+    .join('');
+
+  if (!concatenatedPubkeys) {
+    return null;
+  }
+
+  // ARC4 decrypt
+  const cipher = new Arc4(arc4Key);
+  const decryptedStr = cipher.decodeString(concatenatedPubkeys);
+  const decrypted = unicodeStringToBytes(decryptedStr);
+
+  // First 2 bytes = big-endian content length
+  const expectedLength = bigEndianBytesToNumber(decrypted.slice(0, 2));
+  const data = decrypted.slice(2, 2 + expectedLength);
+
+  // Must contain "stamp:" prefix
+  const result = bytesToUnicodeString(data);
+  if (!result || !result.includes('stamp:')) {
+    return null;
+  }
+
+  // Return content after stripping the stamp: prefix
+  return result.replace('stamp:', '');
 }
