@@ -116,6 +116,20 @@ src/
 └── digital-artifact-analyser.service.ts  # Unified: parse all artifact types at once
 ```
 
+## IMPORTANT: _ordpoolFlags Side Effect Pattern
+
+`analyseTransactions()` and `analyseTransaction()` set `tx._ordpoolFlags` as a **side effect** on each transaction object they process. This is intentional and critical for the ordpool/mempool integration.
+
+**Why**: The ordpool backend is a fork of mempool.space. Upstream's `getTransactionFlags()` is **synchronous**, and making it async would cascade `async/await` changes through 15+ upstream files (`classifyTransaction`, `classifyTransactions`, `summarizeBlockTransactions`, `processBlockTemplates`, `dataToMempoolBlocks`, `processClusterMempoolBlocks`, and all their callers). Every upstream merge would re-create these conflicts.
+
+**How it works**: Instead of making upstream functions async, we pre-compute ordpool flags BEFORE upstream classification runs:
+1. `analyseTransactions(transactions)` iterates all txs, parses artifacts, and sets `tx._ordpoolFlags = Number(combinedOrdpoolFlags)` on each tx object
+2. `analyseTransaction(tx, flags)` does the same for a single tx
+3. Upstream's `getTransactionFlags(tx)` (sync) reads `tx._ordpoolFlags` via a 3-line HACK and ORs them into the flags
+4. Since JavaScript arrays are passed by reference, enriching tx objects in `$getBlockExtended` makes them visible to `summarizeBlockTransactions` which runs next on the same array
+
+**Do NOT remove the `_ordpoolFlags` assignment.** It looks like a weird side effect but it's the only way to inject ordpool flags into the upstream classification pipeline without making 15+ files async.
+
 ## Public API
 
 ```typescript
@@ -131,7 +145,12 @@ LabitbuParserService.parse(tx): ParsedLabitbu | null
 Src20ParserService.parse(tx): ParsedSrc20 | null
 
 // Analyze a full block's transactions (used by ordpool backend)
+// SIDE EFFECT: sets tx._ordpoolFlags on each transaction (see above)
 DigitalArtifactAnalyserService.analyseTransactions(txs): OrdpoolStats
+
+// Analyze a single transaction (used for mempool tx pre-enrichment)
+// SIDE EFFECT: sets tx._ordpoolFlags on the transaction (see above)
+DigitalArtifactAnalyserService.analyseTransaction(tx, flags): Promise<bigint>
 ```
 
 ## Error Handling Convention

@@ -165,9 +165,18 @@ export class DigitalArtifactAnalyserService {
       let labitbuFeeAdded = false;
       let inscriptionMintFeeAdded = false;
 
+      // Accumulate per-tx ordpool flags across all artifacts.
+      // After the loop, we store them on tx._ordpoolFlags so that upstream's
+      // getTransactionFlags() (sync) can pick them up without being made async.
+      // This avoids cascading async/await changes through 15+ upstream files.
+      // See backend/.claude/CLAUDE.md "HARD RULE: Ordpool Flags Must Be Applied Everywhere".
+      let txOrdpoolFlags: bigint = 0n;
+
       for (const artifact of artifacts) {
         // Analyse once — returns flags + any parsed intermediate data
         const { flags, brc20, src20Content } = await DigitalArtifactAnalyserService.analyse(artifact);
+
+        txOrdpoolFlags |= flags;
 
         // ** Amounts: Iterate over each flag by checking each bit in the flag set
         for (const [flag, statKey] of artifactTypeMap.entries()) {
@@ -336,6 +345,11 @@ export class DigitalArtifactAnalyserService {
           }
         }
       }
+
+      // Store pre-computed ordpool flags on the transaction object.
+      // This is the key to avoiding async/await cascading in the upstream mempool codebase:
+      // upstream's getTransactionFlags() stays sync and reads tx._ordpoolFlags via a 3-line HACK.
+      (tx as any)._ordpoolFlags = Number(txOrdpoolFlags);
     }
 
     // Set final Rune stats
@@ -396,7 +410,7 @@ export class DigitalArtifactAnalyserService {
 
     let flags: bigint = BigInt(0);
     let brc20: BrC20Parsed | undefined;
-    let src20Content: any;
+    let src20Content: Src20Parsed | undefined;
 
     switch (artifact.type) {
       case DigitalArtifactType.Cat21:
@@ -585,11 +599,17 @@ export class DigitalArtifactAnalyserService {
 
     const artifacts: DigitalArtifact[] = DigitalArtifactsParserService.parse(tx);
 
+    let txOrdpoolFlags: bigint = 0n;
     for (const artifact of artifacts) {
       const { flags: ordpoolFlags } = await DigitalArtifactAnalyserService.analyse(artifact);
-      flags |= ordpoolFlags;
+      txOrdpoolFlags |= ordpoolFlags;
     }
 
+    // Side effect: store ordpool-only flags on the tx object.
+    // Same pattern as analyseTransactions() -- enables sync getTransactionFlags() in upstream code.
+    (tx as any)._ordpoolFlags = Number(txOrdpoolFlags);
+
+    flags |= txOrdpoolFlags;
     return flags;
   }
 }
