@@ -310,13 +310,22 @@ describe('CounterpartyParserService', () => {
       expect(data[data.length - 1]).toBe(0x00);
     });
 
-    // Rock-Paper-Scissors game commitment (3-byte payload: wager + possible_moves + expiration)
+    // Rock-Paper-Scissors game commitment (3-byte CBOR payload)
     it('should parse a rps (type 80)', () => {
       const txn = readTransaction('58de8f604b563904ee76dd784003feacd87256cda014d3ad5e84610f54b2b22c');
       const result = CounterpartyParserService.parse(txn)!;
       expect(result.messageTypeId).toBe(80);
       expect(result.messageType).toBe('rps');
       expect(result.getMessageData().length).toBe(3);
+    });
+
+    // Subasset issuance (lock/reset variant) -- FAKEARWYN.SUPERMARIOWYN
+    it('should parse a subasset issuance (type 23 -- LR)', () => {
+      const txn = readTransaction('2c01d2a018c1b31bf1211dc60d8c6aa44fbbae03fec6c733574cf726d975fb47');
+      const result = CounterpartyParserService.parse(txn)!;
+      expect(result.messageTypeId).toBe(23);
+      expect(result.messageType).toBe('issuance_subasset');
+      expect(result.getMessageData().length).toBe(154);
     });
 
     it('should return null for a non-Counterparty transaction', () => {
