@@ -23,6 +23,7 @@
     "fetch-tx-testdata": "node fetch-tx-testdata.js",
     "fetch-inscription-testdata": "node fetch-inscription-testdata.js",
     "prepublishOnly": "npm run test && npm run clean && npm run build",
+    "prepare": "npm run build",
     "create-link": "npm run build && cd dist && npm link",
     "build:cat21": "esbuild src/cat21/cat21-bundle.ts --bundle --format=esm --target=es2020 --outfile=dist/cat21.js --minify && esbuild src/cat21/cat21-bundle.ts --bundle --format=iife --global-name=Cat21 --target=es2020 --outfile=dist/cat21.iife.js --minify"
   },
