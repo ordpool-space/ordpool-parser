@@ -328,6 +328,50 @@ describe('CounterpartyParserService', () => {
       expect(result.getMessageData().length).toBe(154);
     });
 
+    // Bet on a feed broadcast value (2 = NotEqual, deadline at block 471,400)
+    // Bets are largely deprecated but the protocol path is still alive
+    it('should parse a bet (type 40)', () => {
+      // Real mainnet bet from block 471,011 (Aug 2017): 1AuspQ6w... wagers
+      // 2.0 BTC against ~28.0 BTC counter-wager that feed value !== 7.0
+      const txn = readTransaction('6f2deeab17f2559edcdd952e8d942ac7adf2679df382bfdbf2a554beb32729cf');
+      const result = CounterpartyParserService.parse(txn)!;
+      expect(result.encoding).toBe('opreturn');
+      expect(result.messageTypeId).toBe(40);
+      expect(result.messageType).toBe('bet');
+      const data = result.getMessageData();
+      // bet.py FORMAT = ">HIQQdII":
+      //   bet_type(2) + deadline(4) + wager(8) + counterwager(8) +
+      //   target_value double(8) + leverage(4) + expiration(4) = 38 bytes
+      expect(data.length).toBe(38);
+      const view = new DataView(data.buffer, data.byteOffset);
+      // bet_type = 2 (NotEqual)
+      expect(view.getUint16(0)).toBe(2);
+      // deadline block = 471,400
+      expect(view.getUint32(2)).toBe(471400);
+      // wager = 2.0 BTC = 200,000,000 satoshis
+      expect(view.getBigUint64(6)).toBe(200000000n);
+      // counter-wager = 2,799,999,999 satoshis
+      expect(view.getBigUint64(14)).toBe(2799999999n);
+      // target_value = 7.0 (IEEE 754 double)
+      expect(view.getFloat64(22)).toBe(7.0);
+      // leverage = 5040 (default = 1.0x in 5040ths)
+      expect(view.getUint32(30)).toBe(5040);
+      // expiration = 565 blocks
+      expect(view.getUint32(34)).toBe(565);
+    });
+
+    // Burn (type 60) is detected purely by sending BTC to the unspendable address
+    // 1CounterpartyXXXXXXXXXXXXXXXUWLpVr -- never has CNTRPRTY message data on chain.
+    // Counterparty's burn.py compose() returns (source, [(destination, qty)], None) -- no message.
+    // The case 60 in mapMessageType() exists for protocol completeness but is unreachable
+    // via our parser. We assert this explicitly: a real mainnet burn tx must return null.
+    it('should return null for a burn transaction (type 60 has no CNTRPRTY data)', () => {
+      // Real burn tx from block 283,810 (Jan 2014, proof-of-burn era)
+      // Source: 1HVgrYx3U... burned 0.1 BTC, earned 100.009 XCP
+      const txn = readTransaction('4560d0e3d04927108b615ab106040489aca9c4aceedcf69d2b71f63b3139c7ae');
+      expect(CounterpartyParserService.parse(txn)).toBeNull();
+    });
+
     it('should return null for a non-Counterparty transaction', () => {
       const txn = readTransaction(CAT21_GENESIS_TXID);
       expect(CounterpartyParserService.parse(txn)).toBeNull();
@@ -355,6 +399,23 @@ describe('CounterpartyParserService', () => {
       // Broadcast: timestamp (4 bytes BE) at offset 0
       const view = new DataView(data.buffer, data.byteOffset);
       expect(view.getUint32(0)).toBe(0x55ca4a7e); // Unix timestamp 1439303294
+    });
+
+    // Subasset standard (type 21) -- HIPHOPGAME.JAHIWITNESS, block 763,846 (May 2023)
+    // Pre-LR-bit era (LR_SUBASSET_ID 23 activated at block 819,300), so this uses
+    // SUBASSET_ID 21. Multisig encoding (4 multisig outputs).
+    it('should parse a subasset issuance standard (type 21, pre-LR)', () => {
+      const txn = readTransaction('4bbd0d08aa85cdee4b863fdec2b602a57e1f9388572e326a3fac567945ac49df');
+      const result = CounterpartyParserService.parse(txn)!;
+      expect(result.encoding).toBe('multisig');
+      expect(result.messageTypeId).toBe(21);
+      expect(result.messageType).toBe('issuance_subasset');
+      const data = result.getMessageData();
+      // First byte after the type ID is the asset_id (compacted varint).
+      // For HIPHOPGAME.JAHIWITNESS (asset_id A11540093991530252820) the description
+      // field carries an Arweave URL ending in ".json".
+      const tail = new TextDecoder().decode(data.subarray(data.length - 5));
+      expect(tail).toBe('.json');
     });
   });
 
@@ -436,6 +497,29 @@ describe('CounterpartyParserService', () => {
 
       expect(result.messageTypeId).toBe(30);
       expect(result.getMessageData().length).toBe(9132);
+    });
+
+    // RPS resolve (type 81) -- block 334,627 (Dec 2014), pre-short_tx_type_id (489,956)
+    // Counterparty's own API documents that "RPS messages decoding is not implemented",
+    // but the message_type_id and raw payload still parse cleanly.
+    // Move 1 (rock), random nonce, paired with rps match bd157f74...
+    it('should parse an rps_resolve (ID 81, 4-byte encoding) via multisig', () => {
+      const txn = readTransaction('cdba50a759c3839f2004af04a890dcc0a1f1e90ed14e2400aeb69f5fe210f145');
+      const result = CounterpartyParserService.parse(txn)!;
+      expect(result.encoding).toBe('multisig');
+      expect(result.messageTypeId).toBe(81);
+      expect(result.messageType).toBe('rps_resolve');
+      const data = result.getMessageData();
+      // move(2 bytes BE) + random(16 bytes) + tx0_hash(32 bytes) + tx1_hash(32 bytes) = 82 bytes
+      expect(data.length).toBe(82);
+      const view = new DataView(data.buffer, data.byteOffset);
+      // Move = 1 (rock) -- per the API params for this resolve event
+      expect(view.getUint16(0)).toBe(1);
+      // Random nonce: 97b2e50c2b1cdc39a9cb99322c273552
+      expect(bytesToHex(data.subarray(2, 18))).toBe('97b2e50c2b1cdc39a9cb99322c273552');
+      // The two paired-game txids (rps_match_id is the underscore-joined pair)
+      expect(bytesToHex(data.subarray(18, 50))).toBe('bd157f74373369f25e5c7e393ac84185d654c7aa6c8d0a5646162e4b030b85c9');
+      expect(bytesToHex(data.subarray(50, 82))).toBe('8d754f1579c0e1395c4f2d6580f74605481c773acd649075eeba0d52bb9dba78');
     });
   });
 

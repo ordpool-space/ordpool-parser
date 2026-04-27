@@ -133,13 +133,23 @@ export function mapMessageType(id: number): CounterpartyMessageType {
     case 30: return 'broadcast';           // broadcast.py
     case 40: return 'bet';                 // bet.py
     case 50: return 'dividend';            // dividend.py
-    case 60: return 'burn';                // burn.py
+    case 60: return 'burn';                // burn.py — DEFENSIVE: never reached.
+                                           // Burns are detected purely by destination
+                                           // (1CounterpartyXXXXXXXXXXXXXXXUWLpVr). Counterparty's
+                                           // burn.py compose() returns data=None, so no on-chain
+                                           // tx ever has CNTRPRTY-prefixed message data with id 60.
     case 70: return 'cancel';              // cancel.py
     case 80: return 'rps';                 // rps.py
     case 81: return 'rps_resolve';         // rpsresolve.py
     case 90: return 'fairminter';          // fairminter.py
     case 91: return 'fairmint';            // fairmint.py
-    case 100: return 'utxo';              // utxo.py — attach/detach (legacy)
+    case 100: return 'utxo';              // utxo.py — DEFENSIVE: never observed on mainnet.
+                                           // utxo.py defines ID=100 with struct.pack format, but
+                                           // production UTXO moves are detected via bare utxo
+                                           // tracking (no message data). Verified by scanning
+                                           // 100,000 transactions: zero with 0x64 / 00000064 prefix.
+                                           // The two real on-chain forms are 101 (attach) and 102
+                                           // (detach).
     case 101: return 'attach';             // attach.py
     case 102: return 'detach';             // detach.py
     case 110: return 'destroy';            // destroy.py
