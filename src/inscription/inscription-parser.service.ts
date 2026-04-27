@@ -323,8 +323,7 @@ export class InscriptionParserService {
         contentSize: combinedData.length // The size of the content (the body of the inscription)
       };
 
-    } catch (ex) {
-      // console.error(ex);
+    } catch {
       return null;
     }
   }
