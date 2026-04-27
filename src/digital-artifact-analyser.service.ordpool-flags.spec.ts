@@ -176,4 +176,137 @@ describe('_ordpoolFlags side effect on analyseTransactions', () => {
     }
     expect(classifiedFlags & OrdpoolTransactionFlags.ordpool_rune).toBe(OrdpoolTransactionFlags.ordpool_rune);
   });
+
+  it('should store _ordpoolFlags as type number (not bigint)', async () => {
+    // The consumer does BigInt((tx as any)._ordpoolFlags).
+    // If we stored bigint, the truthiness check `if (tx._ordpoolFlags)` would
+    // behave differently for 0n (falsy) vs 0 (falsy) -- both are falsy, so ok.
+    // But BigInt(0n) vs BigInt(0) could differ in some engines.
+    // Storing as number is safer and matches the tx.flags convention.
+    const tx = { txid: 'type-check', fee: 100 } as TransactionSimplePlus;
+
+    (DigitalArtifactsParserService.parse as jest.Mock).mockReturnValue([
+      { type: 'Cat21' } as DigitalArtifact,
+    ]);
+    (DigitalArtifactAnalyserService.analyse as jest.Mock).mockReturnValue({
+      flags: OrdpoolTransactionFlags.ordpool_cat21
+    });
+
+    await DigitalArtifactAnalyserService.analyseTransactions([tx]);
+
+    expect(typeof (tx as any)._ordpoolFlags).toBe('number');
+    expect((tx as any)._ordpoolFlags).not.toBeInstanceOf(BigInt);
+  });
+
+  it('should be idempotent when called twice on the same tx', async () => {
+    // Re-indexing scenario: analyseTransactions called twice on the same array.
+    // _ordpoolFlags should be overwritten with the same value, not corrupted.
+    const tx = { txid: 'idempotent-test', fee: 100 } as TransactionSimplePlus;
+
+    (DigitalArtifactsParserService.parse as jest.Mock).mockReturnValue([
+      { type: 'Inscription' } as DigitalArtifact,
+    ]);
+    (DigitalArtifactAnalyserService.analyse as jest.Mock).mockReturnValue({
+      flags: OrdpoolTransactionFlags.ordpool_inscription
+    });
+
+    // Call twice
+    await DigitalArtifactAnalyserService.analyseTransactions([tx]);
+    const firstValue = (tx as any)._ordpoolFlags;
+
+    await DigitalArtifactAnalyserService.analyseTransactions([tx]);
+    const secondValue = (tx as any)._ordpoolFlags;
+
+    expect(firstValue).toBe(secondValue);
+    expect(secondValue).toBe(Number(OrdpoolTransactionFlags.ordpool_inscription));
+  });
+
+  it('should simulate the early return path in getTransactionFlags', async () => {
+    // Upstream getTransactionFlags has:
+    //   let flags = tx.flags ? BigInt(tx.flags) : 0n;
+    //   ... variable flags (CPFP, RBF) ...
+    //   if ((tx as any)._ordpoolFlags) { flags |= BigInt(...); }  // our HACK
+    //   if (tx.flags) { return Number(flags); }  // early return
+    //
+    // On FIRST call: tx.flags is 0/undefined -> full computation -> ordpool flags included
+    // On SECOND call: tx.flags has all flags from first call (including ordpool)
+    //   -> early return path -> ordpool flags already in tx.flags -> still present
+
+    const tx = { txid: 'early-return-test', fee: 100 } as TransactionSimplePlus;
+
+    (DigitalArtifactsParserService.parse as jest.Mock).mockReturnValue([
+      { type: 'Runestone' } as DigitalArtifact,
+    ]);
+    (DigitalArtifactAnalyserService.analyse as jest.Mock).mockReturnValue({
+      flags: OrdpoolTransactionFlags.ordpool_rune
+    });
+
+    // Simulate $getBlockExtended: pre-enrich
+    await DigitalArtifactAnalyserService.analyseTransactions([tx]);
+
+    // Simulate FIRST call to getTransactionFlags (tx.flags not set yet)
+    const upstreamV2Flag = 0b00000100n; // some upstream static flag
+    let flags = (tx as any).flags ? BigInt((tx as any).flags) : 0n;
+    flags |= upstreamV2Flag; // upstream adds its flags
+
+    // Our HACK (runs before early return check)
+    if ((tx as any)._ordpoolFlags) {
+      flags |= BigInt((tx as any)._ordpoolFlags);
+    }
+
+    // No early return on first call (tx.flags was falsy)
+    // Caller stores result:
+    (tx as any).flags = Number(flags);
+
+    // Verify first call result has BOTH upstream and ordpool flags
+    expect(BigInt((tx as any).flags) & upstreamV2Flag).toBe(upstreamV2Flag);
+    expect(BigInt((tx as any).flags) & OrdpoolTransactionFlags.ordpool_rune).toBe(OrdpoolTransactionFlags.ordpool_rune);
+
+    // Simulate SECOND call to getTransactionFlags (tx.flags IS set now -> early return path)
+    let flags2 = (tx as any).flags ? BigInt((tx as any).flags) : 0n;
+    // variable flags (CPFP etc) would be added here...
+
+    // Our HACK (still runs, but ordpool flags are already in flags2 via tx.flags)
+    if ((tx as any)._ordpoolFlags) {
+      flags2 |= BigInt((tx as any)._ordpoolFlags);
+    }
+
+    // Early return: if (tx.flags) { return Number(flags2); }
+    // Ordpool flags survive because they're in tx.flags from the first call
+    expect(BigInt(Number(flags2)) & OrdpoolTransactionFlags.ordpool_rune).toBe(OrdpoolTransactionFlags.ordpool_rune);
+    expect(BigInt(Number(flags2)) & upstreamV2Flag).toBe(upstreamV2Flag);
+  });
+
+  it('should simulate the mempool path (single tx pre-enrichment)', async () => {
+    // In mempool.ts, when a new tx arrives:
+    // 1. await analyseTransaction(tx, 0n)  -- sets tx._ordpoolFlags
+    // 2. tx.flags = Common.getTransactionFlags(tx)  -- sync, reads _ordpoolFlags
+    //
+    // This differs from the block path where analyseTransactions (plural) is used.
+
+    const tx = { txid: 'mempool-tx', fee: 250 } as TransactionSimple;
+
+    (DigitalArtifactsParserService.parse as jest.Mock).mockReturnValue([
+      { type: 'Cat21' } as DigitalArtifact,
+    ]);
+    (DigitalArtifactAnalyserService.analyse as jest.Mock).mockReturnValue({
+      flags: OrdpoolTransactionFlags.ordpool_cat21 | OrdpoolTransactionFlags.ordpool_cat21_mint
+    });
+
+    // Step 1: mempool.ts calls analyseTransaction (async, sets _ordpoolFlags)
+    await DigitalArtifactAnalyserService.analyseTransaction(tx, 0n);
+
+    // Step 2: getTransactionFlags (sync) reads _ordpoolFlags
+    let flags = 0n;
+    const upstreamFlag = 0b00001000n; // some upstream flag
+    flags |= upstreamFlag;
+    if ((tx as any)._ordpoolFlags) {
+      flags |= BigInt((tx as any)._ordpoolFlags);
+    }
+
+    // Both upstream and ordpool flags present
+    expect(flags & upstreamFlag).toBe(upstreamFlag);
+    expect(flags & OrdpoolTransactionFlags.ordpool_cat21).toBe(OrdpoolTransactionFlags.ordpool_cat21);
+    expect(flags & OrdpoolTransactionFlags.ordpool_cat21_mint).toBe(OrdpoolTransactionFlags.ordpool_cat21_mint);
+  });
 });
