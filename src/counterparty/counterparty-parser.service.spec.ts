@@ -489,6 +489,18 @@ describe('CounterpartyParserService', () => {
       expect(data[0]).toBe(0x93);
     });
 
+    // P2TR mpma (multi-peer-multi-asset send) — real mainnet tx, block 946,561.
+    // Demonstrates that P2TR encoding works for non-issuance message types too.
+    it('should parse an mpma via P2TR (multi-recipient send)', () => {
+      const txn = readTransaction('a671933874e11bcf664326ec36dbf3c927538dd6802acd047218bffbe6cd4641');
+      const result = CounterpartyParserService.parse(txn)!;
+      expect(result.encoding).toBe('p2tr');
+      expect(result.messageTypeId).toBe(3);
+      expect(result.messageType).toBe('mpma');
+      // The P2TR-encoded mpma payload is exactly 2,482 bytes for this tx
+      expect(result.getMessageData().length).toBe(2482);
+    });
+
     // Real mainnet P2TR issuance using the "ord" inscription envelope
     // (OP_FALSE OP_IF "ord" [7] "xcp" [1] "image/jpeg" [5] <CBOR metadata> [0] <JPEG content> OP_ENDIF)
     // ORDINALMINT asset with embedded JPEG image, block 933,916

@@ -48,6 +48,13 @@ export const knownFields = {
   // rune-parser.service.helper.findCommitment.ts and Rune.commitment in rune/src/rune.ts.
   rune: 0x0d,
 
+  // note, with a tag of 15 — reserved by ord (`Tag::Note = 15`, `#[allow(unused)]`).
+  // Defined in the protocol but not actively read by ord's indexer. Inscribers
+  // sometimes use it for a free-form text note. We expose it so callers can read
+  // it; ord ignores it.
+  // see https://github.com/ordinals/ord/blob/master/src/inscriptions/tag.rs
+  note: 0x0f,
+
   // properties, with a tag of 17 — CBOR-encoded gallery items + attributes (chunked like metadata)
   // see https://docs.ordinals.com/inscriptions/properties.html
   properties: 0x11,
