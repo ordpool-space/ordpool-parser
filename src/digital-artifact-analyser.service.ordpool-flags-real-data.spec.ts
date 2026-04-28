@@ -51,6 +51,54 @@ describe('_ordpoolFlags with real blockchain data (no mocks)', () => {
     const flagsBigInt = BigInt(flags);
     expect(flagsBigInt & OrdpoolTransactionFlags.ordpool_inscription).toBe(OrdpoolTransactionFlags.ordpool_inscription);
     expect(flagsBigInt & OrdpoolTransactionFlags.ordpool_inscription_mint).toBe(OrdpoolTransactionFlags.ordpool_inscription_mint);
+    // Content-type bucket: image/webp -> ordpool_inscription_image (and NOT _text or _json)
+    expect(flagsBigInt & OrdpoolTransactionFlags.ordpool_inscription_image).toBe(OrdpoolTransactionFlags.ordpool_inscription_image);
+    expect(flagsBigInt & OrdpoolTransactionFlags.ordpool_inscription_text).toBe(0n);
+    expect(flagsBigInt & OrdpoolTransactionFlags.ordpool_inscription_json).toBe(0n);
+  });
+
+  // Inscription with PNG content -> ordpool_inscription_image
+  it('should set ordpool_inscription_image for a PNG inscription', async () => {
+    // 092111e8... has 3 PNG inscriptions in one tx
+    const tx = readTransaction('092111e882a8025f3f05ab791982e8cc7fd7395afe849a5949fd56255b5c41cc');
+
+    await DigitalArtifactAnalyserService.analyseTransaction(tx, 0n);
+
+    const flagsBigInt = BigInt((tx as any)._ordpoolFlags);
+    expect(flagsBigInt & OrdpoolTransactionFlags.ordpool_inscription_image).toBe(OrdpoolTransactionFlags.ordpool_inscription_image);
+    expect(flagsBigInt & OrdpoolTransactionFlags.ordpool_inscription_text).toBe(0n);
+    expect(flagsBigInt & OrdpoolTransactionFlags.ordpool_inscription_json).toBe(0n);
+  });
+
+  // Inscription with text/html content -> ordpool_inscription_text
+  it('should set ordpool_inscription_text for an HTML inscription', async () => {
+    // 11d3f4b3... has 3 text/html inscriptions
+    const tx = readTransaction('11d3f4b39e8ab97995bab1eacf7dcbf1345ec59c07261c0197e18bf29b88d8da');
+
+    await DigitalArtifactAnalyserService.analyseTransaction(tx, 0n);
+
+    const flagsBigInt = BigInt((tx as any)._ordpoolFlags);
+    expect(flagsBigInt & OrdpoolTransactionFlags.ordpool_inscription_text).toBe(OrdpoolTransactionFlags.ordpool_inscription_text);
+    expect(flagsBigInt & OrdpoolTransactionFlags.ordpool_inscription_image).toBe(0n);
+  });
+
+  // Inscription with text/plain that parses as JSON object -> ordpool_inscription_text + _json
+  it('should set ordpool_inscription_text AND _json for a BRC-20 deploy (text/plain JSON)', async () => {
+    // 49cbc5cb... is text/plain content that happens to be valid BRC-20 deploy JSON
+    const tx = readTransaction('49cbc5cbac92cf917dd4539d62720a3e528d17e22ef5fc47070a17ec0d3cf307');
+
+    await DigitalArtifactAnalyserService.analyseTransaction(tx, 0n);
+
+    const flagsBigInt = BigInt((tx as any)._ordpoolFlags);
+    // text/plain content type -> _text
+    expect(flagsBigInt & OrdpoolTransactionFlags.ordpool_inscription_text).toBe(OrdpoolTransactionFlags.ordpool_inscription_text);
+    // body parses as JSON object -> _json (coexists with _text)
+    expect(flagsBigInt & OrdpoolTransactionFlags.ordpool_inscription_json).toBe(OrdpoolTransactionFlags.ordpool_inscription_json);
+    // Not an image
+    expect(flagsBigInt & OrdpoolTransactionFlags.ordpool_inscription_image).toBe(0n);
+    // BRC-20 deploy bits also set
+    expect(flagsBigInt & OrdpoolTransactionFlags.ordpool_brc20).toBe(OrdpoolTransactionFlags.ordpool_brc20);
+    expect(flagsBigInt & OrdpoolTransactionFlags.ordpool_brc20_deploy).toBe(OrdpoolTransactionFlags.ordpool_brc20_deploy);
   });
 
   // Atomical: ATOM DFT reveal

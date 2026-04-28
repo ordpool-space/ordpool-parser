@@ -44,6 +44,7 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
     expect(flags).toBe(
       OrdpoolTransactionFlags.ordpool_inscription |
       OrdpoolTransactionFlags.ordpool_inscription_mint |
+      OrdpoolTransactionFlags.ordpool_inscription_json |
       OrdpoolTransactionFlags.ordpool_brc20 |
       OrdpoolTransactionFlags.ordpool_brc20_deploy
     );
@@ -59,6 +60,7 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
     expect(flags).toBe(
       OrdpoolTransactionFlags.ordpool_inscription |
       OrdpoolTransactionFlags.ordpool_inscription_mint |
+      OrdpoolTransactionFlags.ordpool_inscription_json |
       OrdpoolTransactionFlags.ordpool_brc20 |
       OrdpoolTransactionFlags.ordpool_brc20_mint
     );
@@ -74,6 +76,7 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
     expect(flags).toBe(
       OrdpoolTransactionFlags.ordpool_inscription |
       OrdpoolTransactionFlags.ordpool_inscription_mint |
+      OrdpoolTransactionFlags.ordpool_inscription_json |
       OrdpoolTransactionFlags.ordpool_brc20 |
       OrdpoolTransactionFlags.ordpool_brc20_transfer
     );
@@ -91,6 +94,7 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
     expect(flags).toBe(
       OrdpoolTransactionFlags.ordpool_inscription |
       OrdpoolTransactionFlags.ordpool_inscription_mint |
+      OrdpoolTransactionFlags.ordpool_inscription_json |
       OrdpoolTransactionFlags.ordpool_brc20
       // NO ordpool_brc20_deploy -- invalid BRC-20 is silently skipped
     );
@@ -106,6 +110,7 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
     expect(flags).toBe(
       OrdpoolTransactionFlags.ordpool_inscription |
       OrdpoolTransactionFlags.ordpool_inscription_mint |
+      OrdpoolTransactionFlags.ordpool_inscription_json |
       OrdpoolTransactionFlags.ordpool_brc20
       // NO ordpool_brc20_mint -- invalid BRC-20 is silently skipped
     );
@@ -121,6 +126,7 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
     expect(flags).toBe(
       OrdpoolTransactionFlags.ordpool_inscription |
       OrdpoolTransactionFlags.ordpool_inscription_mint |
+      OrdpoolTransactionFlags.ordpool_inscription_json |
       OrdpoolTransactionFlags.ordpool_brc20
       // NO ordpool_brc20_transfer -- missing amt
     );
@@ -135,7 +141,8 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
     const { flags } = await DigitalArtifactAnalyserService.analyse(inscriptionArtifact);
     expect(flags).toBe(
       OrdpoolTransactionFlags.ordpool_inscription |
-      OrdpoolTransactionFlags.ordpool_inscription_mint
+      OrdpoolTransactionFlags.ordpool_inscription_mint |
+      OrdpoolTransactionFlags.ordpool_inscription_json
     );
   });
 

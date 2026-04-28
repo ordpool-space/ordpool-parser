@@ -1,6 +1,6 @@
 import { AtomicalParserService } from './atomical/atomical-parser.service';
 import { Cat21ParserService } from './cat21/cat21-parser.service';
-import { convertToActivities, contructRuneEtchAttempt, isFlagSetOnTransaction, constructCat21Mint } from './digital-artifact-analyser.service.helper';
+import { convertToActivities, contructRuneEtchAttempt, isFlagSetOnTransaction, constructCat21Mint, parseJsonObject } from './digital-artifact-analyser.service.helper';
 import { DigitalArtifactsParserService } from './digital-artifacts-parser.service';
 import { InscriptionParserService } from './inscription/inscription-parser.service';
 import { LabitbuParserService } from './labitbu/labitbu-parser.service';
@@ -469,13 +469,42 @@ export class DigitalArtifactAnalyserService {
         flags |= OrdpoolTransactionFlags.ordpool_inscription;
         flags |= OrdpoolTransactionFlags.ordpool_inscription_mint;
 
+        // Content-type bucket flags. Cheap (contentType is already known on the
+        // ParsedInscription), useful for "what kind of inscriptions get inscribed?"
+        // charts. _image / _text / _json coexist with _mint -- a mint of an image
+        // sets both _mint and _image.
+        const contentType = inscription.contentType;
+        if (contentType) {
+          if (contentType.startsWith('image/')) {
+            flags |= OrdpoolTransactionFlags.ordpool_inscription_image;
+          } else if (
+            contentType.startsWith('text/plain') ||
+            contentType.startsWith('text/html') ||
+            contentType.startsWith('text/markdown') ||
+            contentType.startsWith('text/css') ||
+            contentType.startsWith('text/javascript') ||
+            contentType.startsWith('application/javascript') ||
+            contentType.startsWith('application/x-javascript')
+          ) {
+            flags |= OrdpoolTransactionFlags.ordpool_inscription_text;
+          }
+        }
+
         // Check for valid JSON content
         if (
-          inscription.contentType?.startsWith('text/plain') ||
-          inscription.contentType?.startsWith('application/json')
+          contentType?.startsWith('text/plain') ||
+          contentType?.startsWith('application/json')
         ) {
 
-          brc20 = parseBrc20Content(await inscription.getContent()) ?? undefined;
+          const inscriptionContent = await inscription.getContent();
+
+          // _json fires whenever the body parses as a JSON object. It coexists
+          // with _text when the contentType is text/plain (BRC-20 etc.).
+          if (parseJsonObject(inscriptionContent)) {
+            flags |= OrdpoolTransactionFlags.ordpool_inscription_json;
+          }
+
+          brc20 = parseBrc20Content(inscriptionContent) ?? undefined;
           if (brc20) {
 
             flags |= OrdpoolTransactionFlags.ordpool_brc20;

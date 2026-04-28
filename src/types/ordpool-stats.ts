@@ -133,24 +133,21 @@ export interface OrdpoolStats {
   amounts: {
     atomical: number;
     atomicalMint: number;
-    atomicalTransfer: number;    // unused — needs sat tracking for complete numbers
     atomicalUpdate: number;
 
     cat21: number;
     cat21Mint: number;
-    cat21Transfer: number;       // unused, for now
 
     inscription: number;
     inscriptionMint: number;
-    inscriptionTransfer: number; // unused, for now
-    inscriptionBurn: number;     // unused, for now
+    inscriptionImage: number;
+    inscriptionText: number;
+    inscriptionJson: number;
 
     rune: number;
     runeEtch: number;
     runeMint: number;
     runeCenotaph: number;
-    runeTransfer: number;         // unused, for now
-    runeBurn: number;             // unused, for now
 
     brc20: number;
     brc20Deploy: number;
@@ -163,6 +160,10 @@ export interface OrdpoolStats {
     src20Transfer: number;
 
     labitbu: number;
+    counterparty: number;
+    stamp: number;
+    src721: number;
+    src101: number;
   },
 
   fees: {
@@ -224,24 +225,21 @@ export function getEmptyStats(): OrdpoolStats {
     amounts: {
       atomical: 0,
       atomicalMint: 0,
-      atomicalTransfer: 0,
       atomicalUpdate: 0,
 
       cat21: 0,
       cat21Mint: 0,
-      cat21Transfer: 0,
 
       inscription: 0,
       inscriptionMint: 0,
-      inscriptionTransfer: 0,
-      inscriptionBurn: 0,
+      inscriptionImage: 0,
+      inscriptionText: 0,
+      inscriptionJson: 0,
 
       rune: 0,
       runeEtch: 0,
       runeMint: 0,
       runeCenotaph: 0,
-      runeTransfer: 0,
-      runeBurn: 0,
 
       brc20: 0,
       brc20Deploy: 0,
@@ -254,6 +252,10 @@ export function getEmptyStats(): OrdpoolStats {
       src20Transfer: 0,
 
       labitbu: 0,
+      counterparty: 0,
+      stamp: 0,
+      src721: 0,
+      src101: 0,
     },
 
     fees: {
@@ -319,24 +321,21 @@ export function getArtifactTypeMap() {
 
     [OrdpoolTransactionFlags.ordpool_atomical,              'atomical'],
     [OrdpoolTransactionFlags.ordpool_atomical_mint,         'atomicalMint'],
-    [OrdpoolTransactionFlags.ordpool_atomical_transfer,     'atomicalTransfer'],
     [OrdpoolTransactionFlags.ordpool_atomical_update,       'atomicalUpdate'],
 
     [OrdpoolTransactionFlags.ordpool_cat21,                 'cat21'],
     [OrdpoolTransactionFlags.ordpool_cat21_mint,            'cat21Mint'],
-    [OrdpoolTransactionFlags.ordpool_cat21_transfer,        'cat21Transfer'],
 
     [OrdpoolTransactionFlags.ordpool_inscription,           'inscription'],
     [OrdpoolTransactionFlags.ordpool_inscription_mint,      'inscriptionMint'],
-    [OrdpoolTransactionFlags.ordpool_inscription_transfer,  'inscriptionTransfer'],
-    [OrdpoolTransactionFlags.ordpool_inscription_burn,      'inscriptionBurn'],
+    [OrdpoolTransactionFlags.ordpool_inscription_image,     'inscriptionImage'],
+    [OrdpoolTransactionFlags.ordpool_inscription_text,      'inscriptionText'],
+    [OrdpoolTransactionFlags.ordpool_inscription_json,      'inscriptionJson'],
 
     [OrdpoolTransactionFlags.ordpool_rune,                  'rune'],
     [OrdpoolTransactionFlags.ordpool_rune_etch,             'runeEtch'],
     [OrdpoolTransactionFlags.ordpool_rune_mint,             'runeMint'],
     [OrdpoolTransactionFlags.ordpool_rune_cenotaph,         'runeCenotaph'],
-    [OrdpoolTransactionFlags.ordpool_rune_transfer,         'runeTransfer'],
-    [OrdpoolTransactionFlags.ordpool_rune_burn,             'runeBurn'],
 
     [OrdpoolTransactionFlags.ordpool_brc20,                 'brc20'],
     [OrdpoolTransactionFlags.ordpool_brc20_deploy,          'brc20Deploy'],
@@ -349,5 +348,9 @@ export function getArtifactTypeMap() {
     [OrdpoolTransactionFlags.ordpool_src20_transfer,        'src20Transfer'],
 
     [OrdpoolTransactionFlags.ordpool_labitbu,               'labitbu'],
+    [OrdpoolTransactionFlags.ordpool_counterparty,          'counterparty'],
+    [OrdpoolTransactionFlags.ordpool_stamp,                 'stamp'],
+    [OrdpoolTransactionFlags.ordpool_src721,                'src721'],
+    [OrdpoolTransactionFlags.ordpool_src101,                'src101'],
   ]);
 }
