@@ -15,7 +15,10 @@ export interface TransactionSimple {
     scriptpubkey_type: string;
   }[];
   status: {
-    block_hash?: string; // undefined; if unconfirmed txn!
+    block_hash?: string;   // undefined if unconfirmed txn
+    block_height?: number; // undefined if unconfirmed txn — used by parsers
+                           // for era-specific decisions (e.g. Counterparty
+                           // burn window 278,310-283,810)
   }
 }
 

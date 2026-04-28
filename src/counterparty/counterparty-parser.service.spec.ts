@@ -377,6 +377,24 @@ describe('CounterpartyParserService', () => {
       expect(result.getMessageData().length).toBe(0);
     });
 
+    // Window-based early exit: same vout shape (output to UNSPENDABLE), but
+    // block_height moved outside [278,310, 283,810]. Must return null because
+    // the burn protocol is dead post-window (lost BTC, not Counterparty).
+    it('should NOT detect a burn outside the window (post-2014 send to UNSPENDABLE)', () => {
+      const txn = readTransaction('4560d0e3d04927108b615ab106040489aca9c4aceedcf69d2b71f63b3139c7ae');
+      // Pretend this exact tx confirmed in a modern block. Same outputs,
+      // same destination, but the protocol no longer credits XCP.
+      const modernTxn = { ...txn, status: { ...txn.status, block_height: 900000 } };
+      expect(CounterpartyParserService.parse(modernTxn)).toBeNull();
+    });
+
+    it('should NOT detect a burn for an unconfirmed mempool tx', () => {
+      const txn = readTransaction('4560d0e3d04927108b615ab106040489aca9c4aceedcf69d2b71f63b3139c7ae');
+      // Drop block_height entirely (mempool tx -- can't be in 2014's burn window)
+      const mempoolTxn = { ...txn, status: {} };
+      expect(CounterpartyParserService.parse(mempoolTxn)).toBeNull();
+    });
+
     it('should return null for a non-Counterparty transaction', () => {
       const txn = readTransaction(CAT21_GENESIS_TXID);
       expect(CounterpartyParserService.parse(txn)).toBeNull();

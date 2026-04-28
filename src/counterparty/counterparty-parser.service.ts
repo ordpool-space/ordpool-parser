@@ -40,7 +40,8 @@ export class CounterpartyParserService {
   static parse(transaction: {
     txid: string,
     vin: { txid: string, witness?: string[] }[],
-    vout: { scriptpubkey: string, scriptpubkey_type: string }[]
+    vout: { scriptpubkey: string, scriptpubkey_type: string }[],
+    status?: { block_height?: number }
   }, onError?: OnParseError): ParsedCounterparty | null {
 
     try {
@@ -85,9 +86,11 @@ export class CounterpartyParserService {
 
       // 4. Burn detection -- last, since it's a fallback that doesn't carry
       //    message data. A burn tx never has CNTRPRTY-prefixed data anyway,
-      //    so the previous three paths will have returned null.
+      //    so the previous three paths will have returned null. Window-gated
+      //    by block_height: only blocks 278,310-283,810 contain valid burns;
+      //    everything else (incl. unconfirmed) skips the vout scan entirely.
       if (!result) {
-        result = tryDetectBurn(transaction.vout);
+        result = tryDetectBurn(transaction.vout, transaction.status?.block_height);
       }
 
       if (!result) {
@@ -121,7 +124,8 @@ export class CounterpartyParserService {
   static hasCounterparty(transaction: {
     txid: string,
     vin: { txid: string, witness?: string[] }[],
-    vout: { scriptpubkey: string, scriptpubkey_type: string }[]
+    vout: { scriptpubkey: string, scriptpubkey_type: string }[],
+    status?: { block_height?: number }
   }): boolean {
     return CounterpartyParserService.parse(transaction) !== null;
   }

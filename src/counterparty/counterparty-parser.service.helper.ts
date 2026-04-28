@@ -15,6 +15,12 @@ const CNTRPRTY_PREFIX = new Uint8Array([0x43, 0x4e, 0x54, 0x52, 0x50, 0x52, 0x54
 export const UNSPENDABLE_MAINNET_SCRIPTPUBKEY =
   '76a914818895f3dc2c178629d3d2d8fa3ec4a3f817982188ac';
 
+// Mainnet burn window for XCP creation. Hardcoded in counterparty-core/lib/config.py
+// as BURN_START_MAINNET and BURN_END_MAINNET. Outside this window, sends to
+// UNSPENDABLE just lose BTC -- no XCP credit, and the indexer marks them invalid.
+export const BURN_START_MAINNET = 278310; // Jan 2, 2014
+export const BURN_END_MAINNET = 283810;   // Feb 5, 2014
+
 /**
  * Extracted Counterparty message payload from a Bitcoin transaction.
  */
@@ -186,20 +192,34 @@ export function mapMessageType(id: number): CounterpartyMessageType {
  * string "Counterparty" so no private key exists. Anyone paying it is
  * doing this intentionally.
  *
- * The parser is stateless and does not filter by block height. Sends to
- * UNSPENDABLE after block 283,810 are still recognized as type 60 burns
- * (matching counterparty-core, where burn.py validate() returns
- * problems=["too late"] for post-window blocks -- the message type is
- * recognized but marked invalid). Callers that need window validation
- * can apply it themselves.
+ * Window-based early exit: if blockHeight is provided and outside the burn
+ * window [278,310, 283,810], we skip the destination scan entirely. The
+ * burn protocol is dead post-window -- counterparty-core's burn.py
+ * validate() rejects with "too late". Skipping is the right behavior: a
+ * 2026 send to UNSPENDABLE is just lost BTC, not a Counterparty event.
+ * If blockHeight is undefined (mempool tx), we also skip -- modern unconfirmed
+ * txs cannot land in a 2014 block.
  *
  * Maps to message_type_id 60 (burn.py ID = 60). The message data is empty:
  * burn.py compose() returns (source, [(destination, quantity)], None) -- the
  * third tuple element is the on-chain message, which is None.
  */
 export function tryDetectBurn(
-  vout: { scriptpubkey: string }[]
+  vout: { scriptpubkey: string }[],
+  blockHeight: number | undefined
 ): CounterpartyPayload | null {
+  // Early exit: outside the burn window (or unconfirmed). Skip the vout scan
+  // entirely. This is correct (post-window sends to UNSPENDABLE earn 0 XCP and
+  // are flagged invalid by the indexer) and fast (the common case for any
+  // modern transaction).
+  if (
+    blockHeight === undefined
+    || blockHeight < BURN_START_MAINNET
+    || blockHeight > BURN_END_MAINNET
+  ) {
+    return null;
+  }
+
   for (const output of vout) {
     if (output.scriptpubkey === UNSPENDABLE_MAINNET_SCRIPTPUBKEY) {
       return {
