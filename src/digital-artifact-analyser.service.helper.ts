@@ -39,7 +39,7 @@ export function isFlagSetOnTransaction(tx: { flags?: number | null }, flag: Ordp
  * @param content - The content to validate and parse.
  * @returns The parsed JSON object if valid, or null if invalid.
  */
-export function parseJsonObject(content: string): any | null {
+export function parseJsonObject(content: string): Record<string, unknown> | null {
 
   if (typeof content !== 'string' || !content) {
     return null;
@@ -51,7 +51,12 @@ export function parseJsonObject(content: string): any | null {
   if (content.startsWith('{') && content.endsWith('}')) {
 
     try {
-      return JSON.parse(content);
+      const parsed: unknown = JSON.parse(content);
+      // Reject arrays and primitives -- the function name promises an OBJECT
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        return parsed as Record<string, unknown>;
+      }
+      return null;
     } catch {
       return null;
     }

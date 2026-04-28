@@ -10,6 +10,18 @@ import {
 } from './inscription-parser.service.helper';
 
 /**
+ * CBOR-decoded values are recursive and arbitrary by spec. We use `unknown`
+ * (not `any`) so callers must narrow before reading. The CBOR decoder returns
+ * either primitives, arrays, Uint8Array, or objects with integer-or-string keys.
+ */
+type CborValue = unknown;
+type CborMap = Record<number | string, CborValue>;
+
+function isCborMap(value: CborValue): value is CborMap {
+  return !!value && typeof value === 'object' && !ArrayBuffer.isView(value) && !Array.isArray(value);
+}
+
+/**
  * Parses the CBOR properties from tag 17 fields.
  * Handles both inline and packed inscription ID encodings,
  * and decompression via brotli or gzip (tag 19).
@@ -40,43 +52,48 @@ export async function parseProperties(fields: { tag: number; value: Uint8Array }
   }
 
   // CBOR decode — properties use integer keys
-  let decoded: any;
+  let decoded: CborValue;
   try {
     decoded = CBOR.decode(propertiesBytes);
   } catch {
     return undefined;
   }
 
-  if (!decoded || typeof decoded !== 'object') {
+  if (!isCborMap(decoded)) {
     return undefined;
   }
 
   // Parse gallery items (key 0)
-  const rawGallery: any[] = decoded[0] || [];
-  const packedTxids: Uint8Array | undefined = decoded[2]; // key 2: concatenated 32-byte txids
+  const rawGalleryUnknown = decoded[0];
+  const rawGallery: CborValue[] = Array.isArray(rawGalleryUnknown) ? rawGalleryUnknown : [];
+  const packedTxidsUnknown = decoded[2]; // key 2: concatenated 32-byte txids
+  const packedTxids: Uint8Array | undefined = ArrayBuffer.isView(packedTxidsUnknown)
+    ? new Uint8Array(packedTxidsUnknown.buffer, packedTxidsUnknown.byteOffset, packedTxidsUnknown.byteLength)
+    : undefined;
 
   const gallery: GalleryItem[] = [];
   for (let i = 0; i < rawGallery.length; i++) {
     const rawItem = rawGallery[i];
-    if (!rawItem || typeof rawItem !== 'object') {
+    if (!isCborMap(rawItem)) {
       continue;
     }
 
     let inscriptionId: string | undefined;
 
     // Try inline ID first (key 0: 32-36 byte inscription ID)
-    const inlineId: Uint8Array | undefined = rawItem[0];
+    const inlineId = rawItem[0];
     if (ArrayBuffer.isView(inlineId) && inlineId.byteLength >= 32 && inlineId.byteLength <= 36) {
       inscriptionId = extractInscriptionId(new Uint8Array(inlineId.buffer, inlineId.byteOffset, inlineId.byteLength));
     }
 
     // Fall back to packed encoding (txid from Properties[2], index from Item[2])
-    if (!inscriptionId && ArrayBuffer.isView(packedTxids)) {
+    if (!inscriptionId && packedTxids) {
       const txidOffset = i * 32;
       if (txidOffset + 32 <= packedTxids.byteLength) {
         const txidBytes = new Uint8Array(packedTxids.buffer, packedTxids.byteOffset + txidOffset, 32);
         const txidHex = bytesToHex(new Uint8Array(txidBytes).reverse());
-        const index = rawItem[2] ?? 0;
+        const indexRaw = rawItem[2];
+        const index = typeof indexRaw === 'number' ? indexRaw : 0;
         inscriptionId = txidHex + 'i' + index;
       }
     }
@@ -104,9 +121,11 @@ export async function parseProperties(fields: { tag: number; value: Uint8Array }
 
 /**
  * Parses an Attributes CBOR map (key 0 = title, key 1 = traits).
+ * Accepts unknown to force the caller to pass arbitrary CBOR-decoded data,
+ * narrowing happens inside.
  */
-export function parseAttributes(raw: any): { title?: string; traits?: Record<string, boolean | number | string | null> } {
-  if (!raw || typeof raw !== 'object') {
+export function parseAttributes(raw: unknown): { title?: string; traits?: Record<string, boolean | number | string | null> } {
+  if (!isCborMap(raw)) {
     return {};
   }
 
@@ -116,10 +135,11 @@ export function parseAttributes(raw: any): { title?: string; traits?: Record<str
     result.title = raw[0];
   }
 
-  if (raw[1] && typeof raw[1] === 'object' && !ArrayBuffer.isView(raw[1])) {
+  const traitsRaw = raw[1];
+  if (isCborMap(traitsRaw)) {
     const traits: Record<string, boolean | number | string | null> = {};
-    for (const key of Object.keys(raw[1])) {
-      const val = raw[1][key];
+    for (const key of Object.keys(traitsRaw)) {
+      const val = traitsRaw[key];
       if (val === null || typeof val === 'boolean' || typeof val === 'number' || typeof val === 'string') {
         traits[key] = val;
       }

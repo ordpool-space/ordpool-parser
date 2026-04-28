@@ -65,7 +65,7 @@ describe('DigitalArtifactAnalyserService.analyseTransactions', () => {
   });
 
   it('should count multiple flags for an Inscription with BRC-20 mint', async () => {
-    const artifacts: any[] = [
+    const artifacts: DigitalArtifact[] = [
       {
         type: DigitalArtifactType.Inscription,
         contentType: 'application/json',
@@ -82,7 +82,7 @@ describe('DigitalArtifactAnalyserService.analyseTransactions', () => {
   });
 
   it('should count a Runestone with a mint', async () => {
-    const artifacts: any[] = [
+    const artifacts: DigitalArtifact[] = [
       {
         type: DigitalArtifactType.Runestone,
         runestone: {
@@ -99,7 +99,7 @@ describe('DigitalArtifactAnalyserService.analyseTransactions', () => {
   });
 
   it('should count SRC-20 deploy correctly', async () => {
-    const artifacts: any[] = [
+    const artifacts: DigitalArtifact[] = [
       {
         type: DigitalArtifactType.Src20,
         getContent: () => JSON.stringify({ p: 'src-20', op: 'deploy' }),

@@ -85,14 +85,20 @@ export class StampParserService {
     content: string
   ): ParsedSrc20 | ParsedSrc721 | ParsedSrc101 | null {
 
-    let json: any;
+    let json: unknown;
     try {
       json = JSON.parse(content);
     } catch {
       return null;
     }
 
-    const protocol = (json?.p || json?.P || '').toLowerCase();
+    // Stamp protocols (SRC-20/721/101) require a JSON object with a 'p' field.
+    if (!json || typeof json !== 'object' || Array.isArray(json)) {
+      return null;
+    }
+    const obj = json as Record<string, unknown>;
+    const rawP = obj.p ?? obj.P;
+    const protocol = typeof rawP === 'string' ? rawP.toLowerCase() : '';
 
     if (protocol === 'src-20') {
       return StampParserService.createProtocolArtifact(DigitalArtifactType.Src20, txid, content);

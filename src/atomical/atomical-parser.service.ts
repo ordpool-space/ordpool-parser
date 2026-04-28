@@ -108,7 +108,13 @@ export class AtomicalParserService {
 
         getArgs: (): Record<string, unknown> | null => {
           const payload = decodePayload();
-          return (payload as any)?.args ?? null;
+          if (!payload) return null;
+          const args = payload['args'];
+          // 'args' must itself be a CBOR map -- reject arrays/primitives/binary
+          if (args && typeof args === 'object' && !Array.isArray(args) && !ArrayBuffer.isView(args)) {
+            return args as Record<string, unknown>;
+          }
+          return null;
         },
 
         getFiles: (): AtomicalFile[] => {
@@ -127,18 +133,25 @@ export class AtomicalParserService {
             if (key === 'args') {
               continue;
             }
-            const entry = payload[key] as any;
+            const entry: unknown = payload[key];
 
             // Format 1: {$ct: "image/png", $b: <binary>} — used by prepareFilesData (old path)
-            if (entry && entry.$ct && ArrayBuffer.isView(entry.$b)) {
-              files.push(buildFile(
-                key,
-                entry.$ct,
-                new Uint8Array(entry.$b.buffer, entry.$b.byteOffset, entry.$b.byteLength),
-              ));
+            if (entry && typeof entry === 'object' && !ArrayBuffer.isView(entry) && !Array.isArray(entry)) {
+              const wrapper = entry as Record<string, unknown>;
+              const ct = wrapper.$ct;
+              const b = wrapper.$b;
+              if (typeof ct === 'string' && ArrayBuffer.isView(b)) {
+                files.push(buildFile(
+                  key,
+                  ct,
+                  new Uint8Array(b.buffer, b.byteOffset, b.byteLength),
+                ));
+                continue;
+              }
+            }
 
             // Format 2: raw binary directly — used by prepareFilesDataAsObject (newer path)
-            } else if (ArrayBuffer.isView(entry)) {
+            if (ArrayBuffer.isView(entry)) {
               files.push(buildFile(
                 key,
                 guessContentType(key),

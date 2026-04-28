@@ -32,7 +32,7 @@ export namespace IEsploraApi {
     scriptsig_asm: string;
     inner_redeemscript_asm?: string; // changed to optional
     inner_witnessscript_asm?: string; // changed to optional
-    sequence: any;
+    sequence: number; // 32-bit unsigned -- always a JS number from Esplora
     witness?: string[];  // changed to optional
     prevout: Vout | null;
     // Elements

@@ -25,7 +25,7 @@ export class InscriptionPreviewService {
     if (!inscription) {
       return {
         instructionsFor: undefined,
-        previewContent: await getPreviewUnknown(undefined as any),
+        previewContent: await getPreviewUnknown(),
         renderDirectly: false
       }
     }
@@ -355,7 +355,7 @@ async function getPreviewText(inscription: ParsedInscription): Promise<string> {
 }
 
 // test here: http://localhost:4200/tx/06158001c0be9d375c10a56266d8028b80ebe1ef5e2a9c9a4904dbe31b72e01c
-async function getPreviewUnknown(_inscription: ParsedInscription): Promise<string> {
+async function getPreviewUnknown(_inscription?: ParsedInscription): Promise<string> {
 
   return `<!doctype html>
 <html lang='en'>
