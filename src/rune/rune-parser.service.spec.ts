@@ -51,14 +51,9 @@ describe('Rune parser', () => {
     expect(etching?.symbol).toBe('ᚠ');
 
     // A rune may have an open mint, allowing anyone to create and allocate units of that rune for themselves.
-    // An open mint is subject to terms, which are set upon etching.
-    expect(etching?.terms).toBeDefined(); // terms object exists with amount + cap below
-
-    // Each mint transaction creates a fixed amount of new units of a rune.
-    expect(etching?.terms?.amount).toBe(100n);
-
-    // The number of times a rune may be minted is its cap. A mint is closed once the cap is reached.
-    expect(etching?.terms?.cap).toBe(1111111n);
+    // An open mint is subject to terms, which are set upon etching. Pin the full shape:
+    // just amount + cap (no height/offset constraints on this etching).
+    expect(etching?.terms).toEqual({ amount: 100n, cap: 1111111n });
 
     // This means this rune will apply all future protocol changes
     expect(etching?.turbo).toBe(true);

@@ -6,7 +6,7 @@
 
 - **Zero runtime dependencies** — works in Node.js AND browsers
 - **Dual output**: ESM (`dist/`) and CommonJS (`dist-commonjs/`)
-- **Version 2.x** is the version for the ordpool-v2 ecosystem rewrite. There are no external consumers — the only users are ordpool.space and cat21.space. No CHANGELOG needed.
+- **Version 2.x** is the v2 ecosystem rewrite. There are no external consumers — the only users are ordpool.space (frontend) and cat21.space (frontend + backend). No CHANGELOG needed.
 
 ## Commands
 
@@ -23,7 +23,19 @@ npm run create-link         # build + npm link for local development
 
 ## Releasing
 
-Every npm publish must have a matching git tag and GitHub release to keep npm and GitHub in sync.
+Two consumer paths, two ways to ship a change:
+
+**a) git SHA refs (preferred for backends).** `ordpool/backend` and
+`cat21-indexer/backend` pin via `"ordpool-parser":
+"github:ordpool-space/ordpool-parser#<sha>"`. The `prepare` script in
+`package.json` runs `npm run build` automatically when a git ref is
+installed, so no publish is needed. To ship a change to a backend
+consumer: commit + push to `main`, then bump the SHA in the consumer's
+`package.json` and `npm install`.
+
+**b) npm publish (for `ordpool/frontend`, which still pins `^2.0.x`).**
+Every publish needs a matching git tag and GitHub release to keep
+sources in sync:
 
 ```bash
 # 1. Bump version in package.json

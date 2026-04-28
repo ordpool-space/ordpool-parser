@@ -467,61 +467,25 @@ describe("CBOR Tests", () => {
   });
 
   test("Remaining Bytes", function() {
-    let hasThrown = false;
-    try {
-      const arrayBuffer = new ArrayBuffer(2);
-      const uint8Array = new Uint8Array(arrayBuffer);
-
-      CBOR.decode(uint8Array)
-    } catch (e) {
-      hasThrown = true;
-    }
-
-    expect(hasThrown).toBeTruthy();
+    const arrayBuffer = new ArrayBuffer(2);
+    const uint8Array = new Uint8Array(arrayBuffer);
+    expect(() => CBOR.decode(uint8Array)).toThrow();
   });
 
   test("Invalid length encoding", function() {
-    let hasThrown = false;
-    try {
-      CBOR.decode(hex2array("1e"))
-    } catch (e) {
-      hasThrown = true;
-    }
-
-    expect(hasThrown).toBeTruthy();
+    expect(() => CBOR.decode(hex2array("1e"))).toThrow();
   });
 
   test("Invalid length", function() {
-    let hasThrown = false;
-    try {
-      CBOR.decode(hex2array("1f"))
-    } catch (e) {
-      hasThrown = true;
-    }
-
-    expect(hasThrown).toBeTruthy();
+    expect(() => CBOR.decode(hex2array("1f"))).toThrow();
   });
 
   test("Invalid indefinite length element type", function() {
-    let hasThrown = false;
-    try {
-      CBOR.decode(hex2array("5f00"))
-    } catch (e) {
-      hasThrown = true;
-    }
-
-    expect(hasThrown).toBeTruthy();
+    expect(() => CBOR.decode(hex2array("5f00"))).toThrow();
   });
 
   test("Invalid indefinite length element length", function() {
-    let hasThrown = false;
-    try {
-      CBOR.decode(hex2array("5f5f"))
-    } catch (e) {
-      hasThrown = true;
-    }
-
-    expect(hasThrown).toBeTruthy();
+    expect(() => CBOR.decode(hex2array("5f5f"))).toThrow();
   });
 
   test("Tagging", () => {
@@ -532,29 +496,17 @@ describe("CBOR Tests", () => {
       return new SimpleValue(value);
     });
 
-    // first item is a TaggedValue
-    expect(decoded[0]).toBeInstanceOf(TaggedValue);
+    // first item: TaggedValue { value: 3, tag: 0x12 }
+    expect(decoded[0]).toEqual(new TaggedValue(3, 0x12));
+    expect(decoded[0].constructor.name).toBe('TaggedValue');
 
-    // first item value
-    expect(decoded[0].value).toBe(3);
+    // second item: TaggedValue { value: 8, tag: 0x4567 }
+    expect(decoded[1]).toEqual(new TaggedValue(8, 0x4567));
+    expect(decoded[1].constructor.name).toBe('TaggedValue');
 
-    // first item tag
-    expect(decoded[0].tag).toBe(0x12);
-
-    // econd item is a TaggedValue
-    expect(decoded[1]).toBeInstanceOf(TaggedValue);
-
-    // second item value
-    expect(decoded[1].value).toBe(8);
-
-    // second item tag
-    expect(decoded[1].tag).toBe(0x4567);
-
-    // third item is a SimpleValue
-    expect(decoded[2]).toBeInstanceOf(SimpleValue);
-
-    // third item tag
-    expect(decoded[2].value).toBe(0xf0);
+    // third item: SimpleValue { value: 0xf0 }
+    expect(decoded[2]).toEqual(new SimpleValue(0xf0));
+    expect(decoded[2].constructor.name).toBe('SimpleValue');
   });
 
   test("decodeFirst", function() {

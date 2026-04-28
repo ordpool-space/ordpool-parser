@@ -16,21 +16,27 @@ describe('Inscription parser', () => {
     const inscriptions = InscriptionParserService.parse(txn);
     expect(inscriptions.length).toBe(2000);
 
-    const satsOutput1 = txn.vout[0].value; // 2121
-    const satsOutput2 = txn.vout[1].value; // 23691
-    let countingSat = inscriptions[0].getPointer() || 0; // 10121 -- so it's somewhere in the middle?
+    const satsOutput1 = txn.vout[0].value;
+    const satsOutput2 = txn.vout[1].value;
+    let countingSat = inscriptions[0].getPointer() || 0;
+
+    // Pin everything exactly: output 0 has 2121 sats, output 1 has 23691 sats.
+    // The 2000 inscriptions all land sequentially in output 1 starting at sat 10121.
+    expect(satsOutput1).toBe(2121);
+    expect(satsOutput2).toBe(23691);
+    expect(countingSat).toBe(10121);
 
     for (var i = 0; i < inscriptions.length; i++) {
-
       const pointer = inscriptions[i].getPointer();
-
-      // this verifies that all sats are sequential and that all of them are in output 2, as mentioned in the tweet
+      // every inscription's pointer must be the next sequential sat
       expect(countingSat).toBe(pointer);
-      expect(countingSat).toBeGreaterThan(satsOutput1);
-      expect(countingSat).toBeLessThan(satsOutput1 + satsOutput2);
-
       countingSat++;
     }
+
+    // After the loop, the last pointer was 10121 + 2000 - 1 = 12120,
+    // which sits inside output 1 (whose sats run 2121..2121+23691-1 = 25811)
+    expect(countingSat - 1).toBe(12120);
+    expect(satsOutput1 + satsOutput2 - 1).toBe(25811);
   });
 
   /**
@@ -123,16 +129,14 @@ describe('Inscription parser', () => {
 
       const availableSats = satsOutput1 + satsOutput2 + satsOutput3 + satsOutput4 + satsOutput5; // 1470
 
-      const pointer1 = inscriptions[0].getPointer(); // undefined
-      const pointer2 = inscriptions[1].getPointer(); // 3289650
-      const pointer3 = inscriptions[2].getPointer(); // 3421236
-      const pointer4 = inscriptions[3].getPointer(); // 3552822
-      const pointer5 = inscriptions[4].getPointer(); // 3684408
+      // Exact pointer values from the on-chain tx -- documented in ord#3076
+      expect(inscriptions[0].getPointer()).toBeUndefined(); // first inscription has no pointer
+      expect(inscriptions[1].getPointer()).toBe(3289650);
+      expect(inscriptions[2].getPointer()).toBe(3421236);
+      expect(inscriptions[3].getPointer()).toBe(3552822);
+      expect(inscriptions[4].getPointer()).toBe(3684408);
 
-      // yep, they are overflowing!
-      expect(pointer2).toBeGreaterThan(availableSats);
-      expect(pointer3).toBeGreaterThan(availableSats);
-      expect(pointer4).toBeGreaterThan(availableSats);
-      expect(pointer5).toBeGreaterThan(availableSats);
+      // All four explicit pointers overflow the 1470 sats available
+      expect(availableSats).toBe(1470);
     });
 });

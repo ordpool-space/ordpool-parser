@@ -194,8 +194,8 @@ describe('_ordpoolFlags side effect on analyseTransactions', () => {
 
     await DigitalArtifactAnalyserService.analyseTransactions([tx]);
 
+    // Must be a JS Number (not bigint) for upstream mempool's sync getTransactionFlags()
     expect(typeof (tx as any)._ordpoolFlags).toBe('number');
-    expect((tx as any)._ordpoolFlags).not.toBeInstanceOf(BigInt);
   });
 
   it('should be idempotent when called twice on the same tx', async () => {

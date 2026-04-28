@@ -45,14 +45,15 @@ describe('parseSrc20Content', () => {
 
   it('should trim whitespace before parsing', () => {
     const result = parseSrc20Content('  {"p":"src-20","op":"mint","tick":"STAMP","amt":"100"}  ');
-    expect(result).not.toBeNull();
-    expect(result!.op).toBe('mint');
+    expect(result).toEqual({ p: 'src-20', op: 'mint', tick: 'STAMP', amt: '100' });
   });
 
   it('should accept extra fields (ignored per SRC-20 spec)', () => {
     const result = parseSrc20Content('{"p":"src-20","op":"deploy","tick":"STAMP","max":"21000","lim":"100","random":"test"}');
-    expect(result).not.toBeNull();
-    expect(result!.op).toBe('deploy');
+    // Extra "random" field is preserved (we don't strip unknown fields)
+    expect(result).toEqual({
+      p: 'src-20', op: 'deploy', tick: 'STAMP', max: '21000', lim: '100', random: 'test',
+    });
   });
 });
 
