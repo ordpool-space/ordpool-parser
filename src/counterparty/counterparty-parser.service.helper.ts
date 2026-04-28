@@ -8,6 +8,13 @@ import { CounterpartyEncoding, CounterpartyMessageType } from '../types/parsed-c
 // "CNTRPRTY" in ASCII (hex: 434e545250525459)
 const CNTRPRTY_PREFIX = new Uint8Array([0x43, 0x4e, 0x54, 0x52, 0x50, 0x52, 0x54, 0x59]);
 
+// Mainnet UNSPENDABLE address: 1CounterpartyXXXXXXXXXXXXXXXUWLpVr
+// scriptpubkey is P2PKH: 76a914 + hash160(818895f3dc2c178629d3d2d8fa3ec4a3f8179821) + 88ac
+// The address is hardcoded in counterparty-core/lib/config.py as UNSPENDABLE_MAINNET.
+// Any tx output paying this scriptpubkey is a burn (proof-of-burn protocol, Jan-Feb 2014).
+export const UNSPENDABLE_MAINNET_SCRIPTPUBKEY =
+  '76a914818895f3dc2c178629d3d2d8fa3ec4a3f817982188ac';
+
 /**
  * Extracted Counterparty message payload from a Bitcoin transaction.
  */
@@ -133,23 +140,24 @@ export function mapMessageType(id: number): CounterpartyMessageType {
     case 30: return 'broadcast';           // broadcast.py
     case 40: return 'bet';                 // bet.py
     case 50: return 'dividend';            // dividend.py
-    case 60: return 'burn';                // burn.py — DEFENSIVE: never reached.
-                                           // Burns are detected purely by destination
-                                           // (1CounterpartyXXXXXXXXXXXXXXXUWLpVr). Counterparty's
-                                           // burn.py compose() returns data=None, so no on-chain
-                                           // tx ever has CNTRPRTY-prefixed message data with id 60.
+    case 60: return 'burn';                // burn.py — set by tryDetectBurn(), not by ARC4
+                                           // decryption. Burns have no CNTRPRTY message data
+                                           // on chain; they are identified by an output paying
+                                           // 1CounterpartyXXXXXXXXXXXXXXXUWLpVr (UNSPENDABLE).
     case 70: return 'cancel';              // cancel.py
     case 80: return 'rps';                 // rps.py
     case 81: return 'rps_resolve';         // rpsresolve.py
     case 90: return 'fairminter';          // fairminter.py
     case 91: return 'fairmint';            // fairmint.py
-    case 100: return 'utxo';              // utxo.py — DEFENSIVE: never observed on mainnet.
-                                           // utxo.py defines ID=100 with struct.pack format, but
-                                           // production UTXO moves are detected via bare utxo
-                                           // tracking (no message data). Verified by scanning
-                                           // 100,000 transactions: zero with 0x64 / 00000064 prefix.
-                                           // The two real on-chain forms are 101 (attach) and 102
-                                           // (detach).
+    case 100: return 'utxo';              // utxo.py — DEFENSIVE: defined in counterparty-core
+                                           // (struct.pack format with ID=100) but no mainnet tx
+                                           // composes this form -- verified by scanning 100,000
+                                           // recent transactions, zero with 0x64 / 00000064
+                                           // prefix. Production UTXO moves are tracked statefully
+                                           // (the indexer maintains a UTXO->asset ledger and
+                                           // observes spends) -- this requires state beyond a
+                                           // single-tx parser. The two on-chain message-encoded
+                                           // forms are 101 (attach) and 102 (detach).
     case 101: return 'attach';             // attach.py
     case 102: return 'detach';             // detach.py
     case 110: return 'destroy';            // destroy.py
@@ -161,6 +169,39 @@ export function mapMessageType(id: number): CounterpartyMessageType {
  * Tries to decrypt and validate Counterparty data from OP_RETURN outputs.
  * This is the fastest detection method (decrypt ≤80 bytes, check prefix).
  */
+/**
+ * Detects a Counterparty proof-of-burn transaction.
+ *
+ * Burns are NOT encoded with CNTRPRTY-prefixed message data. The protocol
+ * detects them by destination: any tx output paying the hardcoded UNSPENDABLE
+ * mainnet address (1CounterpartyXXXXXXXXXXXXXXXUWLpVr) is a burn.
+ *
+ * Source addresses are unconstrained. The burn window on mainnet ran from
+ * block 278,310 to 283,810 (Jan 2-Feb 5, 2014). Sends to UNSPENDABLE outside
+ * that window are still on-chain "burns" but earn 0 XCP. We don't filter on
+ * block height -- the parser is stateless. Callers that need window validation
+ * can apply it themselves.
+ *
+ * Maps to message_type_id 60 (burn.py ID = 60). The message data is empty:
+ * burn.py compose() returns (source, [(destination, quantity)], None) -- the
+ * third tuple element is the on-chain message, which is None.
+ */
+export function tryDetectBurn(
+  vout: { scriptpubkey: string }[]
+): CounterpartyPayload | null {
+  for (const output of vout) {
+    if (output.scriptpubkey === UNSPENDABLE_MAINNET_SCRIPTPUBKEY) {
+      return {
+        encoding: 'destination',
+        messageTypeId: 60,
+        messageType: 'burn',
+        messageData: new Uint8Array(0),
+      };
+    }
+  }
+  return null;
+}
+
 export function tryDecryptOpReturn(
   vout: { scriptpubkey: string, scriptpubkey_type: string }[],
   arc4Key: Uint8Array

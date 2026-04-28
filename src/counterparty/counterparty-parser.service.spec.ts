@@ -360,16 +360,21 @@ describe('CounterpartyParserService', () => {
       expect(view.getUint32(34)).toBe(565);
     });
 
-    // Burn (type 60) is detected purely by sending BTC to the unspendable address
-    // 1CounterpartyXXXXXXXXXXXXXXXUWLpVr -- never has CNTRPRTY message data on chain.
-    // Counterparty's burn.py compose() returns (source, [(destination, qty)], None) -- no message.
-    // The case 60 in mapMessageType() exists for protocol completeness but is unreachable
-    // via our parser. We assert this explicitly: a real mainnet burn tx must return null.
-    it('should return null for a burn transaction (type 60 has no CNTRPRTY data)', () => {
-      // Real burn tx from block 283,810 (Jan 2014, proof-of-burn era)
+    // Burn (type 60) is detected by destination, not by CNTRPRTY message data.
+    // Any tx output paying 1CounterpartyXXXXXXXXXXXXXXXUWLpVr (UNSPENDABLE_MAINNET)
+    // is a burn. Burn window was blocks 278,310-283,810 (Jan-Feb 2014).
+    // burn.py compose() returns (source, [(destination, qty)], None) -- no message bytes.
+    it('should detect a burn transaction by destination (type 60, no message data)', () => {
+      // Real burn tx from block 283,810 (Feb 5, 2014, last day of burn window)
       // Source: 1HVgrYx3U... burned 0.1 BTC, earned 100.009 XCP
       const txn = readTransaction('4560d0e3d04927108b615ab106040489aca9c4aceedcf69d2b71f63b3139c7ae');
-      expect(CounterpartyParserService.parse(txn)).toBeNull();
+      const result = CounterpartyParserService.parse(txn)!;
+      expect(result.type).toBe(DigitalArtifactType.Counterparty);
+      expect(result.encoding).toBe('destination');
+      expect(result.messageTypeId).toBe(60);
+      expect(result.messageType).toBe('burn');
+      // No on-chain CNTRPRTY-prefixed message data for burns
+      expect(result.getMessageData().length).toBe(0);
     });
 
     it('should return null for a non-Counterparty transaction', () => {

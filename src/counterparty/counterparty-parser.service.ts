@@ -5,6 +5,7 @@ import { OnParseError } from '../types/parser-options';
 import {
   tryDecryptMultisig,
   tryDecryptOpReturn,
+  tryDetectBurn,
   tryExtractP2tr,
 } from './counterparty-parser.service.helper';
 
@@ -15,10 +16,13 @@ import {
  * Spells of Genesis, and the first DEX on Bitcoin. Data is ARC4-encrypted
  * using vin[0].txid as key, prefixed with "CNTRPRTY".
  *
- * Three encoding methods:
+ * Four detection paths:
  * 1. OP_RETURN -- for messages <=80 bytes (most common since 2017+)
  * 2. Multisig -- for larger data (legacy, same format as SRC-20/Stamps)
  * 3. P2TR -- Taproot witness envelope (v11+, block 902,000)
+ * 4. Destination address -- proof-of-burn (no message data, identified by
+ *    output paying the hardcoded UNSPENDABLE address). Burn period was
+ *    blocks 278,310-283,810 (Jan-Feb 2014).
  */
 export class CounterpartyParserService {
 
@@ -29,6 +33,9 @@ export class CounterpartyParserService {
    * 1. P2TR -- literal "CNTRPRTY" OP_RETURN + witness envelope (no decryption)
    * 2. OP_RETURN -- ARC4 decrypt <=80 bytes, check CNTRPRTY prefix
    * 3. Multisig -- extract pubkeys per output, decrypt, check prefix (expensive)
+   * 4. Burn -- output to UNSPENDABLE address (last, since it's a fallback
+   *    that doesn't carry message data and we'd rather match a real CNTRPRTY
+   *    payload first if one happens to coexist with a burn output).
    */
   static parse(transaction: {
     txid: string,
@@ -57,10 +64,6 @@ export class CounterpartyParserService {
         }
       }
 
-      if (!hasOpReturn && !hasMultisig) {
-        return null;
-      }
-
       // 1. P2TR (cheapest -- no decryption, just check literal marker + witness envelope)
       let result = hasLiteralCntrprty
         ? tryExtractP2tr(transaction.vin, transaction.vout)
@@ -78,6 +81,13 @@ export class CounterpartyParserService {
       if (!result && hasMultisig) {
         const arc4Key = hexToBytes(transaction.vin[0].txid);
         result = tryDecryptMultisig(transaction.vout, arc4Key);
+      }
+
+      // 4. Burn detection -- last, since it's a fallback that doesn't carry
+      //    message data. A burn tx never has CNTRPRTY-prefixed data anyway,
+      //    so the previous three paths will have returned null.
+      if (!result) {
+        result = tryDetectBurn(transaction.vout);
       }
 
       if (!result) {

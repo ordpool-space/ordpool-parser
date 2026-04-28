@@ -39,8 +39,13 @@ export type CounterpartyMessageType =
 
 /**
  * How the Counterparty data was encoded in the Bitcoin transaction.
+ *
+ * - 'opreturn' / 'multisig' / 'p2tr': CNTRPRTY-prefixed message data (the common case).
+ * - 'destination': no message data on chain, classified by sending BTC to a hardcoded
+ *   Counterparty address. Used by the proof-of-burn protocol (Jan-Feb 2014):
+ *   any output to 1CounterpartyXXXXXXXXXXXXXXXUWLpVr (mainnet UNSPENDABLE) is a burn.
  */
-export type CounterpartyEncoding = 'opreturn' | 'multisig' | 'p2tr';
+export type CounterpartyEncoding = 'opreturn' | 'multisig' | 'p2tr' | 'destination';
 
 export interface ParsedCounterparty extends DigitalArtifact {
 
