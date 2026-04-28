@@ -122,10 +122,12 @@ describe('_ordpoolFlags with real blockchain data (no mocks)', () => {
         withoutArtifacts++;
       }
     }
-    // Counts are pinned: block 840,000 contains a known mix
-    expect(withArtifacts + withoutArtifacts).toBe(3050);
-    expect(withArtifacts).toBeGreaterThanOrEqual(1);
-    expect(withoutArtifacts).toBeGreaterThanOrEqual(1);
+    // Counts are pinned exactly. Block 840,000 contains 2,227 txs with at
+    // least one ordpool artifact and 823 plain txs (3,050 total). Any change
+    // here means the parser started seeing new artifacts (good?) or stopped
+    // seeing some (regression). Either way, investigate.
+    expect(withArtifacts).toBe(2227);
+    expect(withoutArtifacts).toBe(823);
 
     // The first tx (coinbase) should have no ordpool artifacts
     expect((transactions[0] as any)._ordpoolFlags).toBe(0);

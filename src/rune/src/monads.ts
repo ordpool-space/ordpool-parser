@@ -349,7 +349,10 @@ export function Some<T extends NonUndefined>(val: T): Option<T> {
  * console.log(option.isNone()); // Outputs: true
  * ```
  */
-export const None: Option<any> = new NoneImpl(); // eslint-disable-line @typescript-eslint/no-explicit-any
+// `Option<never>` is the precise type: None contains no value of any type,
+// and Option<never> is assignable to Option<T> for every T (covariance via the
+// bottom type). No `any` needed.
+export const None: Option<never> = new NoneImpl();
 
 /**
  * Type guard to check if an Option is a Some value.

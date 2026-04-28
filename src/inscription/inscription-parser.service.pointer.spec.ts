@@ -130,7 +130,7 @@ describe('Inscription parser', () => {
       const availableSats = satsOutput1 + satsOutput2 + satsOutput3 + satsOutput4 + satsOutput5; // 1470
 
       // Exact pointer values from the on-chain tx -- documented in ord#3076
-      expect(inscriptions[0].getPointer()).toBeUndefined(); // first inscription has no pointer
+      expect(inscriptions[0].getPointer()).toBe(undefined); // first inscription has no pointer
       expect(inscriptions[1].getPointer()).toBe(3289650);
       expect(inscriptions[2].getPointer()).toBe(3421236);
       expect(inscriptions[3].getPointer()).toBe(3552822);

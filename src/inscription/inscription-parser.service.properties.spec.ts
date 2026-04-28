@@ -30,8 +30,9 @@ describe('InscriptionParserService — Properties / Galleries', () => {
 
       const properties = (await inscription.getProperties())!;
       expect(properties.gallery.length).toBe(111);
-      expect(properties.title).toBeUndefined();
-      expect(properties.traits).toBeUndefined();
+
+      // Gallery has no top-level attributes -- pin the entire keyset, not just absence
+      expect(Object.keys(properties).sort()).toEqual(['gallery']);
 
       // First and last item — exact inscription IDs
       expect(properties.gallery[0].inscriptionId).toBe(
@@ -41,11 +42,10 @@ describe('InscriptionParserService — Properties / Galleries', () => {
         '960eb5e3f62ccb4a04ce0c6bcd4cb748b37d1680e2eee875000bb106ff404539i0'
       );
 
-      // No per-item attributes
+      // No per-item attributes -- each item is a {inscriptionId} singleton
       for (const item of properties.gallery) {
         expect(item.inscriptionId).toMatch(/^[a-f0-9]{64}i\d+$/);
-        expect(item.title).toBeUndefined();
-        expect(item.traits).toBeUndefined();
+        expect(Object.keys(item).sort()).toEqual(['inscriptionId']);
       }
     });
   });
@@ -72,7 +72,7 @@ describe('InscriptionParserService — Properties / Galleries', () => {
       expect(properties.gallery[0].inscriptionId).toBe(
         'c280f43d4a088665b226b06ec15d893cb1a2802ac87f7a4242141cb3c1d7d163i0'
       );
-      expect(properties.gallery[0].title).toBeUndefined();
+      expect((properties.gallery[0] as any).title).toBe(undefined);
       expect(properties.gallery[0].traits).toEqual({ rune: '\u16C3' }); // ᛃ (Jera rune)
 
       // Last item (index 332, but inscription uses i99 for the last batch item)
@@ -146,7 +146,7 @@ describe('InscriptionParserService — Properties / Galleries', () => {
       const txn = readTransaction('2740d27e3017da44ee439792f6f60449e43992fddffd9387685b14d21b725ff0');
       const inscriptions = InscriptionParserService.parse(txn);
       expect(inscriptions.length).toBe(2000);
-      expect(await inscriptions[0].getProperties()).toBeUndefined();
+      expect(await inscriptions[0].getProperties()).toBe(undefined);
     });
   });
 });

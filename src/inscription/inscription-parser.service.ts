@@ -276,7 +276,7 @@ export class InscriptionParserService {
           return parentsRaw.map(parentRaw => extractInscriptionId(parentRaw));
         },
 
-        getMetadata: (): string | undefined => {
+        getMetadata: (): unknown => {
           const metadataChunks = getKnownFieldValues(fields, knownFields.metadata);
 
           if (metadataChunks.length === 0) {

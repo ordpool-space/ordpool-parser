@@ -74,10 +74,12 @@ export interface ParsedInscription extends DigitalArtifact {
   getParents: () => string[];
 
   /**
-   * Get Metadata, from tag 5
+   * Get Metadata, from tag 5. CBOR-decoded; returns whatever shape the
+   * inscriber encoded -- could be a string, number, array, object, or
+   * undefined if no metadata field exists. Callers must narrow before use.
    * see metadata docs: https://docs.ordinals.com/inscriptions/metadata.html
    */
-  getMetadata: () => string | undefined;
+  getMetadata: () => unknown;
 
   /**
    * Get Metaprotocol, from tag 7

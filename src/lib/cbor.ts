@@ -41,7 +41,7 @@ const POW_2_53 = Math.pow(2, 53);
  *          This binary representation can be transmitted or stored
  *          and later decoded back into its original format.
  */
-function encode(value: any): Uint8Array {
+function encode(value: unknown): Uint8Array {
   let data = new ArrayBuffer(256);
   let dataView = new DataView(data);
   let lastLength: number;
@@ -65,7 +65,9 @@ function encode(value: any): Uint8Array {
     return dataView;
   }
 
-  function commitWrite(notUsed?: any) {
+  // Accepts (and ignores) any return value -- callers pass through the
+  // result of DataView setters (which return undefined) for terseness.
+  function commitWrite(_unused?: unknown): void {
     offset += lastLength;
   }
 
@@ -119,7 +121,7 @@ function encode(value: any): Uint8Array {
     }
   }
 
-  function encodeItem(value: any): void {
+  function encodeItem(value: unknown): void {
     if (value === false)
       return writeUint8(0xf4);
     if (value === true)
@@ -156,14 +158,15 @@ function encode(value: any): Uint8Array {
           const bytes = new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
           writeTypeAndLength(2, bytes.length);
           writeUint8Array(bytes);
-        } else {
-          const keys = Object.keys(value);
+        } else if (value && typeof value === 'object') {
+          const obj = value as Record<string, unknown>;
+          const keys = Object.keys(obj);
           length = keys.length;
           writeTypeAndLength(5, length);
           for (let i = 0; i < length; ++i) {
             const key = keys[i];
             encodeItem(key);
-            encodeItem(value[key]);
+            encodeItem(obj[key]);
           }
         }
     }
@@ -185,10 +188,12 @@ function encode(value: any): Uint8Array {
  */
 function decode(
   data: Uint8Array,
-  tagger?: (tag: number, value: any) => any,
-  simpleValue?: ((value: any) => any),
+  // Note: invocation order is (value, tag), not (tag, value) -- this matches
+  // the original library's call site at major-type 6 below.
+  tagger?: (value: unknown, tag: number) => unknown,
+  simpleValue?: ((value: number) => unknown),
   decodeFirstFlag: boolean = false
-): any {
+): unknown {
   const dataByteLength = data.length;
   const dataView = new DataView(data.buffer, data.byteOffset, data.byteLength);
   let offset = 0;
@@ -198,7 +203,7 @@ function decode(
   if (typeof simpleValue !== "function")
     simpleValue = function() { return undefined; };
 
-  function commitRead(length: number, value: any): any {
+  function commitRead<T>(length: number, value: T): T {
     offset += length;
     return value;
   }
@@ -284,7 +289,7 @@ function decode(
     return length;
   }
 
-  function decodeItem(): any {
+  function decodeItem(): unknown {
     const initialByte = readUint8();
     const majorType = initialByte >> 5;
     const additionalInformation = initialByte & 0x1f;
@@ -360,9 +365,9 @@ function decode(
         }
         return retArray;
       case 5:
-        const retObject = {} as any;
+        const retObject: Record<string | number, unknown> = {};
         for (let i = 0; i < length || length < 0 && !readBreak(); ++i) {
-          const key = decodeItem();
+          const key = decodeItem() as string | number;
           retObject[key] = decodeItem();
         }
         return retObject;
@@ -404,9 +409,11 @@ function decode(
  */
 function decodeFirst(
   data: Uint8Array,
-  tagger?: (tag: number, value: any) => any,
-  simpleValue?: ((value: any) => any),
-): any {
+  // Note: invocation order is (value, tag), not (tag, value) -- this matches
+  // the original library's call site at major-type 6 below.
+  tagger?: (value: unknown, tag: number) => unknown,
+  simpleValue?: ((value: number) => unknown),
+): unknown {
   return decode(data, tagger, simpleValue, true);
 }
 

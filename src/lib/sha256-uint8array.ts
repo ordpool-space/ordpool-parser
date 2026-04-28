@@ -136,8 +136,9 @@ export class Hash {
     // no more bytes
     if (offset === length) return this;
 
-    // data: Uint8Array | Int8Array
-    return this._uint8(data as any, offset);
+    // data: Uint8Array | Int8Array -- both have the same byte layout, so the
+    // _uint8 worker accepts either. Narrow via two-step cast through unknown.
+    return this._uint8(data as unknown as Uint8Array, offset);
   }
 
   private _uint8(data: Uint8Array, offset?: number) {

@@ -16,7 +16,7 @@ import { ParsedInscription } from './types/parsed-inscription';
 import { ParsedRunestone } from './types/parsed-runestone';
 import { BrC20Parsed, getBrc20Flaws, parseBrc20Content } from './types/parsed-brc20';
 import { getSrc20Flaws, ParsedSrc20, parseSrc20Content, Src20Parsed } from './types/parsed-src20';
-import { TransactionSimple, TransactionSimplePlus } from './types/transaction-simple';
+import { OrdpoolFlagged, TransactionSimple, TransactionSimplePlus } from './types/transaction-simple';
 
 
 /** Flags for the artifact, plus any already-parsed BRC-20 / SRC-20 content. */
@@ -349,7 +349,7 @@ export class DigitalArtifactAnalyserService {
       // Store pre-computed ordpool flags on the transaction object.
       // This is the key to avoiding async/await cascading in the upstream mempool codebase:
       // upstream's getTransactionFlags() stays sync and reads tx._ordpoolFlags via a 3-line HACK.
-      (tx as any)._ordpoolFlags = Number(txOrdpoolFlags);
+      (tx as TransactionSimplePlus & OrdpoolFlagged)._ordpoolFlags = Number(txOrdpoolFlags);
     }
 
     // Set final Rune stats
@@ -607,7 +607,7 @@ export class DigitalArtifactAnalyserService {
 
     // Side effect: store ordpool-only flags on the tx object.
     // Same pattern as analyseTransactions() -- enables sync getTransactionFlags() in upstream code.
-    (tx as any)._ordpoolFlags = Number(txOrdpoolFlags);
+    (tx as TransactionSimple & OrdpoolFlagged)._ordpoolFlags = Number(txOrdpoolFlags);
 
     flags |= txOrdpoolFlags;
     return flags;

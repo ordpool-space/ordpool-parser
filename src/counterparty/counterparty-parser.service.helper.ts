@@ -156,15 +156,14 @@ export function mapMessageType(id: number): CounterpartyMessageType {
     case 81: return 'rps_resolve';         // rpsresolve.py
     case 90: return 'fairminter';          // fairminter.py
     case 91: return 'fairmint';            // fairmint.py
-    case 100: return 'utxo';              // utxo.py — DEFENSIVE: defined in counterparty-core
-                                           // (struct.pack format with ID=100) but no mainnet tx
-                                           // composes this form -- verified by scanning 100,000
-                                           // recent transactions, zero with 0x64 / 00000064
-                                           // prefix. Production UTXO moves are tracked statefully
-                                           // (the indexer maintains a UTXO->asset ledger and
-                                           // observes spends) -- this requires state beyond a
-                                           // single-tx parser. The two on-chain message-encoded
-                                           // forms are 101 (attach) and 102 (detach).
+    case 100: return 'utxo';              // utxo.py — was the active utxo-message format from
+                                           // Aug 27, 2024 (introduced) through Oct 30, 2024 (split
+                                           // into attach 101 / detach 102). Real mainnet txs exist
+                                           // in that 64-day window (e.g. 5c5496c4..., block 866,026).
+                                           // Format: source|destination_utxo|asset|quantity (UTF-8,
+                                           // pipe-separated). After Oct 30, 2024 the protocol uses
+                                           // 101/102; pure UTXO moves (no message data) are tracked
+                                           // statefully via the indexer's UTXO->asset ledger.
     case 101: return 'attach';             // attach.py
     case 102: return 'detach';             // detach.py
     case 110: return 'destroy';            // destroy.py

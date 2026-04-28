@@ -172,7 +172,7 @@ describe('Rune parser', () => {
     expect(mint?.block).toBe(849635n);
     expect(mint?.tx).toBe(553);
 
-    expect(runestone?.runestone?.edicts).toBeUndefined();
+    expect(runestone?.runestone?.edicts).toBe(undefined);
   });
 
   it('should decode a runestone mint with edict in the same txn',() => {

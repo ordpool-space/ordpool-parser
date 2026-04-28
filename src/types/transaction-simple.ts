@@ -1,5 +1,17 @@
 
 /**
+ * Marker for the side-effect field set by DigitalArtifactAnalyserService.
+ * Documented as a HACK in CLAUDE.md -- enables sync getTransactionFlags() in
+ * the upstream mempool.space codebase without async cascading.
+ *
+ * The field stores the OR-combined OrdpoolTransactionFlags as a JS Number
+ * (downcast from bigint, since upstream's flag pipeline is Number-only).
+ */
+export interface OrdpoolFlagged {
+  _ordpoolFlags?: number;
+}
+
+/**
  * simplified version of IEsploraApi.Transaction with only the properties we need for our parsers
  */
 export interface TransactionSimple {

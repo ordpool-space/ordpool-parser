@@ -26,7 +26,7 @@ describe('InscriptionPreviewService', () => {
   describe('getPreview — undefined inscription', () => {
     it('returns the unknown placeholder with renderDirectly=false and no instructionsFor', async () => {
       const preview = await InscriptionPreviewService.getPreview(undefined);
-      expect(preview.instructionsFor).toBeUndefined();
+      expect(preview.instructionsFor).toBe(undefined);
       expect(preview.renderDirectly).toBe(false);
       // The unknown template is a complete HTML document with a single "?" body
       expect(preview.previewContent).toContain('<!doctype html>');

@@ -424,6 +424,29 @@ describe('CounterpartyParserService', () => {
       expect(view.getUint32(0)).toBe(0x55ca4a7e); // Unix timestamp 1439303294
     });
 
+    // utxo legacy (type 100) -- BITCORN attach, block 866,026 (Oct 16, 2024)
+    // utxo.py was the only utxo path between Aug 27, 2024 (introduced) and
+    // Oct 30, 2024 (split into attach 101 / detach 102). Tx 5c5496c4 is from
+    // that 64-day window. Format: source|destination_utxo|asset|quantity
+    // (UTF-8 pipe-separated, per counterparty-core utxo.py compose()).
+    it('should parse a utxo attach (type 100, Aug-Oct 2024 utxo.py-only window)', () => {
+      const txn = readTransaction('5c5496c4a9f2bf98dcaad2c2b67fa446b37468668ddcc503d6120d482672153d');
+      const result = CounterpartyParserService.parse(txn)!;
+      expect(result.encoding).toBe('multisig');
+      expect(result.messageTypeId).toBe(100);
+      expect(result.messageType).toBe('utxo');
+      const data = result.getMessageData();
+      expect(data.length).toBe(111);
+      // utxo.py format: source|destination_utxo|asset|quantity
+      const payload = new TextDecoder().decode(data);
+      expect(payload).toBe(
+        '19QWXpMXeLkoEKEJv2xo9rn8wkPCyxACSX' +                                 // source address
+        '|50438351646f4c4b994cd1be2eb15df7568ea59707a2bbe9d2f32fbc0fa690e1:1' + // destination UTXO
+        '|BITCORN' +                                                            // asset
+        '|1'                                                                    // quantity
+      );
+    });
+
     // Subasset standard (type 21) -- HIPHOPGAME.JAHIWITNESS, block 763,846 (May 2023)
     // Pre-LR-bit era (LR_SUBASSET_ID 23 activated at block 819,300), so this uses
     // SUBASSET_ID 21. Multisig encoding (4 multisig outputs).

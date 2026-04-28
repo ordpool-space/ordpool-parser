@@ -30,6 +30,6 @@ describe('InscriptionParserService — Rune commitment (tag 13)', () => {
     const inscriptions = InscriptionParserService.parse(txn);
 
     expect(inscriptions.length).toBe(1);
-    expect(inscriptions[0].getRune()).toBeUndefined();
+    expect(inscriptions[0].getRune()).toBe(undefined);
   });
 });

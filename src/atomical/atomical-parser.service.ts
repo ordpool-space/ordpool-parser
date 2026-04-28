@@ -87,7 +87,14 @@ export class AtomicalParserService {
           return null;
         }
         try {
-          decodedPayload = CBOR.decodeFirst(payloadRaw);
+          const raw: unknown = CBOR.decodeFirst(payloadRaw);
+          // The atomical envelope MUST decode to a CBOR map. Anything else
+          // (array, primitive, raw bytes) is malformed and we treat as no payload.
+          if (raw && typeof raw === 'object' && !Array.isArray(raw) && !ArrayBuffer.isView(raw)) {
+            decodedPayload = raw as Record<string, unknown>;
+          } else {
+            decodedPayload = null;
+          }
           return decodedPayload;
         } catch (e) {
           onError?.(e);

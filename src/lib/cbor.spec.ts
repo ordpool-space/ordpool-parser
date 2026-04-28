@@ -494,7 +494,7 @@ describe("CBOR Tests", () => {
       return new TaggedValue(value, tag);
     }, (value) => {
       return new SimpleValue(value);
-    });
+    }) as Array<TaggedValue | SimpleValue>;
 
     // first item: TaggedValue { value: 3, tag: 0x12 }
     expect(decoded[0]).toEqual(new TaggedValue(3, 0x12));

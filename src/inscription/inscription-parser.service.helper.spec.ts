@@ -18,7 +18,7 @@ describe('getKnownFieldValue', () => {
       { tag: 2, value: new Uint8Array([20]) }
     ];
     const result = getKnownFieldValue(fields, 3);
-    expect(result).toBeUndefined();
+    expect(result).toBe(undefined);
   });
 });
 
@@ -268,7 +268,7 @@ describe('extractPointer', () => {
   });
 
   it('should return undefined for undefined pointer value', () => {
-    expect(extractPointer(undefined)).toBeUndefined();
+    expect(extractPointer(undefined)).toBe(undefined);
   });
 });
 
