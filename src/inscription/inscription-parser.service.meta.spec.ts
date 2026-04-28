@@ -69,4 +69,22 @@ describe('Inscription parser', () => {
     const inscription = InscriptionParserService.parse(txn)[0];
     expect(inscription.getMetadata()).toEqual(undefined);
   });
+
+  // Tag 15 (note) is reserved by ord (`Tag::Note`, `#[allow(unused)]`) and the
+  // ord indexer ignores it -- but it's accepted on chain. The chisel.xyz inscribe
+  // service has stamped its URL into the note field on at least some of the
+  // inscriptions it produced (4 hits across our testdata, all 18 bytes
+  // "https://chisel.xyz"). Whether they always did this isn't clear.
+  it('should parse a note (tag 15) set by the chisel.xyz inscribe service', () => {
+    const txn = readTransaction('4c83f2e1d12d6f71e9f69159aff48f7946ce04c5ffcc3a3feee4080bac343722');
+    const inscription = InscriptionParserService.parse(txn)[0];
+    expect(inscription.getNote()).toBe('https://chisel.xyz');
+  });
+
+  it('should return `undefined` for getNote() when tag 15 is absent', () => {
+    // genesis CAT-21 tx has no inscription envelope, but `Hello, world!` does
+    const txn = readTransaction('c1e013bdd1434450c6e1155417c81eb888e20cbde2e0cde37ec238d91cf37045');
+    const inscription = InscriptionParserService.parse(txn)[0];
+    expect(inscription.getNote()).toBe(undefined);
+  });
 });

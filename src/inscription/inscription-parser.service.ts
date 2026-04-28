@@ -299,6 +299,14 @@ export class InscriptionParserService {
           return bytesToUnicodeString(metaprotocolRaw);
         },
 
+        getNote: (): string | undefined => {
+          const noteRaw = getKnownFieldValue(fields, knownFields.note);
+          if (!noteRaw) {
+            return undefined;
+          }
+          return bytesToUnicodeString(noteRaw);
+        },
+
         getContentEncoding: (): string | undefined => {
           return contentEncoding;
         },
