@@ -25,7 +25,12 @@ export type CounterpartyMessageType =
   | 'broadcast'          // 30 — Publish data/oracle feed
   | 'bet'                // 40 — Betting contract
   | 'dividend'           // 50 — Pay dividends to holders
-  | 'burn'               // 60 — XCP proof-of-burn creation
+  | 'burn'               // 60 — Proof-of-burn that CREATED XCP (Jan-Feb 2014).
+                         //      NOT generic asset destruction (that is type 110 'destroy').
+                         //      Send BTC to 1CounterpartyXXXXXXXXXXXXXXXUWLpVr to mint XCP
+                         //      at burned x time-decay multiplier (1500 -> 1000). Burn window
+                         //      was strictly blocks 278,310-283,810; sends after that earn 0
+                         //      and the indexer marks them "too late".
   | 'cancel'             // 70 — Cancel open order/bet
   | 'rps'                // 80 — Rock-Paper-Scissors
   | 'rps_resolve'        // 81 — Reveal RPS choice

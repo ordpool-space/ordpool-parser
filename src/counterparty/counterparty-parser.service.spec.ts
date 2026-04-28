@@ -360,20 +360,20 @@ describe('CounterpartyParserService', () => {
       expect(view.getUint32(34)).toBe(565);
     });
 
-    // Burn (type 60) is detected by destination, not by CNTRPRTY message data.
-    // Any tx output paying 1CounterpartyXXXXXXXXXXXXXXXUWLpVr (UNSPENDABLE_MAINNET)
-    // is a burn. Burn window was blocks 278,310-283,810 (Jan-Feb 2014).
-    // burn.py compose() returns (source, [(destination, qty)], None) -- no message bytes.
-    it('should detect a burn transaction by destination (type 60, no message data)', () => {
+    // Type 60 (burn) is the XCP-CREATION proof-of-burn (Jan-Feb 2014), NOT
+    // generic asset destruction (which is type 110, 'destroy'). XCP had no
+    // ICO -- it was bootstrapped by sending BTC to UNSPENDABLE_MAINNET, and
+    // the protocol minted XCP at a 1500 -> 1000 time-decay multiplier.
+    // No CNTRPRTY message data is involved; detection is purely by destination.
+    it('should detect a proof-of-burn (type 60, XCP creation, no message data)', () => {
       // Real burn tx from block 283,810 (Feb 5, 2014, last day of burn window)
-      // Source: 1HVgrYx3U... burned 0.1 BTC, earned 100.009 XCP
+      // Source 1HVgrYx3U... burned 0.1 BTC and earned ~100.009 XCP
       const txn = readTransaction('4560d0e3d04927108b615ab106040489aca9c4aceedcf69d2b71f63b3139c7ae');
       const result = CounterpartyParserService.parse(txn)!;
       expect(result.type).toBe(DigitalArtifactType.Counterparty);
       expect(result.encoding).toBe('destination');
       expect(result.messageTypeId).toBe(60);
       expect(result.messageType).toBe('burn');
-      // No on-chain CNTRPRTY-prefixed message data for burns
       expect(result.getMessageData().length).toBe(0);
     });
 

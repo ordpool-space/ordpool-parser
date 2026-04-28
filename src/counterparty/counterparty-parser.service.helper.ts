@@ -140,9 +140,10 @@ export function mapMessageType(id: number): CounterpartyMessageType {
     case 30: return 'broadcast';           // broadcast.py
     case 40: return 'bet';                 // bet.py
     case 50: return 'dividend';            // dividend.py
-    case 60: return 'burn';                // burn.py — set by tryDetectBurn(), not by ARC4
-                                           // decryption. Burns have no CNTRPRTY message data
-                                           // on chain; they are identified by an output paying
+    case 60: return 'burn';                // burn.py — XCP creation via proof-of-burn (Jan-Feb
+                                           // 2014). NOT generic asset destruction (that's 110).
+                                           // Set by tryDetectBurn(), not ARC4 -- burns have no
+                                           // CNTRPRTY message data; identified by an output to
                                            // 1CounterpartyXXXXXXXXXXXXXXXUWLpVr (UNSPENDABLE).
     case 70: return 'cancel';              // cancel.py
     case 80: return 'rps';                 // rps.py
@@ -172,14 +173,24 @@ export function mapMessageType(id: number): CounterpartyMessageType {
 /**
  * Detects a Counterparty proof-of-burn transaction.
  *
- * Burns are NOT encoded with CNTRPRTY-prefixed message data. The protocol
- * detects them by destination: any tx output paying the hardcoded UNSPENDABLE
- * mainnet address (1CounterpartyXXXXXXXXXXXXXXXUWLpVr) is a burn.
+ * NOTE: This is XCP CREATION, not generic asset destruction. The mechanism
+ * that bootstrapped XCP supply: between blocks 278,310 and 283,810 (Jan 2 -
+ * Feb 5, 2014, ~5,500 blocks), users sent BTC to a hardcoded unspendable
+ * address and the protocol minted XCP for them at a time-decaying rate
+ * (multiplier 1500 -> 1000). Total ~2,124 BTC burned, ~2.6M XCP created.
+ * Generic token destruction is a different message type (110, 'destroy').
  *
- * Source addresses are unconstrained. The burn window on mainnet ran from
- * block 278,310 to 283,810 (Jan 2-Feb 5, 2014). Sends to UNSPENDABLE outside
- * that window are still on-chain "burns" but earn 0 XCP. We don't filter on
- * block height -- the parser is stateless. Callers that need window validation
+ * Detection is by destination: any tx output paying UNSPENDABLE_MAINNET
+ * (1CounterpartyXXXXXXXXXXXXXXXUWLpVr) is a Counterparty burn event. The
+ * address is unspendable by construction -- its bytes encode the literal
+ * string "Counterparty" so no private key exists. Anyone paying it is
+ * doing this intentionally.
+ *
+ * The parser is stateless and does not filter by block height. Sends to
+ * UNSPENDABLE after block 283,810 are still recognized as type 60 burns
+ * (matching counterparty-core, where burn.py validate() returns
+ * problems=["too late"] for post-window blocks -- the message type is
+ * recognized but marked invalid). Callers that need window validation
  * can apply it themselves.
  *
  * Maps to message_type_id 60 (burn.py ID = 60). The message data is empty:
