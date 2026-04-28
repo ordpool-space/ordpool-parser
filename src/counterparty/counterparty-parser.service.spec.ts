@@ -469,6 +469,12 @@ describe('CounterpartyParserService', () => {
   // parse — P2TR encoding (Taproot witness envelope, v11+, block 902,000)
   // ===========================================================================
 
+  // P2TR Counterparty is rare on mainnet. A scan of the most-recent 30,000
+  // Counterparty transactions returned exactly ONE P2TR-encoded tx across all
+  // common message types (the mpma below). Most wallets stick to OP_RETURN
+  // (cheaper, universally supported); P2TR is reserved for cases like
+  // fairminter, the ord-envelope issuance variant, and oversized payloads.
+  // The three tests below cover all P2TR variants we have real testdata for.
   describe('parse — P2TR encoding', () => {
     it('should parse a fairminter via P2TR (THERAREONES)', () => {
       const txn = readTransaction(P2TR_FAIRMINTER_TXID);
