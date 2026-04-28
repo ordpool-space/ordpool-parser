@@ -48,11 +48,16 @@ export const knownFields = {
   // rune-parser.service.helper.findCommitment.ts and Rune.commitment in rune/src/rune.ts.
   rune: 0x0d,
 
-  // note, with a tag of 15 — reserved by ord (`Tag::Note = 15`, `#[allow(unused)]`).
-  // Defined in the protocol but not actively read by ord's indexer. Inscribers
-  // sometimes use it for a free-form text note. We expose it so callers can read
-  // it; ord ignores it.
-  // see https://github.com/ordinals/ord/blob/master/src/inscriptions/tag.rs
+  // note, with a tag of 15 — `Tag::Note` in ord, similar to BitTorrent's
+  // `created_by`. The history is reverse: chisel.xyz (an inscribe service)
+  // started writing their URL "https://chisel.xyz" into tag 15 first, and
+  // then Casey reserved the tag in ord PR #3256 (March 2024) "to ensure we
+  // don't accidentally use it in the future." ord stores the value in the
+  // Inscription struct but, per Casey: "this field will probably never be
+  // displayed, since users probably don't want the tool which created the
+  // inscription to display on /inscription". So: officially reserved as Note,
+  // de facto used as inscriber-tool watermark, never user-facing in ord itself.
+  // see https://github.com/ordinals/ord/pull/3256
   note: 0x0f,
 
   // properties, with a tag of 17 — CBOR-encoded gallery items + attributes (chunked like metadata)
