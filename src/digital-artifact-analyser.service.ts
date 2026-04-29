@@ -67,15 +67,11 @@ export interface AnalyseResult {
  *    -> `{ "op": "transfer" }` -> ordpool_src20_transfer
  *
  *
- * Not supported (requires ordinal/sat tracking, which is outside a stateless
- * tx parser's scope): transfer and burn flags for inscription / cat21 / rune.
- * The matching enum entries were removed in v2.1.0 -- see
- * .claude/CLAUDE.md "Narrow exception: structurally impossible code paths".
- *
- * Atomicals x/y/z (FT UTXO splat/split/custom-color) are detectable from the
- * witness payload alone but the resulting counts only make sense alongside
- * sat tracking (which UTXO is being split, with which assets), so we don't
- * fire ordpool_atomical_transfer for them either -- removed in v2.1.0.
+ * Transfer / burn detection for inscription, cat21 and rune is intentionally
+ * absent: a stateless tx parser cannot identify those events without sat
+ * tracking, which only an indexer can do. Atomicals x/y/z (FT UTXO
+ * splat/split/custom-color) are detectable from the witness alone but the
+ * counts only make sense alongside sat tracking, so they're skipped too.
  */
 export class DigitalArtifactAnalyserService {
 

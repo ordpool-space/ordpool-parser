@@ -80,12 +80,6 @@ The only safe changes to CAT-21 code:
 
 If a /simplify agent suggests removing "dead code" that represents protocol support (types, enum values, routing logic, flags), **push back**. The code is not dead -- it's waiting for its first transaction. The right response is to search harder for test data, not to delete the support.
 
-### Narrow exception: structurally impossible code paths
-
-The rule above protects code that *could* fire if a matching tx ever appeared. It does **not** protect code paths that *cannot* fire by construction. Concrete example: ordpool's `*_transfer` and `*_burn` flags for inscriptions / cat21 / runes / atomicals were dropped in v3.0.0 because a stateless tx parser cannot identify a transfer or burn — that requires sat tracking, which only an indexer can do. ord itself doesn't permanently record transfers; it resolves the current owner on query. The flags would never fire regardless of how hard we searched for testdata.
-
-Test for "is this exception applicable?": *if a real on-chain tx of this kind appeared right now, would our parser have any signal to fire the flag?* If no (because the signal lives in indexer state, not in the tx itself), removal is OK. If yes (we just haven't found the tx yet), the rule above stands — search harder, do not delete.
-
 ## General Rules
 
 - **Never brag with arbitrary numbers.** Don't write "436 tests" or "39 test suites" or "63,000 cats" in documentation or comments — these numbers change constantly and get stale. Anyone can run `npm test` and see the actual count.
