@@ -200,9 +200,25 @@ export async function getDecodedContent(contentEncoding: string | undefined, com
  * If decompression succeeds, returns the decompressed data as Uint8Array.
  * If decompression fails due to size exceeding the allowed limit, returns
  * 'Decompressed size exceeds allowed limit' as Uint8Array.
+ * If decompression fails for any other reason (e.g. an inscription declares
+ * Content-Encoding: br but its body is not valid brotli — block 869,599 has
+ * exactly one such tx, 5125c1...4634, whose body is gzip-magic bytes
+ * mis-labeled as brotli), returns the raw input bytes instead of throwing.
+ *
+ * Why raw bytes (verified against ord source `src/subcommand/server/r.rs`
+ * `content_response`): in its default mode ord NEVER decompresses on the
+ * server. It just sets `Content-Encoding: br` on the response and ships
+ * the inscribed bytes; the browser tries to decode and silently falls
+ * back to rendering the raw bytes when decoding fails. ord only attempts
+ * server-side brotli decompression when the operator opts in via
+ * `--decompress` (which ord's own help text labels a "DoS vector"), and
+ * in that mode it returns a 500 on corrupt input. We mirror ord's default
+ * pass-through path here: getContent() never throws on malformed
+ * compression; downstream JSON / BRC-20 detection simply won't match.
  *
  * @param bytes - The Uint8Array containing compressed data.
- * @returns A Uint8Array containing the decompressed data or an error message as Uint8Array.
+ * @returns A Uint8Array containing the decompressed data, the raw input on
+ *   decode failure, or a size-limit error message as Uint8Array.
  */
 export function brotliDecodeUint8Array(bytes: Uint8Array): Uint8Array {
 
@@ -223,13 +239,34 @@ export function brotliDecodeUint8Array(bytes: Uint8Array): Uint8Array {
     if (error instanceof Error && error.message === MAX_DECOMPRESSED_SIZE_MESSAGE) {
       return new TextEncoder().encode(MAX_DECOMPRESSED_SIZE_MESSAGE);
     }
-    throw error;
+    // Corrupt or mis-labeled brotli stream -- match ord / browser behavior
+    // and pass the raw bytes through instead of throwing.
+    return bytes;
   }
 }
 
+/**
+ * Decompresses gzip-encoded bytes via the platform's DecompressionStream.
+ *
+ * Mirrors brotliDecodeUint8Array on failure: corrupt or mis-labeled gzip
+ * data returns the raw input bytes instead of throwing. Same justification
+ * (see brotliDecodeUint8Array doc) -- ord's default content-serving path
+ * passes the raw bytes through and lets the browser fail silently. We do
+ * the same so a single malformed inscription cannot crash the whole
+ * batch processor.
+ *
+ * The "DecompressionStream not supported" environment error still throws,
+ * because that's a host-environment configuration problem, not a
+ * data-validity problem.
+ */
 export async function gzipDecode(bytes: Uint8Array): Promise<Uint8Array> {
-  if (typeof DecompressionStream !== 'undefined') {
-    // Create a DecompressionStream for "gzip"
+  if (typeof DecompressionStream === 'undefined') {
+    throw new Error(
+      'gzip decoding is not supported in this environment. For Node.js, upgrade to version 18 or higher.'
+    );
+  }
+
+  try {
     const ds = new DecompressionStream('gzip');
 
     // Write the input bytes to the stream
@@ -261,10 +298,10 @@ export async function gzipDecode(bytes: Uint8Array): Promise<Uint8Array> {
     }
 
     return result;
-  } else {
-    throw new Error(
-      'gzip decoding is not supported in this environment. For Node.js, upgrade to version 18 or higher.'
-    );
+  } catch {
+    // Corrupt or mis-labeled gzip stream -- pass the raw bytes through
+    // (same fallback as brotliDecodeUint8Array).
+    return bytes;
   }
 }
 

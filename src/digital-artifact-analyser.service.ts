@@ -27,6 +27,23 @@ export interface AnalyseResult {
 }
 
 /**
+ * Reported when an individual artifact's analysis throws (e.g. corrupt brotli
+ * Huffman table inside an inscription's compressed body). The remaining
+ * artifacts in the same transaction are still processed; the consumer gets
+ * notified so it can log / count the skip.
+ */
+export interface AnalyseArtifactErrorContext {
+  txid: string;
+  artifactIndex: number;
+  artifactType: DigitalArtifactType;
+  error: unknown;
+}
+
+export interface AnalyseTransactionOptions {
+  onArtifactError?: (ctx: AnalyseArtifactErrorContext) => void;
+}
+
+/**
  * Analyses digital artifacts and returns ordpool transaction flags.
  *
  * Specification for version 1:
@@ -92,9 +109,14 @@ export class DigitalArtifactAnalyserService {
    * (this one calls the method only with a list of one transaction, which is the coinbase txn)
    *
    * @param transactions - The array of transactions to analyze.
+   * @param options - Optional callback for per-artifact errors. The decoder
+   *   layer (brotli/gzip) is already lenient, but a future parser bug could
+   *   still throw on a single artifact. We catch at the artifact granularity
+   *   so the rest of the block still classifies; the consumer (ordpool-backend)
+   *   can use `onArtifactError` to log the skip.
    * @returns The OrdpoolStats object with counted amounts for each artifact type.
    */
-  static async analyseTransactions(transactions: TransactionSimplePlus[]): Promise<OrdpoolStats> {
+  static async analyseTransactions(transactions: TransactionSimplePlus[], options?: AnalyseTransactionOptions): Promise<OrdpoolStats> {
 
     const artifactTypeMap = getArtifactTypeMap();
 
@@ -172,9 +194,27 @@ export class DigitalArtifactAnalyserService {
       // See backend/.claude/CLAUDE.md "HARD RULE: Ordpool Flags Must Be Applied Everywhere".
       let txOrdpoolFlags: bigint = 0n;
 
+      let artifactIndex = -1;
       for (const artifact of artifacts) {
-        // Analyse once — returns flags + any parsed intermediate data
-        const { flags, brc20, src20Content } = await DigitalArtifactAnalyserService.analyse(artifact);
+        artifactIndex++;
+
+        // Analyse once — returns flags + any parsed intermediate data.
+        // Per-artifact try/catch is defense in depth: the brotli/gzip decoders
+        // are already lenient (see brotliDecodeUint8Array/gzipDecode), but a
+        // future bug in any parser path must not lose the rest of the block.
+        let analysed: AnalyseResult;
+        try {
+          analysed = await DigitalArtifactAnalyserService.analyse(artifact);
+        } catch (error) {
+          options?.onArtifactError?.({
+            txid: tx.txid,
+            artifactIndex,
+            artifactType: artifact.type,
+            error,
+          });
+          continue;
+        }
+        const { flags, brc20, src20Content } = analysed;
 
         txOrdpoolFlags |= flags;
 
@@ -500,6 +540,11 @@ export class DigitalArtifactAnalyserService {
           contentType?.startsWith('application/json')
         ) {
 
+          // getContent() decompresses brotli/gzip-encoded bodies. It never throws --
+          // see brotliDecodeUint8Array / gzipDecode: corrupt or mis-labeled streams
+          // fall through to the raw bytes (matching ord's default content-serving
+          // path, which does not decompress server-side at all). On malformed input,
+          // parseJsonObject and parseBrc20Content simply won't match.
           const inscriptionContent = await inscription.getContent();
 
           // _json fires whenever the body parses as a JSON object. It coexists
@@ -630,16 +675,29 @@ export class DigitalArtifactAnalyserService {
    *
    * @param tx - The transaction to be evaluated for digital artifacts.
    * @param flags - The existing flags to which new flags will be added.
+   * @param options - Optional callback for per-artifact errors (see
+   *   `analyseTransactions`).
    * @return The updated flags with the appropriate ordpool transaction flags set.
    */
-  static async analyseTransaction(tx: TransactionSimple, flags: bigint): Promise<bigint> {
+  static async analyseTransaction(tx: TransactionSimple, flags: bigint, options?: AnalyseTransactionOptions): Promise<bigint> {
 
     const artifacts: DigitalArtifact[] = DigitalArtifactsParserService.parse(tx);
 
     let txOrdpoolFlags: bigint = 0n;
+    let artifactIndex = -1;
     for (const artifact of artifacts) {
-      const { flags: ordpoolFlags } = await DigitalArtifactAnalyserService.analyse(artifact);
-      txOrdpoolFlags |= ordpoolFlags;
+      artifactIndex++;
+      try {
+        const { flags: ordpoolFlags } = await DigitalArtifactAnalyserService.analyse(artifact);
+        txOrdpoolFlags |= ordpoolFlags;
+      } catch (error) {
+        options?.onArtifactError?.({
+          txid: tx.txid,
+          artifactIndex,
+          artifactType: artifact.type,
+          error,
+        });
+      }
     }
 
     // Side effect: store ordpool-only flags on the tx object.
