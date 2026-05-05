@@ -1,3 +1,5 @@
+import { AtomicalOperation } from "../atomical/atomical-parser.service.helper";
+import { CounterpartyEncoding, CounterpartyMessageType } from "./parsed-counterparty";
 import { OrdpoolTransactionFlag, OrdpoolTransactionFlags } from "./ordpool-transaction-flags";
 import { CatTraits } from "./parsed-cat21";
 
@@ -35,6 +37,27 @@ export interface Src20DeployAttempt {
   maxSupply: string;
   mintLimit: string; // Required for SRC-20
   decimals?: string; // Default to 18 if not specified
+}
+
+/** One Atomicals operation observed in this block. Mirror of the runeEtch /
+ *  brc20Deploy / src20Deploy satellite shape. `ticker` is the ticker symbol
+ *  for FT-family ops (ft / dft / dmt) read from `args.request_ticker`; null
+ *  for ops that don't carry one (nft, mod, evt, sl, …). */
+export interface AtomicalOp {
+  txId: string;
+  operation: AtomicalOperation;
+  ticker: string | null;
+}
+
+/** One Counterparty message observed in this block. Counterparty has 22+
+ *  message types (sends, dispensers, fairmints, bets, sweeps, …) and we want
+ *  per-message-type charts — recording each tx's type lets the consumer
+ *  group-by message_type. */
+export interface CounterpartyMessage {
+  txId: string;
+  messageType: CounterpartyMessageType;
+  messageTypeId: number;
+  encoding: CounterpartyEncoding;
 }
 
 export interface Cat21Mint {
@@ -247,12 +270,12 @@ export interface OrdpoolStats {
 
     /** Distinct rune IDs that saw any mint activity in this block. */
     uniqueMintsCount: number;
-    /** Same, excluding UNCOMMON•GOODS (rune 1:0). UI defaults to this. */
+    /** Same, excluding UNCOMMON•GOODS (rune 1:0). */
     uniqueMintsCountNonUncommon: number;
 
     /** Mint count of the most-active rune in this block. */
     topMintCount: number;
-    /** Same, excluding UNCOMMON•GOODS. UI defaults to this. */
+    /** Same, excluding UNCOMMON•GOODS. */
     topMintCountNonUncommon: number;
   };
 
@@ -281,7 +304,15 @@ export interface OrdpoolStats {
     avgFeeRate: number | null;
     minFeeRate: number | null;
     maxFeeRate: number | null;
-  }
+  };
+
+  atomicals: {
+    atomicalOps: AtomicalOp[];
+  };
+
+  counterparty: {
+    counterpartyMessages: CounterpartyMessage[];
+  };
 
   version: number;
 }
@@ -377,6 +408,14 @@ export function getEmptyStats(): OrdpoolStats {
       avgFeeRate: null,
       minFeeRate: null,
       maxFeeRate: null,
+    },
+
+    atomicals: {
+      atomicalOps: [],
+    },
+
+    counterparty: {
+      counterpartyMessages: [],
     },
 
     version: 0
