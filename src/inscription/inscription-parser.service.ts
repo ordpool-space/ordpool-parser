@@ -232,6 +232,19 @@ export class InscriptionParserService {
 
       let cachedProperties: ReturnType<typeof parseProperties> | undefined;
 
+      // Memoize the decompressed bytes. getContent / getData / getDataUri are
+      // all called separately by different consumers (analyser, /content/,
+      // /preview/), and brotli/gzip decode is the most expensive step in the
+      // hot path. Cache the Promise itself so concurrent callers also share
+      // the decode.
+      let decodedDataPromise: Promise<Uint8Array> | undefined;
+      const getDecoded = (): Promise<Uint8Array> => {
+        if (!decodedDataPromise) {
+          decodedDataPromise = getDecodedContent(contentEncoding, combinedData);
+        }
+        return decodedDataPromise;
+      };
+
       return {
 
         type: DigitalArtifactType.Inscription,
@@ -245,18 +258,18 @@ export class InscriptionParserService {
         fields,
 
         getContent: async (): Promise<string> => {
-          const decodedData = await getDecodedContent(contentEncoding, combinedData);
+          const decodedData = await getDecoded();
           return bytesToUnicodeString(decodedData) + ''; // never return undefined here
         },
 
         getData: async (): Promise<string> => {
-          const decodedData = await getDecodedContent(contentEncoding, combinedData);
+          const decodedData = await getDecoded();
           const content = bytesToBinaryString(decodedData);
           return binaryStringToBase64(content);
         },
 
         getDataUri: async(): Promise<string> => {
-          const decodedData = await getDecodedContent(contentEncoding, combinedData);
+          const decodedData = await getDecoded();
           const content = bytesToBinaryString(decodedData);
           const fullBase64Data = binaryStringToBase64(content);
           return `data:${contentType};base64,${fullBase64Data}`;

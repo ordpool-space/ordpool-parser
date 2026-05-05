@@ -190,54 +190,24 @@ export async function getDecodedContent(contentEncoding: string | undefined, com
 
 
 /**
- * Decompresses a Uint8Array using the Brotli algorithm.
+ * Decompresses brotli-compressed bytes. Returns one of:
+ * - decompressed bytes on success
+ * - MAX_DECOMPRESSED_SIZE_MESSAGE (UTF-8) if the result would exceed the cap
+ * - INVALID_COMPRESSED_DATA_MESSAGE (UTF-8) on any other decode failure
  *
- * This function first converts the Uint8Array to an Int8Array (since Brotli decoding expects an Int8Array)
- * and then performs the Brotli decompression. The decompressed data is then returned as a Uint8Array.
+ * Never throws -- malformed inscriptions exist on chain and must be tolerated.
+ * Callers can use isDecodeFailureSentinel() to detect either sentinel.
  *
- * Note: The conversion between Uint8Array and Int8Array does not copy the data but creates a new view over the same memory.
- *
- * Return values:
- * - decompression succeeds                                → decompressed bytes
- * - decompressed size exceeds allowed limit               → MAX_DECOMPRESSED_SIZE_MESSAGE bytes (UTF-8)
- * - any other decode failure (corrupt stream, mis-labeled
- *   gzip body shipped as Content-Encoding: br, ...)       → INVALID_COMPRESSED_DATA_MESSAGE bytes (UTF-8)
- *
- * Why a sentinel instead of throwing: we MUST be able to call this on every
- * inscription's body, including malformed ones. ord itself sidesteps this
- * by never decompressing -- it always ships raw bytes with the declared
- * Content-Encoding header, which is brotli-bomb-safe by construction. We
- * decompress because we actually read the content (BRC-20 / SRC-20 / JSON
- * detection, /preview rendering), so we need an explicit "this didn't
- * decode" return value rather than crashing the caller. Same pattern as
- * MAX_DECOMPRESSED_SIZE_MESSAGE: caller can detect the sentinel if it
- * cares, or just treat it as opaque text.
- *
- * Real example: block 869,599 tx 5125c1...4634 declares Content-Encoding:
- * br on a body that is actually gzip (magic 1f 8b 08 00 ..., decodes via
- * gunzip to "Hello World!"). Without this guard, the previous behaviour
- * was to throw "Corrupted Huffman code histogram" out of analyseTransaction
- * and lose all classification for the tx.
- *
- * @param bytes - The Uint8Array containing compressed data.
- * @returns A Uint8Array containing decompressed data or one of the two
- *   sentinel error messages encoded as UTF-8.
+ * The Int8Array view is required by the inline brotli decoder; it shares the
+ * underlying buffer with the input Uint8Array, no copy.
  */
 export function brotliDecodeUint8Array(bytes: Uint8Array): Uint8Array {
 
-  // Creating an Int8Array view over the same buffer as the original Uint8Array.
-  // The Int8Array view is necessary because brotliDecode expects data in Int8Array format.
   const int8View = new Int8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength);
 
   try {
-    // Perform Brotli decompression using the Int8Array view.
-    // The brotliDecode function returns decompressed data as an Int8Array.
-    const decompressedInt8Array = brotliDecode(int8View);
-
-    // Creating a Uint8Array view over the buffer of the decompressed data.
-    // This conversion is required to return the data in the original Uint8Array format.
-    return new Uint8Array(decompressedInt8Array.buffer, decompressedInt8Array.byteOffset, decompressedInt8Array.byteLength);
-
+    const decompressed = brotliDecode(int8View);
+    return new Uint8Array(decompressed.buffer, decompressed.byteOffset, decompressed.byteLength);
   } catch (error) {
     if (error instanceof Error && error.message === MAX_DECOMPRESSED_SIZE_MESSAGE) {
       return new TextEncoder().encode(MAX_DECOMPRESSED_SIZE_MESSAGE);
@@ -247,17 +217,10 @@ export function brotliDecodeUint8Array(bytes: Uint8Array): Uint8Array {
 }
 
 /**
- * Decompresses gzip-encoded bytes via the platform's DecompressionStream.
- *
- * Failure model mirrors brotliDecodeUint8Array: a corrupt or mis-labeled
- * gzip stream returns INVALID_COMPRESSED_DATA_MESSAGE (UTF-8 encoded)
- * rather than throwing. Same justification -- we read the decompressed
- * bytes for content classification, so the caller needs an explicit
- * "this didn't decode" sentinel.
- *
- * The "DecompressionStream not supported" environment error still throws,
- * because that's a host-environment configuration problem, not a
- * data-validity problem.
+ * Decompresses gzip-encoded bytes via DecompressionStream. Returns
+ * INVALID_COMPRESSED_DATA_MESSAGE (UTF-8) on decode failure -- mirrors
+ * brotliDecodeUint8Array. Throws only when DecompressionStream itself
+ * is unavailable (host environment, not a data problem).
  */
 export async function gzipDecode(bytes: Uint8Array): Promise<Uint8Array> {
   if (typeof DecompressionStream === 'undefined') {

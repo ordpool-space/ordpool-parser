@@ -117,65 +117,37 @@ export class InscriptionPreviewService {
     reason?: DecodeFailureReason
   }> {
 
-    let content: string | undefined = undefined;
+    const ct = inscription.contentType;
+    const isJsonish = ct?.startsWith('text/plain') || ct?.startsWith('application/json');
+    const isCodish =
+      ct?.startsWith('application/yaml') ||
+      ct?.startsWith('text/css') ||
+      ct?.startsWith('text/javascript') ||
+      ct?.startsWith('application/javascript') || // not mapped by ord, but valid as per RFC 4329
+      ct?.startsWith('application/x-javascript');
 
-    if (inscription.contentType?.startsWith('text/plain') ||
-      inscription.contentType?.startsWith('application/json')) {
-
-        content = await inscription.getContent();
-
-        // Short-circuit on decode failure -- the sentinel string is not
-        // valid JSON anyway, but if we let it fall through to the 'preview'
-        // branch below (or to the 'code' branch for yaml/css/js) the
-        // frontend would render the literal "Error: ..." text as the
-        // inscription's content. Route to a dedicated failure UI instead.
-        const failureReason = isDecodeFailureSentinel(content);
-        if (failureReason) {
-          return {
-            content: undefined,
-            whatToShow: 'decode-failure',
-            reason: failureReason
-          };
-        }
-
-        const isValidJson = validateJson(content);
-
-        if (isValidJson) {
-          return {
-            content,
-            whatToShow: 'json'
-          };
-        }
+    if (!isJsonish && !isCodish) {
+      // No need to read the body for binary preview types; getPreview() does
+      // its own decode-failure check on those.
+      return { content: undefined, whatToShow: 'preview' };
     }
 
-    if (inscription.contentType?.startsWith('application/yaml') ||
-      inscription.contentType?.startsWith('text/css') ||
-      inscription.contentType?.startsWith('text/javascript') ||
-      inscription.contentType?.startsWith('application/javascript') || // not mapped by ord, but valid as per RFC 4329
-      inscription.contentType?.startsWith('application/x-javascript')) {
+    const content = await inscription.getContent();
 
-      content = content || await inscription.getContent();
-
-      const failureReason = isDecodeFailureSentinel(content);
-      if (failureReason) {
-        return {
-          content: undefined,
-          whatToShow: 'decode-failure',
-          reason: failureReason
-        };
-      }
-
-      return {
-        content,
-        whatToShow: 'code'
-      };
+    const failureReason = isDecodeFailureSentinel(content);
+    if (failureReason) {
+      return { content: undefined, whatToShow: 'decode-failure', reason: failureReason };
     }
 
-    // avoids unnecessary await
-    return {
-      content: undefined,
-      whatToShow: 'preview'
-    };
+    if (isJsonish && validateJson(content)) {
+      return { content, whatToShow: 'json' };
+    }
+
+    if (isCodish) {
+      return { content, whatToShow: 'code' };
+    }
+
+    return { content: undefined, whatToShow: 'preview' };
   }
 }
 
