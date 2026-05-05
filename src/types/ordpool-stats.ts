@@ -244,6 +244,20 @@ export interface OrdpoolStats {
     mostActiveNonUncommonMint: string | null;
     runeMintActivity: MintActivities;
     runeEtchAttempts: RuneEtchAttempt[];
+
+    /** Distinct rune IDs that saw any mint activity in this block. */
+    uniqueMintsCount: number;
+    /** Same, EXCLUDING UNCOMMON•GOODS (rune 0:0). UNCOMMON•GOODS has no
+     *  premine and no cap and is mintable forever, so it dominates every
+     *  rune mint stat — the non-uncommon variant is the genuinely
+     *  informative metric. Default UI / chart series reads this. */
+    uniqueMintsCountNonUncommon: number;
+
+    /** Mint count of the most-active rune in this block. Almost always the
+     *  UNCOMMON•GOODS count, which is structurally uninteresting. */
+    topMintCount: number;
+    /** Same, EXCLUDING UNCOMMON•GOODS. This is the number to show. */
+    topMintCountNonUncommon: number;
   };
 
   brc20: {
@@ -261,6 +275,16 @@ export interface OrdpoolStats {
   cat21: {
     cat21MintActivity?: Cat21Mint[];
     minimalCat21MintActivity?: MinimalCat21Mint[];
+
+    /** # cats with the genesis trait minted in this block. (The genesis
+     *  trait is hash-derived; ~1/256 of cats by probability.) */
+    genesisCount: number;
+
+    /** AVG / MIN / MAX of feeRate (sat/vB) across cats minted this block.
+     *  null for blocks with no CAT-21 mints. */
+    avgFeeRate: number | null;
+    minFeeRate: number | null;
+    maxFeeRate: number | null;
   }
 
   version: number;
@@ -331,7 +355,11 @@ export function getEmptyStats(): OrdpoolStats {
       mostActiveMint: null,
       mostActiveNonUncommonMint: null,
       runeMintActivity: [],
-      runeEtchAttempts: []
+      runeEtchAttempts: [],
+      uniqueMintsCount: 0,
+      uniqueMintsCountNonUncommon: 0,
+      topMintCount: 0,
+      topMintCountNonUncommon: 0,
     },
 
     brc20: {
@@ -348,7 +376,11 @@ export function getEmptyStats(): OrdpoolStats {
 
     cat21: {
       cat21MintActivity: [],
-      minimalCat21MintActivity: undefined
+      minimalCat21MintActivity: undefined,
+      genesisCount: 0,
+      avgFeeRate: null,
+      minFeeRate: null,
+      maxFeeRate: null,
     },
 
     version: 0

@@ -57,60 +57,90 @@ describe('DigitalArtifacts Parser', () => {
 
     // Per-content-type size aggregates. Bucket priority is json > image > text,
     // so a text/plain inscription that parses as JSON (e.g. a BRC-20 mint) lands
-    // in the json bucket, NOT the text bucket. That's why text-bucket size is
-    // smaller than the per-flag inscriptionText count would suggest.
+    // in the json bucket, NOT the text bucket. The amounts.* counters keep
+    // independent per-flag semantics (text+json can both fire on the same
+    // inscription); the bucket aggregates here use exclusive priority routing.
     const inscriptions = ordpoolStats.inscriptions;
 
-    // Global aggregate: every inscription contributes its envelope + content
-    // size, regardless of bucket. Largest envelope inscription must exist
-    // (878 inscriptions in the block).
-    expect(inscriptions.totalEnvelopeSize).toBeGreaterThan(0);
-    expect(inscriptions.totalContentSize).toBeGreaterThan(0);
-    expect(inscriptions.largestEnvelopeInscriptionId).not.toBeNull();
-    expect(inscriptions.largestContentInscriptionId).not.toBeNull();
+    // Global aggregate. Largest envelope inscription is the same as largest
+    // content inscription (a 166KB image — block 840,000's largest by both
+    // measures).
+    expect(inscriptions.totalEnvelopeSize).toBe(1395961);
+    expect(inscriptions.totalContentSize).toBe(1346526);
+    expect(inscriptions.largestEnvelopeSize).toBe(166656);
+    expect(inscriptions.largestContentSize).toBe(165666);
+    expect(inscriptions.largestEnvelopeInscriptionId).toBe('2fc565c457bf3202704f3b2e61c50312c073e2b365152233f0315e82d7a51659i0');
+    expect(inscriptions.largestContentInscriptionId).toBe('2fc565c457bf3202704f3b2e61c50312c073e2b365152233f0315e82d7a51659i0');
+    expect(Math.round(inscriptions.averageEnvelopeSize)).toBe(1590);
+    expect(Math.round(inscriptions.averageContentSize)).toBe(1534);
 
-    // Per-bucket totals. Image is fully exclusive (image MIME never overlaps
-    // with text or json). Json takes priority over text — every JSON-flagged
-    // inscription lands in the json bucket. Text bucket is "text-flagged AND
-    // NOT json-flagged".
-    expect(inscriptions.image.totalEnvelopeSize).toBeGreaterThan(0);
-    expect(inscriptions.text.totalEnvelopeSize).toBeGreaterThan(0);
-    expect(inscriptions.json.totalEnvelopeSize).toBeGreaterThan(0);
+    // Image bucket. Every image-flagged inscription lands here (image MIME
+    // never overlaps with text/json). The block's largest inscription is
+    // an image, hence the image bucket's largest matches the global largest.
+    expect(inscriptions.image.totalEnvelopeSize).toBe(1313698);
+    expect(inscriptions.image.totalContentSize).toBe(1299620);
+    expect(inscriptions.image.largestEnvelopeSize).toBe(166656);
+    expect(inscriptions.image.largestContentSize).toBe(165666);
+    expect(inscriptions.image.largestEnvelopeInscriptionId).toBe('2fc565c457bf3202704f3b2e61c50312c073e2b365152233f0315e82d7a51659i0');
 
-    // Sum invariant: the three per-bucket totals plus inscriptions in no
-    // bucket (content types we don't classify — model/*, audio/*, video/*,
-    // etc.) must equal the global total. Per-bucket totals therefore can't
-    // exceed the global.
-    expect(
-      inscriptions.image.totalEnvelopeSize +
-      inscriptions.text.totalEnvelopeSize +
-      inscriptions.json.totalEnvelopeSize
-    ).toBeLessThanOrEqual(inscriptions.totalEnvelopeSize);
+    // Text bucket = inscriptions text-flagged AND NOT json-flagged. Smaller
+    // than amounts.inscriptionText (401) because BRC-20 mints (text/plain
+    // that parses as JSON) get reassigned to the json bucket.
+    expect(inscriptions.text.totalEnvelopeSize).toBe(37698);
+    expect(inscriptions.text.totalContentSize).toBe(21380);
+    expect(inscriptions.text.largestEnvelopeSize).toBe(803);
+    expect(inscriptions.text.largestContentSize).toBe(749);
+    expect(inscriptions.text.largestEnvelopeInscriptionId).toBe('075dc6c35cb042c50e63b1508b1953604c2a25bed52f20394596a537cbeaae0bi0');
 
-    // Per-bucket fees: the three sub-totals sum to ≤ global mint fees,
-    // because some inscriptions land in no bucket (their fee is in the
-    // global total but in none of the buckets). Each tx's fee is attributed
-    // to AT MOST one bucket — the first inscription mint's canonical bucket.
-    expect(ordpoolStats.fees.inscriptionImageMints).toBeGreaterThan(0);
-    expect(ordpoolStats.fees.inscriptionTextMints).toBeGreaterThan(0);
-    expect(ordpoolStats.fees.inscriptionJsonMints).toBeGreaterThan(0);
-    expect(
-      ordpoolStats.fees.inscriptionImageMints +
-      ordpoolStats.fees.inscriptionTextMints +
-      ordpoolStats.fees.inscriptionJsonMints
-    ).toBeLessThanOrEqual(ordpoolStats.fees.inscriptionMints);
+    // JSON bucket = inscriptions whose body is a JSON object (BRC-20s and
+    // application/json). Wins over text for text/plain JSON content.
+    expect(inscriptions.json.totalEnvelopeSize).toBe(29220);
+    expect(inscriptions.json.totalContentSize).toBe(25526);
+    expect(inscriptions.json.largestEnvelopeSize).toBe(395);
+    expect(inscriptions.json.largestContentSize).toBe(351);
+    expect(inscriptions.json.largestEnvelopeInscriptionId).toBe('88ac285a05729b88a3e7ad987407d6e7436893bee1a57eb0e84ea222a9ba1403i1');
 
-    // Compression telemetry: brotli + gzip + uncompressed = total mint count.
-    // Block 840,000 has both compressed and uncompressed inscriptions, so
-    // both counters should be reachable but we don't claim exact numbers
-    // here (they could shift if the parser learns new content-encoding
-    // values in future).
-    expect(inscriptions.brotliCount).toBeGreaterThanOrEqual(0);
-    expect(inscriptions.gzipCount).toBeGreaterThanOrEqual(0);
-    expect(inscriptions.brotliCount + inscriptions.gzipCount).toBeLessThanOrEqual(ordpoolStats.amounts.inscriptionMint);
-    expect(inscriptions.compressedEnvelopeBytes).toBeGreaterThanOrEqual(0);
+    // Per-bucket fees. The three sub-totals sum to ≤ global mint fees because
+    // each tx fee is attributed to at most ONE bucket (first inscription
+    // mint's canonical bucket); txs whose first inscription mint is in no
+    // canonical bucket contribute to inscriptionMints only.
+    expect(ordpoolStats.fees.inscriptionMints).toBe(3599529290);
+    expect(ordpoolStats.fees.inscriptionImageMints).toBe(355221094);
+    expect(ordpoolStats.fees.inscriptionTextMints).toBe(122865425);
+    expect(ordpoolStats.fees.inscriptionJsonMints).toBe(567029);
+
+    // Compression telemetry: block 840,000 has 1 brotli-encoded inscription
+    // and no gzip. The brotli inscription has a 3,096-byte envelope.
+    expect(inscriptions.brotliCount).toBe(1);
+    expect(inscriptions.gzipCount).toBe(0);
+    expect(inscriptions.compressedEnvelopeBytes).toBe(3096);
 
     expect(ordpoolStats.runes.runeEtchAttempts.length).toBe(755);
+
+    // CAT-21 block aggregates. Block 840,000 has 5 cats (asserted above), and
+    // none of them carry the genesis trait — the genesis trait is hash-derived
+    // from byte[0] === 79 of SHA256(txid + blockid), so it's rare (~1/256) and
+    // famously only the very first CAT-21 ever (block 824,205) is a genesis.
+    // Fee-rate stats are derived from the per-cat feeRate fields (sat/vB).
+    expect(ordpoolStats.cat21.genesisCount).toBe(0);
+    expect(Math.round((ordpoolStats.cat21.avgFeeRate ?? 0) * 1000) / 1000).toBe(182.288);
+    expect(Math.round((ordpoolStats.cat21.minFeeRate ?? 0) * 1000) / 1000).toBe(100.426);
+    expect(Math.round((ordpoolStats.cat21.maxFeeRate ?? 0) * 1000) / 1000).toBe(260.102);
+
+    // Rune block aggregates with UNCOMMON•GOODS split. Block 840,000 has 2
+    // distinct runes that saw mint activity: UNCOMMON•GOODS (rune ID 1:0)
+    // dominates with 1,196 mints, plus one other rune (8400000:1) with a
+    // single mint. The non-uncommon variants exclude UNCOMMON•GOODS, so the
+    // unique count drops from 2 → 1 and the top-mint count drops from 1,196
+    // → 1. This is exactly the headline "UNCOMMON•GOODS skews everything"
+    // shape that motivated the split — and proves the non-uncommon variant
+    // is the genuinely informative one for any UI / chart series.
+    expect(ordpoolStats.runes.uniqueMintsCount).toBe(2);
+    expect(ordpoolStats.runes.uniqueMintsCountNonUncommon).toBe(1);
+    expect(ordpoolStats.runes.topMintCount).toBe(1196);
+    expect(ordpoolStats.runes.topMintCountNonUncommon).toBe(1);
+    expect(ordpoolStats.runes.mostActiveMint).toBe('1:0');                   // UNCOMMON•GOODS
+    expect(ordpoolStats.runes.mostActiveNonUncommonMint).toBe('8400000:1');
 
     const zzFEHU = ordpoolStats.runes.runeEtchAttempts[0];
     expect(zzFEHU.runeId).toBe('840000:1');

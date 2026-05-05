@@ -482,9 +482,17 @@ export class DigitalArtifactAnalyserService {
       (tx as TransactionSimplePlus & OrdpoolFlagged)._ordpoolFlags = Number(txOrdpoolFlags);
     }
 
-    // Set final Rune stats
+    // Set final Rune stats. Every metric ships in pairs (overall + non-uncommon)
+    // because UNCOMMON•GOODS (rune 0:0) has no premine + no cap and is mintable
+    // forever, so it dominates every "most active" / "top mint count" stat in
+    // ~every block. The non-uncommon variant is the genuinely informative one;
+    // see memory: project_uncommon_goods_skews_rune_stats.md.
     stats.runes.mostActiveMint = mostActiveRuneMint;
     stats.runes.mostActiveNonUncommonMint = mostActiveNonUncommonRuneMint;
+    stats.runes.uniqueMintsCount = Object.keys(runeMintActivity).length;
+    stats.runes.uniqueMintsCountNonUncommon = Object.keys(runeNonUncommonGoodsActivity).length;
+    stats.runes.topMintCount = mostActiveRuneMintCount;
+    stats.runes.topMintCountNonUncommon = mostActiveNonUncommonRuneMintCount;
     stats.fees.runeMints = totalRuneMintFees;
     stats.fees.nonUncommonRuneMints = totalNonUncommonRuneMintFees;
 
@@ -526,6 +534,33 @@ export class DigitalArtifactAnalyserService {
     stats.src20.src20DeployAttempts = src20DeployAttempts;
 
     stats.cat21.cat21MintActivity = cat21MintActivity;
+
+    // CAT-21 block aggregates derived from the per-cat satellite array.
+    // All NULLable for blocks without cats. Note: cat *numbers* are NOT
+    // computed here — sequence numbers come from cat21-ord / cat21-indexer
+    // downstream and are out of ordpool-parser's scope. Only fields the
+    // parser can derive from the tx + traits (genesis trait is hash-derived;
+    // fee rate is per-tx) are included.
+    if (cat21MintActivity.length > 0) {
+      let genesisCount = 0;
+      let feeRateSum = 0;
+      let minFeeRate = Infinity;
+      let maxFeeRate = -Infinity;
+
+      for (const cat of cat21MintActivity) {
+        if (cat.traits.genesis) {
+          genesisCount++;
+        }
+        feeRateSum += cat.feeRate;
+        if (cat.feeRate < minFeeRate) { minFeeRate = cat.feeRate; }
+        if (cat.feeRate > maxFeeRate) { maxFeeRate = cat.feeRate; }
+      }
+
+      stats.cat21.genesisCount = genesisCount;
+      stats.cat21.avgFeeRate = feeRateSum / cat21MintActivity.length;
+      stats.cat21.minFeeRate = minFeeRate;
+      stats.cat21.maxFeeRate = maxFeeRate;
+    }
 
     return stats;
   }
