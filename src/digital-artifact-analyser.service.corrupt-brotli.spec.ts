@@ -4,7 +4,8 @@ import { DigitalArtifactsParserService } from './digital-artifacts-parser.servic
 import { DigitalArtifactType } from './types/digital-artifact';
 import { ParsedInscription } from './types/parsed-inscription';
 import { OrdpoolTransactionFlags } from './types/ordpool-transaction-flags';
-import { INVALID_COMPRESSED_DATA_MESSAGE } from './lib/brotli-decode';
+import { INVALID_COMPRESSED_DATA_MESSAGE, MAX_DECOMPRESSED_SIZE_MESSAGE } from './lib/brotli-decode';
+import { InscriptionPreviewService, isDecodeFailureSentinel } from './inscription/inscription-preview.service';
 import { IEsploraApi } from './types/mempool';
 
 /**
@@ -85,5 +86,70 @@ describe('analyseTransaction with malformed inscription compression', () => {
     expect(stats.amounts.inscriptionText).toBe(1);
     // _json bucket NOT counted -- raw fallback bytes don't parse as JSON.
     expect(stats.amounts.inscriptionJson ?? 0).toBe(0);
+  });
+});
+
+describe('decode-failure sentinel detection helper', () => {
+
+  it('detects INVALID_COMPRESSED_DATA_MESSAGE as invalid-data', () => {
+    expect(isDecodeFailureSentinel(INVALID_COMPRESSED_DATA_MESSAGE)).toBe('invalid-data');
+  });
+
+  it('detects MAX_DECOMPRESSED_SIZE_MESSAGE as size-limit', () => {
+    expect(isDecodeFailureSentinel(MAX_DECOMPRESSED_SIZE_MESSAGE)).toBe('size-limit');
+  });
+
+  it('returns null for any other string', () => {
+    expect(isDecodeFailureSentinel('Hello World!')).toBeNull();
+    expect(isDecodeFailureSentinel('')).toBeNull();
+    expect(isDecodeFailureSentinel('{"p":"brc-20"}')).toBeNull();
+    // Substring of the sentinel must not match -- exact string only.
+    expect(isDecodeFailureSentinel('Error: invalid')).toBeNull();
+  });
+});
+
+describe('InscriptionPreviewService on the corrupt-brotli inscription', () => {
+
+  function getCorruptInscription(): ParsedInscription {
+    const tx = readCorruptBrotliFixture();
+    const artifacts = DigitalArtifactsParserService.parse(tx);
+    const inscription = artifacts.find(a => a.type === DigitalArtifactType.Inscription) as ParsedInscription | undefined;
+    if (!inscription) throw new Error('fixture has no inscription');
+    return inscription;
+  }
+
+  it('getContentTypeInstructions returns whatToShow=decode-failure with reason=invalid-data', async () => {
+    const inscription = getCorruptInscription();
+
+    const instructions = await InscriptionPreviewService.getContentTypeInstructions(inscription);
+
+    expect(instructions.whatToShow).toBe('decode-failure');
+    expect(instructions.reason).toBe('invalid-data');
+    expect(instructions.content).toBeUndefined();
+  });
+
+  it('getPreview returns the decode-failure HTML and never the sentinel string', async () => {
+    const inscription = getCorruptInscription();
+
+    const preview = await InscriptionPreviewService.getPreview(inscription);
+
+    // renderDirectly must be false -- we never let the iframe load /preview/ for
+    // a malformed inscription, otherwise the browser would just render garbage
+    // bytes (which is what we're trying to avoid).
+    expect(preview.renderDirectly).toBe(false);
+
+    // Failure HTML contains the human-readable headline for invalid-data.
+    expect(preview.previewContent).toContain('Inscription content cannot be decoded');
+
+    // The sentinel string itself MUST NOT leak into the iframe HTML -- if it
+    // did, that would mean a downstream preview function embedded the sentinel
+    // bytes into a data URI. The whole point of the short-circuit is to avoid
+    // exactly that.
+    expect(preview.previewContent).not.toContain(INVALID_COMPRESSED_DATA_MESSAGE);
+
+    // Same for the base64 of the sentinel bytes -- catches the case where
+    // getDataUri()-based preview functions accidentally bypass the short-circuit.
+    const sentinelBase64 = Buffer.from(INVALID_COMPRESSED_DATA_MESSAGE, 'utf8').toString('base64');
+    expect(preview.previewContent).not.toContain(sentinelBase64);
   });
 });

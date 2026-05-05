@@ -1,3 +1,4 @@
+import { INVALID_COMPRESSED_DATA_MESSAGE, MAX_DECOMPRESSED_SIZE, MAX_DECOMPRESSED_SIZE_MESSAGE } from '../lib/brotli-decode';
 import { binaryStringToBase64, bytesToBinaryString, unicodeStringToBytes } from '../lib/conversions';
 import { ParsedInscription } from '../types/parsed-inscription';
 
@@ -5,6 +6,22 @@ export interface PreviewInstructions {
   instructionsFor: string | undefined;
   previewContent: string;
   renderDirectly: boolean;
+}
+
+export type DecodeFailureReason = 'invalid-data' | 'size-limit';
+
+/**
+ * If `content` is one of the decoder's failure sentinels (returned by
+ * brotliDecodeUint8Array / gzipDecode when the inscription's compressed
+ * body cannot be decoded or would exceed the size limit), report which
+ * one. Otherwise null. Used by the preview pipeline to short-circuit
+ * downstream rendering -- e.g. avoid embedding 30 bytes of "Error:
+ * invalid compressed data" as a base64 data URI inside an `<img>` tag.
+ */
+export function isDecodeFailureSentinel(content: string): DecodeFailureReason | null {
+  if (content === INVALID_COMPRESSED_DATA_MESSAGE) return 'invalid-data';
+  if (content === MAX_DECOMPRESSED_SIZE_MESSAGE) return 'size-limit';
+  return null;
 }
 
 /**
@@ -28,6 +45,24 @@ export class InscriptionPreviewService {
         previewContent: await getPreviewUnknown(),
         renderDirectly: false
       }
+    }
+
+    // Decode-failure check first. If the body can't be decoded (corrupt
+    // brotli/gzip stream) or would exceed the decompression size limit,
+    // we must NOT continue into the per-content-type preview functions:
+    // they call getDataUri() which would embed the sentinel string as a
+    // base64 image/audio/etc, producing broken-icon previews. Show a
+    // dedicated failure page instead, regardless of declared contentType.
+    // Same outcome for renderDirectly types (image/svg+xml, text/html) --
+    // we replace the would-be iframe-src with the failure page.
+    const decodedContent = await inscription.getContent();
+    const failureReason = isDecodeFailureSentinel(decodedContent);
+    if (failureReason) {
+      return {
+        instructionsFor: inscription.inscriptionId,
+        previewContent: getPreviewDecodeFailure(failureReason),
+        renderDirectly: false
+      };
     }
 
     let previewFunction: (inscription: ParsedInscription) => Promise<string> = getPreviewUnknown;
@@ -78,7 +113,8 @@ export class InscriptionPreviewService {
    */
   static async getContentTypeInstructions(inscription: ParsedInscription): Promise<{
     content: string | undefined,
-    whatToShow: 'json' | 'code' | 'preview'
+    whatToShow: 'json' | 'code' | 'preview' | 'decode-failure',
+    reason?: DecodeFailureReason
   }> {
 
     let content: string | undefined = undefined;
@@ -87,6 +123,21 @@ export class InscriptionPreviewService {
       inscription.contentType?.startsWith('application/json')) {
 
         content = await inscription.getContent();
+
+        // Short-circuit on decode failure -- the sentinel string is not
+        // valid JSON anyway, but if we let it fall through to the 'preview'
+        // branch below (or to the 'code' branch for yaml/css/js) the
+        // frontend would render the literal "Error: ..." text as the
+        // inscription's content. Route to a dedicated failure UI instead.
+        const failureReason = isDecodeFailureSentinel(content);
+        if (failureReason) {
+          return {
+            content: undefined,
+            whatToShow: 'decode-failure',
+            reason: failureReason
+          };
+        }
+
         const isValidJson = validateJson(content);
 
         if (isValidJson) {
@@ -104,6 +155,15 @@ export class InscriptionPreviewService {
       inscription.contentType?.startsWith('application/x-javascript')) {
 
       content = content || await inscription.getContent();
+
+      const failureReason = isDecodeFailureSentinel(content);
+      if (failureReason) {
+        return {
+          content: undefined,
+          whatToShow: 'decode-failure',
+          reason: failureReason
+        };
+      }
 
       return {
         content,
@@ -161,13 +221,13 @@ const table: { [key: string]: (inscription: ParsedInscription) => Promise<string
 
 
 
-// test here: http://localhost:4200/tx/751007cf3090703f241894af5c057fc8850d650a577a800447d4f21f5d2cecde
+// test here: https://ordpool.space/tx/751007cf3090703f241894af5c057fc8850d650a577a800447d4f21f5d2cecde
 async function getPreviewIframe(_inscription: ParsedInscription): Promise<string> {
   // return decodeDataURI(dataUri);
   return ''
 }
 
-// test here: http://localhost:4200/tx/ad99172fce60028406f62725b91b5c508edd95bf21310de5afeb0966ddd89be3
+// test here: https://ordpool.space/tx/ad99172fce60028406f62725b91b5c508edd95bf21310de5afeb0966ddd89be3
 async function getPreviewAudio(inscription: ParsedInscription): Promise<string> {
 
   const dataUri = await inscription.getDataUri();
@@ -185,7 +245,7 @@ async function getPreviewAudio(inscription: ParsedInscription): Promise<string> 
 </html>`;
 }
 
-// test here http://localhost:4200/tx/6fb976ab49dcec017f1e201e84395983204ae1a7c2abf7ced0a85d692e442799
+// test here https://ordpool.space/tx/6fb976ab49dcec017f1e201e84395983204ae1a7c2abf7ced0a85d692e442799
 async function getPreviewImage(inscription: ParsedInscription): Promise<string> {
 
   const dataUri = await inscription.getDataUri();
@@ -223,7 +283,7 @@ async function getPreviewImage(inscription: ParsedInscription): Promise<string> 
 </html>`;
 }
 
-// test here: http://localhost:4200/tx/c133c03e2ed44bb8ada79b1640b6649129de75a8f31d8e6ad573ede442f91cdb
+// test here: https://ordpool.space/tx/c133c03e2ed44bb8ada79b1640b6649129de75a8f31d8e6ad573ede442f91cdb
 async function getPreviewMarkdown(inscription: ParsedInscription): Promise<string> {
 
   const dataUri = await inscription.getDataUri();
@@ -240,7 +300,7 @@ async function getPreviewMarkdown(inscription: ParsedInscription): Promise<strin
 </html>`;
 }
 
-// test here: http://localhost:4200/tx/25013a3ab212e0ca5b3ccbd858ff988f506b77080c51963c948c055028af2051
+// test here: https://ordpool.space/tx/25013a3ab212e0ca5b3ccbd858ff988f506b77080c51963c948c055028af2051
 async function getPreviewModel(inscription: ParsedInscription): Promise<string> {
 
   const dataUri = await inscription.getDataUri();
@@ -263,7 +323,7 @@ async function getPreviewModel(inscription: ParsedInscription): Promise<string> 
 </html>`;
 }
 
-// test here: http://localhost:4200/tx/85b10531435304cbe47d268106b58b57a4416c76573d4b50fa544432597ad670i0
+// test here: https://ordpool.space/tx/85b10531435304cbe47d268106b58b57a4416c76573d4b50fa544432597ad670i0
 // (shows only the first page)
 async function getPreviewPdf(inscription: ParsedInscription): Promise<string> {
 
@@ -282,7 +342,7 @@ async function getPreviewPdf(inscription: ParsedInscription): Promise<string> {
 </html>`;
 }
 
-// test here: http://localhost:4200/tx/430901147831e41111aced3895ee4b9742cf72ac3cffa132624bd38c551ef379
+// test here: https://ordpool.space/tx/430901147831e41111aced3895ee4b9742cf72ac3cffa132624bd38c551ef379
 async function getPreviewText(inscription: ParsedInscription): Promise<string> {
 
   const instructions = await InscriptionPreviewService.getContentTypeInstructions(inscription);
@@ -354,7 +414,7 @@ async function getPreviewText(inscription: ParsedInscription): Promise<string> {
 </html>`;
 }
 
-// test here: http://localhost:4200/tx/06158001c0be9d375c10a56266d8028b80ebe1ef5e2a9c9a4904dbe31b72e01c
+// test here: https://ordpool.space/tx/06158001c0be9d375c10a56266d8028b80ebe1ef5e2a9c9a4904dbe31b72e01c
 async function getPreviewUnknown(_inscription?: ParsedInscription): Promise<string> {
 
   return `<!doctype html>
@@ -369,7 +429,56 @@ async function getPreviewUnknown(_inscription?: ParsedInscription): Promise<stri
 `;
 }
 
-// test here: http://localhost:4200/tx/700f348e1acef6021cdee8bf09e4183d6a3f4d573b4dc5585defd54009a0148c
+/**
+ * Iframe HTML shown when an inscription's compressed body cannot be
+ * decoded (or would exceed the decompression size limit). Used by both
+ * the parser's getPreview() and the frontend's `<app-preview-viewer>`
+ * (via getContentTypeInstructions returning 'decode-failure', which
+ * routes to the same component that renders this HTML).
+ *
+ * Self-contained -- no external CSS or fonts -- because it has to render
+ * inside the sandboxed iframe used by `<app-preview-viewer>` AND inside
+ * the backend's `/preview/:id` response. Two distinct messages so the
+ * user knows whether it's a malformed inscription or a too-large one.
+ *
+ * test here (invalid-data: Content-Encoding: br body that is actually gzip):
+ *   https://ordpool.space/tx/5125c1269bd9c4605764fe76d253078d4c35897646004b8fa9837ad41e94a634
+ * test here (size-limit): no real-data fixture yet -- a >1 MB-decompressing
+ *   brotli body is needed to exercise this branch via the live UI.
+ */
+function getPreviewDecodeFailure(reason: DecodeFailureReason): string {
+  const headline = reason === 'size-limit'
+    ? 'Inscription too large to decode'
+    : 'Inscription content cannot be decoded';
+
+  const detail = reason === 'size-limit'
+    ? `The decompressed content exceeds the ${MAX_DECOMPRESSED_SIZE / 1024 / 1024}&#160;MB safety limit. The data is preserved on chain and remains accessible via the raw content link.`
+    : `The inscription declares a brotli or gzip Content-Encoding that doesn't match its actual body. The data is preserved on chain and remains accessible via the raw content link.`;
+
+  return `<!doctype html>
+<html lang='en'>
+  <head>
+    <meta charset='utf-8'>
+    <style>
+      html, body { margin: 0; padding: 0; height: 100%; background: #131516; color: #d3d4d5; font-family: system-ui, -apple-system, sans-serif; }
+      .wrap { display: flex; align-items: center; justify-content: center; height: 100%; padding: 1.5rem; box-sizing: border-box; }
+      .panel { max-width: 32rem; text-align: center; }
+      .panel h1 { margin: 0 0 0.6rem; font-size: 1.05rem; font-weight: 600; color: #ff9f43; }
+      .panel p { margin: 0; line-height: 1.5; font-size: 0.9rem; color: #b1b3b5; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="panel">
+        <h1>${headline}</h1>
+        <p>${detail}</p>
+      </div>
+    </div>
+  </body>
+</html>`;
+}
+
+// test here: https://ordpool.space/tx/700f348e1acef6021cdee8bf09e4183d6a3f4d573b4dc5585defd54009a0148c
 async function getPreviewVideo(inscription: ParsedInscription): Promise<string> {
 
   const dataUri = await inscription.getDataUri();
