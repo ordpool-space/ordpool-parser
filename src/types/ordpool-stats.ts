@@ -247,16 +247,12 @@ export interface OrdpoolStats {
 
     /** Distinct rune IDs that saw any mint activity in this block. */
     uniqueMintsCount: number;
-    /** Same, EXCLUDING UNCOMMON•GOODS (rune 0:0). UNCOMMON•GOODS has no
-     *  premine and no cap and is mintable forever, so it dominates every
-     *  rune mint stat — the non-uncommon variant is the genuinely
-     *  informative metric. Default UI / chart series reads this. */
+    /** Same, excluding UNCOMMON•GOODS (rune 1:0). UI defaults to this. */
     uniqueMintsCountNonUncommon: number;
 
-    /** Mint count of the most-active rune in this block. Almost always the
-     *  UNCOMMON•GOODS count, which is structurally uninteresting. */
+    /** Mint count of the most-active rune in this block. */
     topMintCount: number;
-    /** Same, EXCLUDING UNCOMMON•GOODS. This is the number to show. */
+    /** Same, excluding UNCOMMON•GOODS. UI defaults to this. */
     topMintCountNonUncommon: number;
   };
 

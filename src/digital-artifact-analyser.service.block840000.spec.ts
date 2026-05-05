@@ -127,14 +127,10 @@ describe('DigitalArtifacts Parser', () => {
     expect(Math.round((ordpoolStats.cat21.minFeeRate ?? 0) * 1000) / 1000).toBe(100.426);
     expect(Math.round((ordpoolStats.cat21.maxFeeRate ?? 0) * 1000) / 1000).toBe(260.102);
 
-    // Rune block aggregates with UNCOMMON•GOODS split. Block 840,000 has 2
-    // distinct runes that saw mint activity: UNCOMMON•GOODS (rune ID 1:0)
-    // dominates with 1,196 mints, plus one other rune (8400000:1) with a
-    // single mint. The non-uncommon variants exclude UNCOMMON•GOODS, so the
-    // unique count drops from 2 → 1 and the top-mint count drops from 1,196
-    // → 1. This is exactly the headline "UNCOMMON•GOODS skews everything"
-    // shape that motivated the split — and proves the non-uncommon variant
-    // is the genuinely informative one for any UI / chart series.
+    // Rune block aggregates with UNCOMMON•GOODS split. Block 840,000 has
+    // UNCOMMON•GOODS (rune ID 1:0) at 1,196 mints + one other rune
+    // (8400000:1) at 1 mint. The non-uncommon variants drop from 2 → 1
+    // unique runes and 1,196 → 1 top mint count.
     expect(ordpoolStats.runes.uniqueMintsCount).toBe(2);
     expect(ordpoolStats.runes.uniqueMintsCountNonUncommon).toBe(1);
     expect(ordpoolStats.runes.topMintCount).toBe(1196);

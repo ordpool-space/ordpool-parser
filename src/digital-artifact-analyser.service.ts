@@ -482,11 +482,9 @@ export class DigitalArtifactAnalyserService {
       (tx as TransactionSimplePlus & OrdpoolFlagged)._ordpoolFlags = Number(txOrdpoolFlags);
     }
 
-    // Set final Rune stats. Every metric ships in pairs (overall + non-uncommon)
-    // because UNCOMMON•GOODS (rune 0:0) has no premine + no cap and is mintable
-    // forever, so it dominates every "most active" / "top mint count" stat in
-    // ~every block. The non-uncommon variant is the genuinely informative one;
-    // see memory: project_uncommon_goods_skews_rune_stats.md.
+    // Rune stats ship in pairs (overall + non-uncommon). UNCOMMON•GOODS
+    // (rune 1:0, no premine, no cap, mintable forever) dominates every
+    // "most active" / "top mint count" stat in ~every block.
     stats.runes.mostActiveMint = mostActiveRuneMint;
     stats.runes.mostActiveNonUncommonMint = mostActiveNonUncommonRuneMint;
     stats.runes.uniqueMintsCount = Object.keys(runeMintActivity).length;
