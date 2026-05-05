@@ -9,9 +9,12 @@ import { isUncommonGoodsMint } from './rune/rune-parser.service.helper';
 import { Src20ParserService } from './src20/src20-parser.service';
 import { DigitalArtifact, DigitalArtifactType } from './types/digital-artifact';
 import { ParsedAtomical } from './types/parsed-atomical';
+import { ParsedCounterparty } from './types/parsed-counterparty';
 import {
+  AtomicalOp,
   Brc20DeployAttempt,
   Cat21Mint,
+  CounterpartyMessage,
   getArtifactTypeMap,
   getEmptyInscriptionSizeAggregate,
   getEmptyStats,
@@ -231,6 +234,13 @@ export class DigitalArtifactAnalyserService {
     const brc20DeployAttempts: Brc20DeployAttempt[] = [];
     const src20DeployAttempts: Src20DeployAttempt[] = [];
 
+    // Per-tx satellite arrays. atomicalOps records every atomical operation
+    // (mint or update); counterpartyMessages records every CNTRPRTY message.
+    // The backend writes these to dedicated satellite tables for per-op /
+    // per-message-type charts.
+    const atomicalOps: AtomicalOp[] = [];
+    const counterpartyMessages: CounterpartyMessage[] = [];
+
     // index is zero-based, we start at -1 so that the 1st txn has number 0
     let txIndex = -1;
     for (const tx of transactions) {
@@ -377,12 +387,44 @@ export class DigitalArtifactAnalyserService {
           }
         }
 
-        // ** Atomical Fees
+        // ** Atomical Fees + per-op satellite row
         if ((flags & OrdpoolTransactionFlags.ordpool_atomical) === OrdpoolTransactionFlags.ordpool_atomical) {
           if (!atomicalFeeAdded) {
             totalAtomicalFees += txFee;
             atomicalFeeAdded = true;
           }
+
+          // Record one row per atomical artifact for the satellite table.
+          // Ticker comes from CBOR `args.request_ticker` (FT-family ops);
+          // null for ops that don't carry one. getArgs() may return null
+          // if CBOR decoding fails — defensive read.
+          const atomical = artifact as ParsedAtomical;
+          let ticker: string | null = null;
+          try {
+            const args = atomical.getArgs();
+            const rawTicker = args?.['request_ticker'];
+            if (typeof rawTicker === 'string' && rawTicker.length > 0) {
+              ticker = rawTicker;
+            }
+          } catch {
+            // CBOR decoding failed; leave ticker null, keep the op record.
+          }
+          atomicalOps.push({
+            txId: tx.txid,
+            operation: atomical.operation,
+            ticker,
+          });
+        }
+
+        // ** Counterparty per-message satellite row
+        if ((flags & OrdpoolTransactionFlags.ordpool_counterparty) === OrdpoolTransactionFlags.ordpool_counterparty) {
+          const counterparty = artifact as ParsedCounterparty;
+          counterpartyMessages.push({
+            txId: tx.txid,
+            messageType: counterparty.messageType,
+            messageTypeId: counterparty.messageTypeId,
+            encoding: counterparty.encoding,
+          });
         }
 
         // ** Inscription Mint Fees + extra stats for inscriptions
@@ -532,6 +574,8 @@ export class DigitalArtifactAnalyserService {
     stats.src20.src20DeployAttempts = src20DeployAttempts;
 
     stats.cat21.cat21MintActivity = cat21MintActivity;
+    stats.atomicals.atomicalOps = atomicalOps;
+    stats.counterparty.counterpartyMessages = counterpartyMessages;
 
     // CAT-21 block aggregates derived from the per-cat satellite array.
     // All NULLable for blocks without cats. Note: cat *numbers* are NOT
