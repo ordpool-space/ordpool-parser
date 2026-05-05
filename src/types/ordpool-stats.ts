@@ -159,7 +159,6 @@ export interface OrdpoolStats {
     src20Mint: number;
     src20Transfer: number;
 
-    labitbu: number;
     counterparty: number;
     stamp: number;
     src721: number;
@@ -173,7 +172,6 @@ export interface OrdpoolStats {
     src20Mints: number;
     cat21Mints: number;
     atomicals: number;
-    labitbus: number;
     inscriptionMints: number;
   };
 
@@ -251,7 +249,6 @@ export function getEmptyStats(): OrdpoolStats {
       src20Mint: 0,
       src20Transfer: 0,
 
-      labitbu: 0,
       counterparty: 0,
       stamp: 0,
       src721: 0,
@@ -265,7 +262,6 @@ export function getEmptyStats(): OrdpoolStats {
       src20Mints: 0,
       cat21Mints: 0,
       atomicals: 0,
-      labitbus: 0,
       inscriptionMints: 0,
     },
 
@@ -347,7 +343,11 @@ export function getArtifactTypeMap() {
     [OrdpoolTransactionFlags.ordpool_src20_mint,            'src20Mint'],
     [OrdpoolTransactionFlags.ordpool_src20_transfer,        'src20Transfer'],
 
-    [OrdpoolTransactionFlags.ordpool_labitbu,               'labitbu'],
+    // ordpool_labitbu intentionally omitted: the flag still fires for
+    // historical blocks (908,072–908,196) but block-level stats are not
+    // recorded any more — Labitbu is a one-time event with a finite
+    // mint window. See `labitbu-parser.service.helper.ts` for the height
+    // gate on the parser side.
     [OrdpoolTransactionFlags.ordpool_counterparty,          'counterparty'],
     [OrdpoolTransactionFlags.ordpool_stamp,                 'stamp'],
     [OrdpoolTransactionFlags.ordpool_src721,                'src721'],

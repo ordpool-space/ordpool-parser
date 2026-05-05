@@ -1,11 +1,18 @@
 import { readTransaction, readBinaryFileAsUint8Array } from '../../testdata/test.helper';
 import { DigitalArtifactType } from '../types/digital-artifact';
 import { LabitbuParserService } from './labitbu-parser.service';
-import { hasLabitbu, extractLabitbuImage } from './labitbu-parser.service.helper';
+import {
+  hasLabitbu,
+  extractLabitbuImage,
+  LABITBU_FIRST_HEIGHT,
+  LABITBU_LAST_HEIGHT,
+} from './labitbu-parser.service.helper';
 
 // Real mainnet Labitbu transaction — WebP image stored in Taproot control block
-// From https://github.com/stutxo/labitbu-maker README
+// From https://github.com/stutxo/labitbu-maker README. Confirmed in block 908072
+// (first Labitbu block).
 const LABITBU_TXID = '5a15dabc8f0c1656ccd07bd2739f683b4c562fb66487329a41f959c38f0cf7d3';
+const LABITBU_BLOCK_HEIGHT = 908_072;
 
 // Non-Labitbu transactions for negative tests
 const CAT21_GENESIS_TXID = '98316dcb21daaa221865208fe0323616ee6dd84e6020b78bc6908e914ac03892';
@@ -17,29 +24,29 @@ describe('LabitbuParserService', () => {
   describe('hasLabitbu', () => {
     it('should detect Labitbu in a real transaction', () => {
       const txn = readTransaction(LABITBU_TXID);
-      expect(LabitbuParserService.hasLabitbu(txn)).toBe(true);
+      expect(LabitbuParserService.hasLabitbu(txn, LABITBU_BLOCK_HEIGHT)).toBe(true);
     });
 
     it('should return false for a CAT-21 transaction', () => {
       const txn = readTransaction(CAT21_GENESIS_TXID);
-      expect(LabitbuParserService.hasLabitbu(txn)).toBe(false);
+      expect(LabitbuParserService.hasLabitbu(txn, txn.status.block_height)).toBe(false);
     });
 
     it('should return false for an inscription transaction', () => {
       const txn = readTransaction(INSCRIPTION_TXID);
-      expect(LabitbuParserService.hasLabitbu(txn)).toBe(false);
+      expect(LabitbuParserService.hasLabitbu(txn, txn.status.block_height)).toBe(false);
     });
 
     it('should return false for an atomical transaction', () => {
       const txn = readTransaction(ATOMICAL_DFT_TXID);
-      expect(LabitbuParserService.hasLabitbu(txn)).toBe(false);
+      expect(LabitbuParserService.hasLabitbu(txn, txn.status.block_height)).toBe(false);
     });
   });
 
   describe('parse', () => {
     it('should parse a real Labitbu transaction and extract the WebP image', () => {
       const txn = readTransaction(LABITBU_TXID);
-      const result = LabitbuParserService.parse(txn)!;
+      const result = LabitbuParserService.parse(txn, undefined, LABITBU_BLOCK_HEIGHT)!;
 
       expect(result.type).toBe(DigitalArtifactType.Labitbu);
       expect(result.uniqueId).toBe(`${DigitalArtifactType.Labitbu}-${LABITBU_TXID}`);
@@ -78,7 +85,47 @@ describe('LabitbuParserService', () => {
 
     it('should return null for a non-Labitbu transaction', () => {
       const txn = readTransaction(CAT21_GENESIS_TXID);
+      expect(LabitbuParserService.parse(txn, undefined, txn.status.block_height)).toBeNull();
+    });
+  });
+
+  describe('height-range gate', () => {
+
+    it('parse: returns null for an in-range tx when no block height is provided', () => {
+      // Same labitbu tx, but pretending we're in mempool-time analysis with no
+      // confirmed block yet. The historical Labitbu window is fully mined, so a
+      // tx without a height can't possibly be inside it — skip detection.
+      const txn = readTransaction(LABITBU_TXID);
       expect(LabitbuParserService.parse(txn)).toBeNull();
+    });
+
+    it('parse: returns null for the same labitbu tx data with an out-of-range height', () => {
+      // The witness data IS labitbu (would normally fire), but the supposed
+      // block height is past the historical mint window. Gate skips detection.
+      const txn = readTransaction(LABITBU_TXID);
+      const futureHeight = LABITBU_LAST_HEIGHT + 1;
+      expect(LabitbuParserService.parse(txn, undefined, futureHeight)).toBeNull();
+    });
+
+    it('parse: returns null for an in-range labitbu tx but a height before the window', () => {
+      const txn = readTransaction(LABITBU_TXID);
+      const pastHeight = LABITBU_FIRST_HEIGHT - 1;
+      expect(LabitbuParserService.parse(txn, undefined, pastHeight)).toBeNull();
+    });
+
+    it('parse: succeeds for the exact first and last block of the window', () => {
+      const txn = readTransaction(LABITBU_TXID);
+      expect(LabitbuParserService.parse(txn, undefined, LABITBU_FIRST_HEIGHT)).not.toBeNull();
+      expect(LabitbuParserService.parse(txn, undefined, LABITBU_LAST_HEIGHT)).not.toBeNull();
+    });
+
+    it('hasLabitbu: same height-gate semantics — undefined and out-of-range both return false', () => {
+      const txn = readTransaction(LABITBU_TXID);
+      expect(LabitbuParserService.hasLabitbu(txn)).toBe(false);
+      expect(LabitbuParserService.hasLabitbu(txn, LABITBU_LAST_HEIGHT + 1)).toBe(false);
+      expect(LabitbuParserService.hasLabitbu(txn, LABITBU_FIRST_HEIGHT - 1)).toBe(false);
+      expect(LabitbuParserService.hasLabitbu(txn, LABITBU_FIRST_HEIGHT)).toBe(true);
+      expect(LabitbuParserService.hasLabitbu(txn, LABITBU_LAST_HEIGHT)).toBe(true);
     });
   });
 

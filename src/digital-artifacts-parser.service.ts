@@ -25,11 +25,12 @@ export class DigitalArtifactsParserService {
   static parse(transaction: TransactionSimple, onError?: OnParseError): DigitalArtifact[] {
 
     const artifacts: DigitalArtifact[] = [];
+    const blockHeight = transaction.status?.block_height;
     const parsedCat = Cat21ParserService.parse(transaction, onError);
     const parsedRune = RuneParserService.parse(transaction, onError);
     const parsedInscriptions = InscriptionParserService.parse(transaction, onError);
     const parsedAtomical = AtomicalParserService.parse(transaction, onError);
-    const parsedLabitbu = LabitbuParserService.parse(transaction, onError);
+    const parsedLabitbu = LabitbuParserService.parse(transaction, onError, blockHeight);
     const parsedCounterparty = CounterpartyParserService.parse(transaction, onError);
     const parsedSrc20 = Src20ParserService.parse(transaction, onError);
 

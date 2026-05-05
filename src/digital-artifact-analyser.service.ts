@@ -152,7 +152,6 @@ export class DigitalArtifactAnalyserService {
     const cat21MintActivity: Cat21Mint[] = [];
     let totalCat21MintFees = 0;
     let totalAtomicalFees = 0;
-    let totalLabitbuFees = 0;
     let totalInscriptionMintFees = 0;
 
     let totalEnvelopeSize = 0;
@@ -184,7 +183,6 @@ export class DigitalArtifactAnalyserService {
       let src20MintFeeAdded = false;
       let cat21MintFeeAdded = false;
       let atomicalFeeAdded = false;
-      let labitbuFeeAdded = false;
       let inscriptionMintFeeAdded = false;
 
       // Accumulate per-tx ordpool flags across all artifacts.
@@ -318,14 +316,6 @@ export class DigitalArtifactAnalyserService {
           }
         }
 
-        // ** Labitbu Fees
-        if ((flags & OrdpoolTransactionFlags.ordpool_labitbu) === OrdpoolTransactionFlags.ordpool_labitbu) {
-          if (!labitbuFeeAdded) {
-            totalLabitbuFees += txFee;
-            labitbuFeeAdded = true;
-          }
-        }
-
         // ** Inscription Mint Fees + extra stats for inscriptions
         if ((flags & OrdpoolTransactionFlags.ordpool_inscription_mint) === OrdpoolTransactionFlags.ordpool_inscription_mint) {
           if (!inscriptionMintFeeAdded) {
@@ -409,7 +399,6 @@ export class DigitalArtifactAnalyserService {
     // Set fees for other artifact types
     stats.fees.cat21Mints = totalCat21MintFees;
     stats.fees.atomicals = totalAtomicalFees;
-    stats.fees.labitbus = totalLabitbuFees;
     stats.fees.inscriptionMints = totalInscriptionMintFees;
 
     // Set final extra stats for inscriptions

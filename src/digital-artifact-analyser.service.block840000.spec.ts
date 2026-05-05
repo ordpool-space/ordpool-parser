@@ -49,7 +49,6 @@ describe('DigitalArtifacts Parser', () => {
       src20Deploy: 0,
       src20Mint: 0,
       src20Transfer: 0,
-      labitbu: 0,
       counterparty: 0,
       stamp: 0,
       src721: 0,

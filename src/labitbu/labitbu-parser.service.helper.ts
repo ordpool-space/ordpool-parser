@@ -1,5 +1,13 @@
 import { hexToBytes } from '../lib/conversions';
 
+// Labitbu was a one-time event: 10,000 WebP images minted in a finite block window.
+// The protocol is dead — no new Labitbu images will ever appear on chain. The
+// parser uses these constants to skip Labitbu detection entirely outside the
+// minting window, saving CPU on every block we'll ever parse going forward.
+// Block 908,072 contains the first known Labitbu mint; 908,196 contains the last.
+export const LABITBU_FIRST_HEIGHT = 908_072;
+export const LABITBU_LAST_HEIGHT  = 908_196;
+
 // Labitbu NUMS key (Nothing-Up-My-Sleeve) — SHA-256 of "Labitbu".
 // This key is provably unspendable and serves as the protocol marker.
 // See: https://nums-secp256k1.jaonoctus.dev/?pk=...&method=TAGGED_HASH_KEY&input=Labitbu
