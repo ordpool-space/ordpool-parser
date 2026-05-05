@@ -1755,6 +1755,16 @@ type ByteBuffer = Int8Array;
 export const MAX_DECOMPRESSED_SIZE = 1 * 1024 * 1024 // 1 MB in bytes
 export const MAX_DECOMPRESSED_SIZE_MESSAGE = 'Decompressed size exceeds allowed limit';
 
+// Returned by brotliDecodeUint8Array / gzipDecode (UTF-8 encoded) when the
+// declared Content-Encoding is honoured but the body fails to decode. ord
+// itself never decompresses inscription content -- it always ships raw bytes
+// with the declared Content-Encoding header (which is the brotli-bomb-safe
+// thing to do). We DO decompress because we need the content for BRC-20 /
+// SRC-20 / preview rendering, so we need an explicit signal back to the
+// caller when the data is unusable; matches the pattern of
+// MAX_DECOMPRESSED_SIZE_MESSAGE above.
+export const INVALID_COMPRESSED_DATA_MESSAGE = 'Error: invalid compressed data';
+
 /**
  * Decodes brotli stream.
  */

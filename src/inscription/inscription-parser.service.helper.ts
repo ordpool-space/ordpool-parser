@@ -1,4 +1,4 @@
-import { MAX_DECOMPRESSED_SIZE_MESSAGE, brotliDecode } from "../lib/brotli-decode";
+import { INVALID_COMPRESSED_DATA_MESSAGE, MAX_DECOMPRESSED_SIZE_MESSAGE, brotliDecode } from "../lib/brotli-decode";
 import { hexToBytes, isStringInArrayOfStrings, littleEndianBytesToNumber } from "../lib/conversions";
 import { bytesToHex } from "../lib/conversions";
 import { OP_ENDIF, OP_FALSE, OP_IF, OP_PUSHBYTES_3 } from "../lib/op-codes";
@@ -197,28 +197,31 @@ export async function getDecodedContent(contentEncoding: string | undefined, com
  *
  * Note: The conversion between Uint8Array and Int8Array does not copy the data but creates a new view over the same memory.
  *
- * If decompression succeeds, returns the decompressed data as Uint8Array.
- * If decompression fails due to size exceeding the allowed limit, returns
- * 'Decompressed size exceeds allowed limit' as Uint8Array.
- * If decompression fails for any other reason (e.g. an inscription declares
- * Content-Encoding: br but its body is not valid brotli — block 869,599 has
- * exactly one such tx, 5125c1...4634, whose body is gzip-magic bytes
- * mis-labeled as brotli), returns the raw input bytes instead of throwing.
+ * Return values:
+ * - decompression succeeds                                → decompressed bytes
+ * - decompressed size exceeds allowed limit               → MAX_DECOMPRESSED_SIZE_MESSAGE bytes (UTF-8)
+ * - any other decode failure (corrupt stream, mis-labeled
+ *   gzip body shipped as Content-Encoding: br, ...)       → INVALID_COMPRESSED_DATA_MESSAGE bytes (UTF-8)
  *
- * Why raw bytes (verified against ord source `src/subcommand/server/r.rs`
- * `content_response`): in its default mode ord NEVER decompresses on the
- * server. It just sets `Content-Encoding: br` on the response and ships
- * the inscribed bytes; the browser tries to decode and silently falls
- * back to rendering the raw bytes when decoding fails. ord only attempts
- * server-side brotli decompression when the operator opts in via
- * `--decompress` (which ord's own help text labels a "DoS vector"), and
- * in that mode it returns a 500 on corrupt input. We mirror ord's default
- * pass-through path here: getContent() never throws on malformed
- * compression; downstream JSON / BRC-20 detection simply won't match.
+ * Why a sentinel instead of throwing: we MUST be able to call this on every
+ * inscription's body, including malformed ones. ord itself sidesteps this
+ * by never decompressing -- it always ships raw bytes with the declared
+ * Content-Encoding header, which is brotli-bomb-safe by construction. We
+ * decompress because we actually read the content (BRC-20 / SRC-20 / JSON
+ * detection, /preview rendering), so we need an explicit "this didn't
+ * decode" return value rather than crashing the caller. Same pattern as
+ * MAX_DECOMPRESSED_SIZE_MESSAGE: caller can detect the sentinel if it
+ * cares, or just treat it as opaque text.
+ *
+ * Real example: block 869,599 tx 5125c1...4634 declares Content-Encoding:
+ * br on a body that is actually gzip (magic 1f 8b 08 00 ..., decodes via
+ * gunzip to "Hello World!"). Without this guard, the previous behaviour
+ * was to throw "Corrupted Huffman code histogram" out of analyseTransaction
+ * and lose all classification for the tx.
  *
  * @param bytes - The Uint8Array containing compressed data.
- * @returns A Uint8Array containing the decompressed data, the raw input on
- *   decode failure, or a size-limit error message as Uint8Array.
+ * @returns A Uint8Array containing decompressed data or one of the two
+ *   sentinel error messages encoded as UTF-8.
  */
 export function brotliDecodeUint8Array(bytes: Uint8Array): Uint8Array {
 
@@ -239,21 +242,18 @@ export function brotliDecodeUint8Array(bytes: Uint8Array): Uint8Array {
     if (error instanceof Error && error.message === MAX_DECOMPRESSED_SIZE_MESSAGE) {
       return new TextEncoder().encode(MAX_DECOMPRESSED_SIZE_MESSAGE);
     }
-    // Corrupt or mis-labeled brotli stream -- match ord / browser behavior
-    // and pass the raw bytes through instead of throwing.
-    return bytes;
+    return new TextEncoder().encode(INVALID_COMPRESSED_DATA_MESSAGE);
   }
 }
 
 /**
  * Decompresses gzip-encoded bytes via the platform's DecompressionStream.
  *
- * Mirrors brotliDecodeUint8Array on failure: corrupt or mis-labeled gzip
- * data returns the raw input bytes instead of throwing. Same justification
- * (see brotliDecodeUint8Array doc) -- ord's default content-serving path
- * passes the raw bytes through and lets the browser fail silently. We do
- * the same so a single malformed inscription cannot crash the whole
- * batch processor.
+ * Failure model mirrors brotliDecodeUint8Array: a corrupt or mis-labeled
+ * gzip stream returns INVALID_COMPRESSED_DATA_MESSAGE (UTF-8 encoded)
+ * rather than throwing. Same justification -- we read the decompressed
+ * bytes for content classification, so the caller needs an explicit
+ * "this didn't decode" sentinel.
  *
  * The "DecompressionStream not supported" environment error still throws,
  * because that's a host-environment configuration problem, not a
@@ -299,9 +299,7 @@ export async function gzipDecode(bytes: Uint8Array): Promise<Uint8Array> {
 
     return result;
   } catch {
-    // Corrupt or mis-labeled gzip stream -- pass the raw bytes through
-    // (same fallback as brotliDecodeUint8Array).
-    return bytes;
+    return new TextEncoder().encode(INVALID_COMPRESSED_DATA_MESSAGE);
   }
 }
 

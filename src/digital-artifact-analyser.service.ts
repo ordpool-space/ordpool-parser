@@ -542,9 +542,11 @@ export class DigitalArtifactAnalyserService {
 
           // getContent() decompresses brotli/gzip-encoded bodies. It never throws --
           // see brotliDecodeUint8Array / gzipDecode: corrupt or mis-labeled streams
-          // fall through to the raw bytes (matching ord's default content-serving
-          // path, which does not decompress server-side at all). On malformed input,
-          // parseJsonObject and parseBrc20Content simply won't match.
+          // return INVALID_COMPRESSED_DATA_MESSAGE as UTF-8 bytes. ord avoids the
+          // problem by never decompressing on its own (raw bytes only, brotli-bomb
+          // safe); we have to decompress because we read the content here. On
+          // malformed input the sentinel string won't match parseJsonObject or
+          // parseBrc20Content, so no false-positive sub-flags fire.
           const inscriptionContent = await inscription.getContent();
 
           // _json fires whenever the body parses as a JSON object. It coexists

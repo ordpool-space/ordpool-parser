@@ -1,6 +1,10 @@
 import fs from 'fs';
 import { DigitalArtifactAnalyserService, AnalyseArtifactErrorContext } from './digital-artifact-analyser.service';
+import { DigitalArtifactsParserService } from './digital-artifacts-parser.service';
+import { DigitalArtifactType } from './types/digital-artifact';
+import { ParsedInscription } from './types/parsed-inscription';
 import { OrdpoolTransactionFlags } from './types/ordpool-transaction-flags';
+import { INVALID_COMPRESSED_DATA_MESSAGE } from './lib/brotli-decode';
 import { IEsploraApi } from './types/mempool';
 
 /**
@@ -28,6 +32,16 @@ describe('analyseTransaction with malformed inscription compression', () => {
   it('does not throw on the corrupt-brotli inscription in block 869,599', async () => {
     const tx = readCorruptBrotliFixture();
     await expect(DigitalArtifactAnalyserService.analyseTransaction(tx, 0n)).resolves.not.toThrow?.();
+  });
+
+  it('inscription.getContent() returns INVALID_COMPRESSED_DATA_MESSAGE on the corrupt body', async () => {
+    const tx = readCorruptBrotliFixture();
+    const artifacts = DigitalArtifactsParserService.parse(tx);
+
+    const inscription = artifacts.find(a => a.type === DigitalArtifactType.Inscription) as ParsedInscription | undefined;
+    expect(inscription).toBeDefined();
+
+    expect(await inscription!.getContent()).toBe(INVALID_COMPRESSED_DATA_MESSAGE);
   });
 
   it('returns inscription flags for the corrupt-brotli tx (not zero)', async () => {
