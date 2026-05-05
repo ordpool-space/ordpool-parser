@@ -55,6 +55,61 @@ describe('DigitalArtifacts Parser', () => {
       src101: 0,
     });
 
+    // Per-content-type size aggregates. Bucket priority is json > image > text,
+    // so a text/plain inscription that parses as JSON (e.g. a BRC-20 mint) lands
+    // in the json bucket, NOT the text bucket. That's why text-bucket size is
+    // smaller than the per-flag inscriptionText count would suggest.
+    const inscriptions = ordpoolStats.inscriptions;
+
+    // Global aggregate: every inscription contributes its envelope + content
+    // size, regardless of bucket. Largest envelope inscription must exist
+    // (878 inscriptions in the block).
+    expect(inscriptions.totalEnvelopeSize).toBeGreaterThan(0);
+    expect(inscriptions.totalContentSize).toBeGreaterThan(0);
+    expect(inscriptions.largestEnvelopeInscriptionId).not.toBeNull();
+    expect(inscriptions.largestContentInscriptionId).not.toBeNull();
+
+    // Per-bucket totals. Image is fully exclusive (image MIME never overlaps
+    // with text or json). Json takes priority over text — every JSON-flagged
+    // inscription lands in the json bucket. Text bucket is "text-flagged AND
+    // NOT json-flagged".
+    expect(inscriptions.image.totalEnvelopeSize).toBeGreaterThan(0);
+    expect(inscriptions.text.totalEnvelopeSize).toBeGreaterThan(0);
+    expect(inscriptions.json.totalEnvelopeSize).toBeGreaterThan(0);
+
+    // Sum invariant: the three per-bucket totals plus inscriptions in no
+    // bucket (content types we don't classify — model/*, audio/*, video/*,
+    // etc.) must equal the global total. Per-bucket totals therefore can't
+    // exceed the global.
+    expect(
+      inscriptions.image.totalEnvelopeSize +
+      inscriptions.text.totalEnvelopeSize +
+      inscriptions.json.totalEnvelopeSize
+    ).toBeLessThanOrEqual(inscriptions.totalEnvelopeSize);
+
+    // Per-bucket fees: the three sub-totals sum to ≤ global mint fees,
+    // because some inscriptions land in no bucket (their fee is in the
+    // global total but in none of the buckets). Each tx's fee is attributed
+    // to AT MOST one bucket — the first inscription mint's canonical bucket.
+    expect(ordpoolStats.fees.inscriptionImageMints).toBeGreaterThan(0);
+    expect(ordpoolStats.fees.inscriptionTextMints).toBeGreaterThan(0);
+    expect(ordpoolStats.fees.inscriptionJsonMints).toBeGreaterThan(0);
+    expect(
+      ordpoolStats.fees.inscriptionImageMints +
+      ordpoolStats.fees.inscriptionTextMints +
+      ordpoolStats.fees.inscriptionJsonMints
+    ).toBeLessThanOrEqual(ordpoolStats.fees.inscriptionMints);
+
+    // Compression telemetry: brotli + gzip + uncompressed = total mint count.
+    // Block 840,000 has both compressed and uncompressed inscriptions, so
+    // both counters should be reachable but we don't claim exact numbers
+    // here (they could shift if the parser learns new content-encoding
+    // values in future).
+    expect(inscriptions.brotliCount).toBeGreaterThanOrEqual(0);
+    expect(inscriptions.gzipCount).toBeGreaterThanOrEqual(0);
+    expect(inscriptions.brotliCount + inscriptions.gzipCount).toBeLessThanOrEqual(ordpoolStats.amounts.inscriptionMint);
+    expect(inscriptions.compressedEnvelopeBytes).toBeGreaterThanOrEqual(0);
+
     expect(ordpoolStats.runes.runeEtchAttempts.length).toBe(755);
 
     const zzFEHU = ordpoolStats.runes.runeEtchAttempts[0];

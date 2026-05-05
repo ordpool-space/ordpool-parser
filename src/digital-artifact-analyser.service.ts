@@ -9,7 +9,17 @@ import { isUncommonGoodsMint } from './rune/rune-parser.service.helper';
 import { Src20ParserService } from './src20/src20-parser.service';
 import { DigitalArtifact, DigitalArtifactType } from './types/digital-artifact';
 import { ParsedAtomical } from './types/parsed-atomical';
-import { Brc20DeployAttempt, Cat21Mint, getArtifactTypeMap, getEmptyStats, OrdpoolStats, RuneEtchAttempt, Src20DeployAttempt } from './types/ordpool-stats';
+import {
+  Brc20DeployAttempt,
+  Cat21Mint,
+  getArtifactTypeMap,
+  getEmptyInscriptionSizeAggregate,
+  getEmptyStats,
+  InscriptionSizeAggregate,
+  OrdpoolStats,
+  RuneEtchAttempt,
+  Src20DeployAttempt,
+} from './types/ordpool-stats';
 import { OrdpoolTransactionFlags } from './types/ordpool-transaction-flags';
 import { ParsedCat21 } from './types/parsed-cat21';
 import { ParsedInscription } from './types/parsed-inscription';
@@ -24,6 +34,38 @@ export interface AnalyseResult {
   flags: bigint;
   brc20?: BrC20Parsed;
   src20Content?: Src20Parsed;
+}
+
+/**
+ * Mutates an `InscriptionSizeAggregate` accumulator with one inscription's
+ * envelope + content metrics. Used both for the global aggregate and for the
+ * per-content-type bucket aggregates (image/text/json).
+ */
+function updateSizeAggregate(agg: InscriptionSizeAggregate, inscription: ParsedInscription): void {
+  agg.totalEnvelopeSize += inscription.envelopeSize;
+  agg.totalContentSize  += inscription.contentSize;
+
+  if (inscription.envelopeSize > agg.largestEnvelopeSize) {
+    agg.largestEnvelopeSize = inscription.envelopeSize;
+    agg.largestEnvelopeInscriptionId = inscription.inscriptionId;
+  }
+  if (inscription.contentSize > agg.largestContentSize) {
+    agg.largestContentSize = inscription.contentSize;
+    agg.largestContentInscriptionId = inscription.inscriptionId;
+  }
+}
+
+/**
+ * Returns a finalised copy of the aggregate with averages filled in from the
+ * supplied inscription count. Mutating helper kept separate so the analyser's
+ * per-loop accumulator stays a pure totals/maxes structure.
+ */
+function finaliseSizeAggregate(agg: InscriptionSizeAggregate, count: number): InscriptionSizeAggregate {
+  return {
+    ...agg,
+    averageEnvelopeSize: count ? agg.totalEnvelopeSize / count : 0,
+    averageContentSize:  count ? agg.totalContentSize  / count : 0,
+  };
 }
 
 /**
@@ -154,12 +196,35 @@ export class DigitalArtifactAnalyserService {
     let totalAtomicalFees = 0;
     let totalInscriptionMintFees = 0;
 
-    let totalEnvelopeSize = 0;
-    let totalContentSize = 0;
-    let largestEnvelopeSize = 0;
-    let largestContentSize = 0;
-    let largestEnvelopeInscriptionId: string | null = null;
-    let largestContentInscriptionId: string | null = null;
+    // Per-content-type inscription mint fees. Each tx is attributed to AT MOST
+    // one bucket (the first inscription mint's canonical bucket — see the
+    // bucket-priority comment in the per-artifact loop below). The three
+    // sub-totals therefore sum to ≤ totalInscriptionMintFees.
+    let totalInscriptionImageMintFees = 0;
+    let totalInscriptionTextMintFees = 0;
+    let totalInscriptionJsonMintFees = 0;
+
+    // Per-content-type size aggregates. Buckets are mutually exclusive at
+    // the size-routing layer (priority json > image > text — see the loop)
+    // so the per-bucket totals sum to the global total minus inscriptions
+    // that don't match any bucket. Counts are tracked separately to compute
+    // averages at the end (a bucket can be "all zero envelope sizes" so we
+    // can't recover the count from totalEnvelopeSize alone).
+    const globalSizeAgg: InscriptionSizeAggregate = getEmptyInscriptionSizeAggregate();
+    const imageSizeAgg: InscriptionSizeAggregate = getEmptyInscriptionSizeAggregate();
+    const textSizeAgg: InscriptionSizeAggregate = getEmptyInscriptionSizeAggregate();
+    const jsonSizeAgg: InscriptionSizeAggregate = getEmptyInscriptionSizeAggregate();
+    let globalInscriptionCount = 0;
+    let imageInscriptionCount = 0;
+    let textInscriptionCount = 0;
+    let jsonInscriptionCount = 0;
+
+    // Inscription compression telemetry — what fraction of inscription weight
+    // is compressed, and which encoders dominate? Read from the inscription's
+    // declared `Content-Encoding` field (tag 9 of the envelope).
+    let inscriptionsBrotliCount = 0;
+    let inscriptionsGzipCount = 0;
+    let inscriptionsCompressedEnvelopeBytes = 0;
 
     // etching/deployments: store all attempts, which might or might not have been successfull
     const runeEtchAttempts: RuneEtchAttempt[] = [];
@@ -184,6 +249,10 @@ export class DigitalArtifactAnalyserService {
       let cat21MintFeeAdded = false;
       let atomicalFeeAdded = false;
       let inscriptionMintFeeAdded = false;
+      // Per-bucket fee is counted at most once per tx, attributed to the
+      // bucket of the first inscription mint we encounter. See bucket
+      // priority logic below.
+      let inscriptionBucketFeeAdded = false;
 
       // Accumulate per-tx ordpool flags across all artifacts.
       // After the loop, we store them on tx._ordpoolFlags so that upstream's
@@ -324,19 +393,50 @@ export class DigitalArtifactAnalyserService {
           }
 
           const inscription = artifact as ParsedInscription;
-          const envelopeSize = inscription.envelopeSize;
-          const contentSize = inscription.contentSize;
 
-          totalEnvelopeSize += envelopeSize;
-          totalContentSize += contentSize;
-
-          if (envelopeSize > largestEnvelopeSize) {
-            largestEnvelopeSize = envelopeSize;
-            largestEnvelopeInscriptionId = inscription.inscriptionId;
+          // Bucket priority for size + fee attribution: json > image > text.
+          // The flags themselves are NOT mutually exclusive (a text/plain
+          // BRC-20 mint fires both ordpool_inscription_text AND
+          // ordpool_inscription_json). For the per-bucket SIZE aggregates
+          // and FEE attribution we want exclusive routing so per-bucket
+          // sums are sane — JSON is the most specific signal, take it
+          // first. The amounts.inscription{Image,Text,Json} counters keep
+          // their independent per-flag semantics; only the size + fee
+          // aggregates use this bucket priority.
+          let bucket: 'image' | 'text' | 'json' | null = null;
+          if ((flags & OrdpoolTransactionFlags.ordpool_inscription_json) === OrdpoolTransactionFlags.ordpool_inscription_json) {
+            bucket = 'json';
+          } else if ((flags & OrdpoolTransactionFlags.ordpool_inscription_image) === OrdpoolTransactionFlags.ordpool_inscription_image) {
+            bucket = 'image';
+          } else if ((flags & OrdpoolTransactionFlags.ordpool_inscription_text) === OrdpoolTransactionFlags.ordpool_inscription_text) {
+            bucket = 'text';
           }
-          if (contentSize > largestContentSize) {
-            largestContentSize = contentSize;
-            largestContentInscriptionId = inscription.inscriptionId;
+
+          updateSizeAggregate(globalSizeAgg, inscription);
+          globalInscriptionCount++;
+
+          if (bucket === 'json')  { updateSizeAggregate(jsonSizeAgg,  inscription); jsonInscriptionCount++; }
+          if (bucket === 'image') { updateSizeAggregate(imageSizeAgg, inscription); imageInscriptionCount++; }
+          if (bucket === 'text')  { updateSizeAggregate(textSizeAgg,  inscription); textInscriptionCount++; }
+
+          if (!inscriptionBucketFeeAdded && bucket !== null) {
+            if (bucket === 'json')  { totalInscriptionJsonMintFees += txFee; }
+            if (bucket === 'image') { totalInscriptionImageMintFees += txFee; }
+            if (bucket === 'text')  { totalInscriptionTextMintFees += txFee; }
+            inscriptionBucketFeeAdded = true;
+          }
+
+          // Compression: read the inscription's declared Content-Encoding.
+          // Empty / unknown encodings count as uncompressed. Optional-chain
+          // the method call so test fixtures that stub a partial
+          // ParsedInscription don't trip — production parses always supply it.
+          const encoding = inscription.getContentEncoding?.();
+          if (encoding === 'br') {
+            inscriptionsBrotliCount++;
+            inscriptionsCompressedEnvelopeBytes += inscription.envelopeSize;
+          } else if (encoding === 'gzip') {
+            inscriptionsGzipCount++;
+            inscriptionsCompressedEnvelopeBytes += inscription.envelopeSize;
           }
         }
 
@@ -400,18 +500,21 @@ export class DigitalArtifactAnalyserService {
     stats.fees.cat21Mints = totalCat21MintFees;
     stats.fees.atomicals = totalAtomicalFees;
     stats.fees.inscriptionMints = totalInscriptionMintFees;
+    stats.fees.inscriptionImageMints = totalInscriptionImageMintFees;
+    stats.fees.inscriptionTextMints  = totalInscriptionTextMintFees;
+    stats.fees.inscriptionJsonMints  = totalInscriptionJsonMintFees;
 
-    // Set final extra stats for inscriptions
-    stats.inscriptions.totalEnvelopeSize = totalEnvelopeSize;
-    stats.inscriptions.totalContentSize = totalContentSize;
-    stats.inscriptions.largestEnvelopeSize = largestEnvelopeSize;
-    stats.inscriptions.largestContentSize = largestContentSize;
-    stats.inscriptions.largestEnvelopeInscriptionId = largestEnvelopeInscriptionId;
-    stats.inscriptions.largestContentInscriptionId = largestContentInscriptionId;
-
-    const inscriptionCount = stats.amounts.inscriptionMint;
-    stats.inscriptions.averageEnvelopeSize = inscriptionCount ? totalEnvelopeSize / inscriptionCount : 0;
-    stats.inscriptions.averageContentSize = inscriptionCount ? totalContentSize / inscriptionCount : 0;
+    // Set final extra stats for inscriptions — global aggregate + 3 per-bucket
+    // aggregates, all averaged by their respective bucket-inscription counts.
+    stats.inscriptions = {
+      ...finaliseSizeAggregate(globalSizeAgg, globalInscriptionCount),
+      image: finaliseSizeAggregate(imageSizeAgg, imageInscriptionCount),
+      text:  finaliseSizeAggregate(textSizeAgg,  textInscriptionCount),
+      json:  finaliseSizeAggregate(jsonSizeAgg,  jsonInscriptionCount),
+      brotliCount: inscriptionsBrotliCount,
+      gzipCount:   inscriptionsGzipCount,
+      compressedEnvelopeBytes: inscriptionsCompressedEnvelopeBytes,
+    };
 
     // Store mint activity with counts
     stats.runes.runeMintActivity = convertToActivities(runeMintActivity).sort((a, b) => b[1] - a[1]);

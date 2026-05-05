@@ -127,6 +127,42 @@ export interface MinimalCat21Mint {
   weight: number;
 }
 
+/**
+ * Inscription size aggregates over a set of inscriptions (whole block, or one
+ * content-type bucket). The same shape is used for the global block aggregate
+ * (`OrdpoolStats.inscriptions`) and per-bucket aggregates (`.image`, `.text`,
+ * `.json`). Buckets are mutually exclusive, so the per-bucket totals sum to
+ * the global totals.
+ */
+export interface InscriptionSizeAggregate {
+  totalEnvelopeSize: number;
+  totalContentSize: number;
+
+  largestEnvelopeSize: number;
+  largestContentSize: number;
+
+  largestEnvelopeInscriptionId: string | null;
+  largestContentInscriptionId: string | null;
+
+  averageEnvelopeSize: number;
+  averageContentSize: number;
+}
+
+/** Helper: empty size-aggregate row, used in getEmptyStats() and as the
+ *  initial state for each bucket counter inside the analyser. */
+export function getEmptyInscriptionSizeAggregate(): InscriptionSizeAggregate {
+  return {
+    totalEnvelopeSize: 0,
+    totalContentSize: 0,
+    largestEnvelopeSize: 0,
+    largestContentSize: 0,
+    largestEnvelopeInscriptionId: null,
+    largestContentInscriptionId: null,
+    averageEnvelopeSize: 0,
+    averageContentSize: 0,
+  };
+}
+
 
 export interface OrdpoolStats {
 
@@ -173,21 +209,34 @@ export interface OrdpoolStats {
     cat21Mints: number;
     atomicals: number;
     inscriptionMints: number;
+
+    // Per-content-type inscription mint fees. Each inscription belongs to
+    // exactly one bucket (image XOR text XOR json — see `analyse()` in the
+    // analyser service for the bucket logic), so the three fields sum to
+    // inscriptionMints (modulo inscriptions whose content type matches none
+    // of the buckets, which contribute to inscriptionMints only).
+    inscriptionImageMints: number;
+    inscriptionTextMints: number;
+    inscriptionJsonMints: number;
   };
 
-  inscriptions: {
+  inscriptions: InscriptionSizeAggregate & {
 
-    totalEnvelopeSize: number;
-    totalContentSize: number;
+    /** Per-content-type inscription size aggregates. Same shape as the
+     *  global aggregate above; sums to the global total minus inscriptions
+     *  whose content type is none of the three buckets. */
+    image: InscriptionSizeAggregate;
+    text: InscriptionSizeAggregate;
+    json: InscriptionSizeAggregate;
 
-    largestEnvelopeSize: number;
-    largestContentSize: number;
-
-    largestEnvelopeInscriptionId: string | null;
-    largestContentInscriptionId: string | null;
-
-    averageEnvelopeSize: number;
-    averageContentSize: number;
+    /** Inscriptions in this block whose body was Content-Encoding: br. */
+    brotliCount: number;
+    /** Inscriptions in this block whose body was Content-Encoding: gzip. */
+    gzipCount: number;
+    /** Sum of envelope sizes for inscriptions that used any compression.
+     *  Compared against `totalEnvelopeSize` this gives the "what fraction
+     *  of inscription weight is compressed" view. */
+    compressedEnvelopeBytes: number;
   },
 
   runes: {
@@ -263,22 +312,19 @@ export function getEmptyStats(): OrdpoolStats {
       cat21Mints: 0,
       atomicals: 0,
       inscriptionMints: 0,
+      inscriptionImageMints: 0,
+      inscriptionTextMints: 0,
+      inscriptionJsonMints: 0,
     },
 
     inscriptions: {
-
-      totalEnvelopeSize: 0,
-      totalContentSize: 0,
-
-      largestEnvelopeSize: 0,
-      largestContentSize: 0,
-
-      largestEnvelopeInscriptionId: null,
-      largestContentInscriptionId: null,
-
-      averageEnvelopeSize: 0,
-      averageContentSize: 0,
-
+      ...getEmptyInscriptionSizeAggregate(),
+      image: getEmptyInscriptionSizeAggregate(),
+      text: getEmptyInscriptionSizeAggregate(),
+      json: getEmptyInscriptionSizeAggregate(),
+      brotliCount: 0,
+      gzipCount: 0,
+      compressedEnvelopeBytes: 0,
     },
 
     runes: {
