@@ -136,10 +136,13 @@ describe('_ordpoolFlags with real blockchain data (no mocks)', () => {
 
     const flags = (tx as any)._ordpoolFlags;
     expect(typeof flags).toBe('number');
-    // Exact value: just ordpool_src20 (2^53). This tx is picked up by
-    // Src20ParserService (not StampParserService), so the stamp bit isn't set.
-    // 2^53 is the highest exact Number; the bigint round-trip is safe here.
-    expect(BigInt(flags)).toBe(OrdpoolTransactionFlags.ordpool_src20);
+    // SRC-20 is part of the Stamps family -- ordpool_stamp is the parent flag
+    // and fires unconditionally on any Src20 artifact (same pattern as
+    // ordpool_inscription parent for ordpool_brc20).
+    expect(BigInt(flags)).toBe(
+      OrdpoolTransactionFlags.ordpool_stamp |
+      OrdpoolTransactionFlags.ordpool_src20
+    );
   });
 
   // Full block integration: analyseTransactions sets _ordpoolFlags on every tx

@@ -217,6 +217,7 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
     } as ParsedSrc20;
     const { flags } = await DigitalArtifactAnalyserService.analyse(src20Artifact);
     expect(flags).toBe(
+      OrdpoolTransactionFlags.ordpool_stamp |
       OrdpoolTransactionFlags.ordpool_src20 |
       OrdpoolTransactionFlags.ordpool_src20_deploy
     );
@@ -229,6 +230,7 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
     } as ParsedSrc20;
     const { flags } = await DigitalArtifactAnalyserService.analyse(src20Artifact);
     expect(flags).toBe(
+      OrdpoolTransactionFlags.ordpool_stamp |
       OrdpoolTransactionFlags.ordpool_src20 |
       OrdpoolTransactionFlags.ordpool_src20_mint
     );
@@ -241,21 +243,25 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
     } as ParsedSrc20;
     const { flags } = await DigitalArtifactAnalyserService.analyse(src20Artifact);
     expect(flags).toBe(
+      OrdpoolTransactionFlags.ordpool_stamp |
       OrdpoolTransactionFlags.ordpool_src20 |
       OrdpoolTransactionFlags.ordpool_src20_transfer
     );
   });
 
-  it('should ignore unsupported SRC-20 JSON content (`p` must always be `src-20`)', async () => {
+  it('should mark Src20 artifact with unsupported `p` as a stamp but skip src20 sub-ops', async () => {
+    // The artifact type ALONE means a stamps-encoded tx -- ordpool_stamp is the
+    // parent flag and fires unconditionally. Without `p: src-20`, the SRC-20
+    // sub-flags don't fire (same pattern as inscription -> brc20 stacking).
     const src20Artifact = {
       type: DigitalArtifactType.Src20,
       getContent: () => JSON.stringify({ p: 'unsupported', op: 'transfer' }),
     } as ParsedSrc20;
     const { flags } = await DigitalArtifactAnalyserService.analyse(src20Artifact);
-    expect(flags).toBe(0n);
+    expect(flags).toBe(OrdpoolTransactionFlags.ordpool_stamp);
   });
 
-  // -- Invalid SRC-20: operation flags are skipped, only top-level src20 flag is set --
+  // -- Invalid SRC-20: operation flags are skipped, only top-level src20+stamp flags are set --
 
   it('should skip deploy flag for SRC-20 with missing ticker', async () => {
     const src20Artifact = {
@@ -264,6 +270,7 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
     } as ParsedSrc20;
     const { flags } = await DigitalArtifactAnalyserService.analyse(src20Artifact);
     expect(flags).toBe(
+      OrdpoolTransactionFlags.ordpool_stamp |
       OrdpoolTransactionFlags.ordpool_src20
       // NO ordpool_src20_deploy -- invalid SRC-20 is silently skipped
     );
@@ -276,6 +283,7 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
     } as ParsedSrc20;
     const { flags } = await DigitalArtifactAnalyserService.analyse(src20Artifact);
     expect(flags).toBe(
+      OrdpoolTransactionFlags.ordpool_stamp |
       OrdpoolTransactionFlags.ordpool_src20
       // NO ordpool_src20_deploy -- missing lim
     );
@@ -288,6 +296,7 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
     } as ParsedSrc20;
     const { flags } = await DigitalArtifactAnalyserService.analyse(src20Artifact);
     expect(flags).toBe(
+      OrdpoolTransactionFlags.ordpool_stamp |
       OrdpoolTransactionFlags.ordpool_src20
       // NO ordpool_src20_mint -- missing amt
     );

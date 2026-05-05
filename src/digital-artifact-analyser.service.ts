@@ -457,10 +457,14 @@ export class DigitalArtifactAnalyserService {
         break;
 
       case DigitalArtifactType.Src721:
+        // SRC-721 is a Stamps-family protocol -- always set ordpool_stamp as parent
+        // (same pattern as ordpool_inscription parent for ordpool_brc20).
+        flags |= OrdpoolTransactionFlags.ordpool_stamp;
         flags |= OrdpoolTransactionFlags.ordpool_src721;
         break;
 
       case DigitalArtifactType.Src101:
+        flags |= OrdpoolTransactionFlags.ordpool_stamp;
         flags |= OrdpoolTransactionFlags.ordpool_src101;
         break;
 
@@ -550,6 +554,10 @@ export class DigitalArtifactAnalyserService {
 
       case DigitalArtifactType.Src20:
         const src20 = artifact as ParsedSrc20;
+
+        // SRC-20 is a Stamps-family protocol -- always set ordpool_stamp as parent
+        // (same pattern as ordpool_inscription parent for ordpool_brc20).
+        flags |= OrdpoolTransactionFlags.ordpool_stamp;
 
         src20Content = parseSrc20Content(src20.getContent()) ?? undefined;
         if (src20Content) {
