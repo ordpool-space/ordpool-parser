@@ -26,60 +26,99 @@ export function hasAtomical(witness: string[]): boolean {
  * but with CBOR-encoded payloads instead of raw content. The envelope marker is "atom"
  * (4 bytes) vs inscriptions' "ord" (3 bytes).
  *
- * ## Terminology cheat sheet (the Atomicals ecosystem has MANY overlapping terms)
+ * The atomicals-electrumx reference indexer is somewhat outdated and a few
+ * doc comments inside it are incomplete or stale, but it remains the single
+ * source of truth for which opcodes exist and what they mean. Everything
+ * below is anchored to permalinks at commit 8df2374 -- click them to verify.
  *
- * **ARC-20** — The fungible token standard on Atomicals (like BRC-20 is to Ordinals).
- *   All ARC-20 tokens are created via `dft` (distributed) or `ft` (direct) operations.
- *   The atomicalmarket.com explorer labels both as "FT".
+ * ## Opcode dispatch (3-letter, 2-letter, 1-letter)
  *
- * **Realm** — A human-readable name registered on Bitcoin (like ENS on Ethereum).
- *   Created via `nft` operation with `args.request_realm`. Realms are NFTs internally.
- *   Subrealms (e.g., "sub.realm") are also `nft` operations.
+ * Source: atomicals-electrumx `parse_operation_from_script`, lines 1119-1170:
+ * https://github.com/atomicals/atomicals-electrumx/blob/8df23747835c20230fc8b8097d469e7a1d97c3e0/electrumx/lib/util_atomicals.py#L1119-L1170
  *
- * **Container** — A named collection of NFTs (like an NFT project/PFP collection).
- *   The container itself is created via `nft` with `args.request_container`.
- *   Individual items are minted via `nft` with `args.request_dmitem` + `args.parent_container`.
+ * | Op    | Source comment                                            | Indexer-recorded label(s)                                       |
+ * |-------|-----------------------------------------------------------|-----------------------------------------------------------------|
+ * | nft   | "Mint non-fungible token"                                 | mint-nft / mint-nft-realm / -subrealm / -container / -dmitem    |
+ * | ft    | "Mint fungible token with direct fixed supply"            | mint-ft (mint-ft-failed on validation failure)                  |
+ * | dft   | "Deploy distributed mint fungible token starting point"   | dft (deploy phase) -- the anchor for subsequent dmt mints       |
+ * | dmt   | "Mint tokens of distributed mint type (dft)"              | mint-dft -- claims a unit of an already-deployed dft            |
+ * | dat   | "Store data on a transaction (dat)"                       | dat                                                             |
+ * | mod   | "Modify general state"                                    | mod                                                             |
+ * | evt   | "Message response/reply"                                  | evt                                                             |
+ * | sl    | "Seal an NFT and lock it from further changes forever"    | seal                                                            |
+ * | x     | "extract - move atomical to 0'th output"                  | splat                                                           |
+ * | y     | "split -" (sic, incomplete in source)                     | split                                                           |
+ * | z     | (no source comment)                                       | custom-color                                                    |
  *
- * **dmint** — "Distributed mint" for container items. NOT a separate operation type.
- *   Uses `nft` operation, identified by `args.request_dmitem` in the CBOR payload.
- *   The container owner sets mint rules via `mod` operations.
+ * Recorded labels are at block_processor.py:305-329 + 1906-2213:
+ * https://github.com/atomicals/atomicals-electrumx/blob/8df23747835c20230fc8b8097d469e7a1d97c3e0/electrumx/server/block_processor.py#L305-L329
  *
- * **dmt** — A newer operation type for distributed minting of NFT collections.
- *   Found in atomicals-js source but rare on mainnet.
+ * Single-letter operation predicates (`is_splat_operation`,
+ * `is_split_operation`, `is_custom_colored_operation`) at util_atomicals.py:
+ * https://github.com/atomicals/atomicals-electrumx/blob/8df23747835c20230fc8b8097d469e7a1d97c3e0/electrumx/lib/util_atomicals.py#L1703-L1713
  *
- * ## Operation categories
+ * ## Sub-types within `nft` (refined by CBOR args)
  *
- * **Create new atomicals** (appear in explorer):
- * - `nft`  — Mint an NFT, realm, subrealm, or container item
- * - `ft`   — Create a direct fungible token (entire supply to creator)
- * - `dft`  — Deploy a distributed fungible token (anyone can mint)
- * - `dmt`  — Distributed mint for NFT collections
- * - `dat`  — Store standalone data on-chain
+ * The `nft` opcode covers five distinct mint subtypes; the indexer records
+ * different labels based on which `args.*` key is present:
+ * - plain NFT      -> mint-nft
+ * - realm          -> args.request_realm        -> mint-nft-realm
+ * - subrealm       -> args.request_subrealm     -> mint-nft-subrealm
+ * - container      -> args.request_container    -> mint-nft-container
+ * - container item -> args.request_dmitem       -> mint-nft-dmitem
  *
- * **Modify existing atomicals** (do NOT appear in explorer as new entries):
- * - `mod`  — Update/set/delete data on an existing atomical
- * - `evt`  — Emit an event log attached to an existing atomical
- * - `sl`   — Seal a container (make it immutable)
+ * Realms are human-readable names registered on Bitcoin (like ENS on Ethereum).
+ * Containers are named collections of NFTs. Container items are minted by
+ * users against rules the container owner sets via `mod` operations on the
+ * container itself ("dmint" -- distributed mint of NFTs).
  *
- * **Transfer/manage fungible token UTXOs** (single-letter codes, very niche):
- * - `x`   — "splat": split a UTXO containing multiple FT units into separate outputs
- * - `y`   — "split": similar split operation for FT UTXOs
- * - `z`   — "custom-color": set custom coloring/labeling on fungible token outputs
- *
- * Source: `splat-interactive-command.ts`, `split-interactive-command.ts`,
- * `custom-color-interactive-command.ts` in atomicals-js.
+ * **Do not confuse `dmt` with `dmint`.** `dmt` is a fungible-token mint
+ * opcode in its own right (mints a unit of a previously-deployed `dft`).
+ * `dmint` is informal slang for the NFT-collection-mint flow, which is
+ * always carried by the `nft` opcode plus `args.request_dmitem`.
  *
  * ## CBOR payload structure
  *
- * Every operation carries a CBOR-encoded map. The `args` key is always present.
- * File attachments use either:
+ * Every operation carries a CBOR-encoded map. Most ops include an `args`
+ * sub-map. File attachments use either:
  * - Format 1: `{ "image.png": { $ct: "image/png", $b: <binary> } }` (old CLI path)
  * - Format 2: `{ "image.png": <raw binary bytes> }` (newer CLI path)
  *
- * Verified with real mainnet data: 'dft' (tx 1d2f39f5...), 'nft' (tx d8c96e39..., 7c852754...)
- * Known from atomicals-js source but no test data yet: 'ft', 'dmt', 'mod', 'evt', 'dat', 'sl', 'x', 'y', 'z'
+ * Real-data coverage:
+ * - dft, nft, x, y, z -- exact-value tests against mainnet txs
+ * - ft, dmt, mod, evt, dat, sl -- recognition only, no fixture yet
  */
 export type AtomicalOperation = 'dft' | 'nft' | 'ft' | 'dmt' | 'mod' | 'evt' | 'dat' | 'sl' | 'x' | 'y' | 'z' | 'unknown';
+
+/**
+ * Human-readable labels for every Atomicals operation. Use in UI legends
+ * and chart axes; consumers can index this map by `parsed.operation` and
+ * always get back a display string.
+ *
+ * The labels for the single-letter ops (`x`, `y`, `z`) match the strings
+ * atomicals-electrumx records in `block_processor.py`:
+ * https://github.com/atomicals/atomicals-electrumx/blob/8df23747835c20230fc8b8097d469e7a1d97c3e0/electrumx/server/block_processor.py#L2160-L2211
+ *
+ * The multi-letter labels are kept generic ("NFT", "FT", "distributed FT",
+ * etc.) because the indexer further refines `nft` / `ft` / `dft` / `dmt`
+ * based on CBOR args (see the `AtomicalOperation` doc comment for the
+ * sub-type matrix). Consumers that want the refined label can inspect
+ * args themselves; the parser only surfaces the raw opcode.
+ */
+export const ATOMICAL_OPERATION_LABELS: Record<AtomicalOperation, string> = {
+  nft:     'NFT',
+  ft:      'FT',
+  dft:     'distributed FT',     // dft deploy; subsequent claims arrive as dmt
+  dmt:     'distributed mint',   // mints a unit of a previously-deployed dft
+  dat:     'data',
+  mod:     'modify',
+  evt:     'event',
+  sl:      'seal',
+  x:       'splat',              // util_atomicals.py: "extract - move atomical to 0'th output"
+  y:       'split',              // FT-amount distribution across outputs per a CBOR map
+  z:       'custom-color',       // is_custom_colored_operation predicate; no source-comment semantic
+  unknown: 'unknown',
+};
 
 /**
  * Finds the atomical mark in raw witness bytes and extracts the operation type.
