@@ -42,9 +42,13 @@ const SPLIT_TXID_BLOCK_811074 = 'e3227e44165c2e3c148024e2a04acb7995620c8c962866b
 const SPLIT_EMPTY_TXID = 'c6ee81d9b67d44d31af4a4a7d80e32233f1abe7e5c0694e44f88cfcaab6e44c5'; // block 813219
 
 // Custom-color (z): payload is `{atomical_id: {output_index: amount}}` map.
-// This fixture sets output 0 to 30 and output 1 to 157 of the FT at the
-// referenced atomical_id. Block 849384, post-activation (848484).
-const CUSTOM_COLOR_TXID = '914a3f3575a1da92035a57bd758da8588fd11776927ab880915f97e66612f773';
+// First fixture is the smallest possible -- two outputs colored. Block 849384.
+const CUSTOM_COLOR_SMALL_TXID = '914a3f3575a1da92035a57bd758da8588fd11776927ab880915f97e66612f773';
+
+// Larger custom-color: distributes the FT across 69 outputs. Block 848559,
+// just after the activation height (848484). Same fixture is in the live
+// indexer DB at row id 2,130,304 (verified via ordpool_stats_atomical_op).
+const CUSTOM_COLOR_LARGE_TXID = 'fd5016351b636a60bfbc58a9aa84bd6796a4c79cc19e1ae9f2a3ef7ecc377593';
 
 describe('AtomicalParserService — splat / split / custom-color', () => {
 
@@ -108,8 +112,8 @@ describe('AtomicalParserService — splat / split / custom-color', () => {
   });
 
   describe('custom-color (z)', () => {
-    it('parses a real custom-color tx with `{atomical_id: {output: amount}}` payload', () => {
-      const tx = readTransaction(CUSTOM_COLOR_TXID);
+    it('parses a small two-output custom-color tx', () => {
+      const tx = readTransaction(CUSTOM_COLOR_SMALL_TXID);
 
       const parsed = AtomicalParserService.parse(tx);
 
@@ -128,6 +132,31 @@ describe('AtomicalParserService — splat / split / custom-color', () => {
           '0': 30,
           '1': 157,
         },
+      });
+    });
+
+    it('parses a large 69-output custom-color tx with mixed amounts', () => {
+      const tx = readTransaction(CUSTOM_COLOR_LARGE_TXID);
+
+      const parsed = AtomicalParserService.parse(tx);
+
+      expect(parsed).not.toBeNull();
+      expect(parsed!.operation).toBe<AtomicalOperation>('z');
+
+      const payload = parsed!.getPayloadRaw();
+      expect(payload.length).toBe(407);
+
+      // 69 outputs total: 0..67 each colored with 200 sats, output 68 with 6400.
+      // Sum = 68 * 200 + 6400 = 20,000 -- the full FT supply of this atomical
+      // being redistributed across all witness outputs in one call.
+      const expectedOutputs: Record<string, number> = {};
+      for (let i = 0; i <= 67; i++) {
+        expectedOutputs[i.toString()] = 200;
+      }
+      expectedOutputs['68'] = 6400;
+
+      expect(CBOR.decode(payload)).toEqual({
+        '9125f03bcf9325f6071762b9aee00b461a0b43ed157c336e2e89e07f47ea6f66i0': expectedOutputs,
       });
     });
   });
