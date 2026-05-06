@@ -86,10 +86,12 @@ export function hasAtomical(witness: string[]): boolean {
  *
  * Real-data coverage:
  * - dft, nft, ft, dmt, dat, mod, sl, x, y, z -- exact-value tests against mainnet txs
- * - evt -- recognition only. No CLI in atomicals-js ever shipped an
- *   event-emit command, and a full-chain scan via the wizz.cash electrumx
- *   proxy finds zero `evt` operations as of 2026-05-06. The opcode is in
- *   the indexer's dispatch table but no real on-chain instance exists yet.
+ * - evt -- recognition only. The `emit` CLI in atomicals-js (lib/commands/
+ *   emit-interactive-command.ts:42) does set `opType: 'evt'`, so the CLI
+ *   shipped, but no `evt` op appears in any scan of the wizz.cash
+ *   electrumx-proxy index as of 2026-05-06 (sparse + dense sweeps across
+ *   the full chain returned zero hits). Apparently nobody runs `emit` in
+ *   the wild. Recognition-only is the right state until a real one shows up.
  */
 export type AtomicalOperation = 'dft' | 'nft' | 'ft' | 'dmt' | 'mod' | 'evt' | 'dat' | 'sl' | 'x' | 'y' | 'z' | 'unknown';
 
