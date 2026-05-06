@@ -1,0 +1,47 @@
+{
+  "txid": "5390e86df98982122175e18a7f24a1618d14e50e0b2242c7ca2c27730ffad700",
+  "version": 1,
+  "locktime": 0,
+  "vin": [
+    {
+      "txid": "16180ed97c32f537bf52d71ef17d24b3090bdb4e561485a2d9907d9df8034214",
+      "vout": 0,
+      "prevout": {
+        "scriptpubkey": "5120e993fe9c58e81a96647dcd128ebbfbddb071dc4b7470de7cc86962c016d702d8",
+        "scriptpubkey_asm": "OP_PUSHNUM_1 OP_PUSHBYTES_32 e993fe9c58e81a96647dcd128ebbfbddb071dc4b7470de7cc86962c016d702d8",
+        "scriptpubkey_type": "v1_p2tr",
+        "scriptpubkey_address": "bc1paxfla8zcaqdfverae5fgawlmmkc8rhztw3cdulxgd93vq9khqtvq2ane79",
+        "value": 8620
+      },
+      "scriptsig": "",
+      "scriptsig_asm": "",
+      "witness": [
+        "17b558e938d06e96bc8214a13bf9452474b972d8b402b1ad2e7075034c921574fd8f7a08c029bc3f623d32ea61c1a0cf03d1c5b46de8678ebb7aa72f52a3fc1c",
+        "2069006ea562e243388d8a8737c8ccb9bd9bacb7c33775a772bc04f0a19d6b0b57ac00630461746f6d03646d743ba16461726773a468626974776f726b6364313631386b6d696e745f7469636b65726461746f6d656e6f6e63651a005319fa6474696d651a650a66a568",
+        "c169006ea562e243388d8a8737c8ccb9bd9bacb7c33775a772bc04f0a19d6b0b57"
+      ],
+      "is_coinbase": false,
+      "sequence": 4294967295,
+      "inner_witnessscript_asm": "OP_PUSHBYTES_32 69006ea562e243388d8a8737c8ccb9bd9bacb7c33775a772bc04f0a19d6b0b57 OP_CHECKSIG OP_0 OP_IF OP_PUSHBYTES_4 61746f6d OP_PUSHBYTES_3 646d74 OP_PUSHBYTES_59 a16461726773a468626974776f726b6364313631386b6d696e745f7469636b65726461746f6d656e6f6e63651a005319fa6474696d651a650a66a5 OP_ENDIF"
+    }
+  ],
+  "vout": [
+    {
+      "scriptpubkey": "5120b42841a264d7910eaa46f37fa113900850241c91637df0b86019dcfe9ba303e0",
+      "scriptpubkey_asm": "OP_PUSHNUM_1 OP_PUSHBYTES_32 b42841a264d7910eaa46f37fa113900850241c91637df0b86019dcfe9ba303e0",
+      "scriptpubkey_type": "v1_p2tr",
+      "scriptpubkey_address": "bc1pks5yrgny67gsa2jx7dl6zyusppgzg8y3vd7lpwrqr8w0axarq0sqg57qye",
+      "value": 1000
+    }
+  ],
+  "size": 303,
+  "weight": 585,
+  "sigops": 0,
+  "fee": 7620,
+  "status": {
+    "confirmed": true,
+    "block_height": 808513,
+    "block_hash": "00000000000000000004b355061484d15ae727b0185b260f8113493cf0b81e41",
+    "block_time": 1695180571
+  }
+}

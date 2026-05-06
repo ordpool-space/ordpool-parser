@@ -85,8 +85,11 @@ export function hasAtomical(witness: string[]): boolean {
  * - Format 2: `{ "image.png": <raw binary bytes> }` (newer CLI path)
  *
  * Real-data coverage:
- * - dft, nft, x, y, z -- exact-value tests against mainnet txs
- * - ft, dmt, mod, evt, dat, sl -- recognition only, no fixture yet
+ * - dft, nft, ft, dmt, dat, mod, sl, x, y, z -- exact-value tests against mainnet txs
+ * - evt -- recognition only. No CLI in atomicals-js ever shipped an
+ *   event-emit command, and a full-chain scan via the wizz.cash electrumx
+ *   proxy finds zero `evt` operations as of 2026-05-06. The opcode is in
+ *   the indexer's dispatch table but no real on-chain instance exists yet.
  */
 export type AtomicalOperation = 'dft' | 'nft' | 'ft' | 'dmt' | 'mod' | 'evt' | 'dat' | 'sl' | 'x' | 'y' | 'z' | 'unknown';
 
