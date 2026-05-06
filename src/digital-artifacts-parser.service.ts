@@ -3,6 +3,7 @@ import { Cat21ParserService } from './cat21/cat21-parser.service';
 import { CounterpartyParserService } from './counterparty/counterparty-parser.service';
 import { InscriptionParserService } from './inscription/inscription-parser.service';
 import { LabitbuParserService } from './labitbu/labitbu-parser.service';
+import { assertEsploraShape } from './lib/transaction-shape';
 import { RuneParserService } from './rune/rune-parser.service';
 import { Src20ParserService } from './src20/src20-parser.service';
 import { StampParserService } from './stamp/stamp-parser.service';
@@ -23,6 +24,8 @@ export class DigitalArtifactsParserService {
    * @returns The parsed digital artifacts or an empty array
    */
   static parse(transaction: TransactionSimple, onError?: OnParseError): DigitalArtifact[] {
+
+    assertEsploraShape(transaction, 'DigitalArtifactsParserService.parse');
 
     const artifacts: DigitalArtifact[] = [];
     const blockHeight = transaction.status?.block_height;

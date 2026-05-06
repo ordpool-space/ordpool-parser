@@ -1,4 +1,5 @@
 import { bytesToBase64, bytesToDataUri, bytesToUnicodeString } from '../lib/conversions';
+import { assertEsploraShape } from '../lib/transaction-shape';
 import { DigitalArtifactType } from '../types/digital-artifact';
 import { ParsedLabitbu } from '../types/parsed-labitbu';
 import { OnParseError } from '../types/parser-options';
@@ -32,6 +33,9 @@ export class LabitbuParserService {
     txid: string,
     vin: { witness?: string[] }[]
   }, onError?: OnParseError, blockHeight?: number): ParsedLabitbu | null {
+
+    // Outside try/catch — see InscriptionParserService.parse for rationale.
+    assertEsploraShape(transaction, 'LabitbuParserService.parse');
 
     if (blockHeight === undefined || blockHeight < LABITBU_FIRST_HEIGHT || blockHeight > LABITBU_LAST_HEIGHT) {
       return null;

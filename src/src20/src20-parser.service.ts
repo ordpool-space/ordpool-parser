@@ -1,6 +1,7 @@
 import { Arc4 } from "../lib/arc4";
 import { bigEndianBytesToNumber, hexToBytes, unicodeStringToBytes } from "../lib/conversions";
 import { bytesToUnicodeString } from '../lib/conversions';
+import { assertEsploraShape } from '../lib/transaction-shape';
 import { extractPubkeys, hasKeyBurn } from './src20-parser.service.helper';
 import { DigitalArtifactType } from "../types/digital-artifact";
 import { OnParseError } from '../types/parser-options';
@@ -44,6 +45,9 @@ export class Src20ParserService {
       scriptpubkey_type: string
     }[];
   }, onError?: OnParseError): ParsedSrc20 | null {
+
+    // Outside try/catch — see InscriptionParserService.parse for rationale.
+    assertEsploraShape(transaction, 'Src20ParserService.parse');
 
     try {
       // early exit by checking against known key burn addresses

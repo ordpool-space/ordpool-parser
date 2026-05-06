@@ -25,6 +25,7 @@ export * from './lib/op-codes';
 export * from './lib/reader';
 export * from './lib/script';
 export * from './lib/sha256-uint8array';
+export * from './lib/transaction-shape';
 export * from './rune/index';
 export * from './rune/rune-parser.service.helper';
 export * from './rune/rune-parser.service';

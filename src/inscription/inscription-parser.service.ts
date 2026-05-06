@@ -9,6 +9,7 @@ import {
 } from '../lib/conversions';
 import { OP_0, OP_ENDIF } from '../lib/op-codes';
 import { readPushdata } from '../lib/reader';
+import { assertEsploraShape } from '../lib/transaction-shape';
 import { DigitalArtifactType } from '../types/digital-artifact';
 import { ParsedInscription } from '../types/parsed-inscription';
 import { OnParseError } from '../types/parser-options';
@@ -37,6 +38,11 @@ export class InscriptionParserService {
     txid: string;
     vin: { witness?: string[] }[]
   }, onError?: OnParseError): ParsedInscription[] {
+
+    // Outside the try/catch on purpose — the parser's catch silences any
+    // error so consumers see []. We want a definite "wrong shape" error
+    // to surface as a stack trace, not a silent empty array.
+    assertEsploraShape(transaction, 'InscriptionParserService.parse');
 
     try {
 

@@ -12,6 +12,7 @@ import {
   validateRuneEtchingSpec,
 } from './rune-parser.service.helper';
 import { OnParseError } from '../types/parser-options';
+import { assertEsploraShape } from '../lib/transaction-shape';
 import { findCommitment } from './rune-parser.service.helper.findCommitment';
 import { RuneEtchingSpec } from './src/etching';
 import { Network } from './src/network';
@@ -32,6 +33,9 @@ export class RuneParserService {
       scriptpubkey_type: string
     }[];
   }, onError?: OnParseError): ParsedRunestone | null {
+
+    // Outside try/catch — see InscriptionParserService.parse for rationale.
+    assertEsploraShape(transaction, 'RuneParserService.parse');
 
     try {
 

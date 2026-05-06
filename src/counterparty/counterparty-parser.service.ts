@@ -1,4 +1,5 @@
 import { hexToBytes } from '../lib/conversions';
+import { assertEsploraShape } from '../lib/transaction-shape';
 import { DigitalArtifactType } from '../types/digital-artifact';
 import { ParsedCounterparty } from '../types/parsed-counterparty';
 import { OnParseError } from '../types/parser-options';
@@ -43,6 +44,9 @@ export class CounterpartyParserService {
     vout: { scriptpubkey: string, scriptpubkey_type: string }[],
     status?: { block_height?: number }
   }, onError?: OnParseError): ParsedCounterparty | null {
+
+    // Outside try/catch — see InscriptionParserService.parse for rationale.
+    assertEsploraShape(transaction, 'CounterpartyParserService.parse');
 
     try {
       if (!transaction.vin.length) {

@@ -1,4 +1,5 @@
 import { bytesToDataUri } from '../lib/conversions';
+import { assertEsploraShape } from '../lib/transaction-shape';
 import { DigitalArtifactType } from '../types/digital-artifact';
 import { OnParseError } from '../types/parser-options';
 import { ParsedSrc20 } from '../types/parsed-src20';
@@ -34,6 +35,9 @@ export class StampParserService {
     vin: { txid: string }[],
     vout: { scriptpubkey: string, scriptpubkey_type: string }[]
   }, onError?: OnParseError): ParsedStamp | ParsedSrc20 | ParsedSrc721 | ParsedSrc101 | null {
+
+    // Outside try/catch — see InscriptionParserService.parse for rationale.
+    assertEsploraShape(transaction, 'StampParserService.parse');
 
     try {
       // Path 1: OLGA P2WSH -- extract raw file data from P2WSH outputs (no decryption)

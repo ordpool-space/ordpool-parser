@@ -1,5 +1,6 @@
 import { CBOR } from '../lib/cbor';
 import { bytesToBase64, bytesToDataUri, bytesToUnicodeString } from '../lib/conversions';
+import { assertEsploraShape } from '../lib/transaction-shape';
 import { DigitalArtifactType } from "../types/digital-artifact";
 import { AtomicalFile, ParsedAtomical } from "../types/parsed-atomical";
 import { OnParseError } from '../types/parser-options';
@@ -54,6 +55,9 @@ export class AtomicalParserService {
     txid: string,
     vin: { witness?: string[] }[]
   }, onError?: OnParseError): ParsedAtomical | null {
+
+    // Outside try/catch — see InscriptionParserService.parse for rationale.
+    assertEsploraShape(transaction, 'AtomicalParserService.parse');
 
     try {
       // Extract the full envelope (operation + CBOR payload) from the first matching witness
