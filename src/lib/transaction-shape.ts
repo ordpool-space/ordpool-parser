@@ -7,9 +7,6 @@
  * verbose shape (`vin[].txinwitness`, `vin[].scriptSig` camelCase as an
  * object, `vout[].scriptPubKey` as an object) every parser silently
  * returns `[]` / `null` because the field names it reads don't exist.
- * That failure mode is exactly the bug we hit on 2026-05-06: every
- * confirmed-tx /preview and /content lookup that fell through to the
- * RPC fetch path 404'd because the parser saw no witness array.
  *
  * The detector here looks for unambiguous bitcoind-rpc-only markers and
  * intentionally biases toward 'esplora' on ambiguity. We only throw when
