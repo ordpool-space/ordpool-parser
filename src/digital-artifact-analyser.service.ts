@@ -26,6 +26,8 @@ import {
 import { OrdpoolTransactionFlags } from './types/ordpool-transaction-flags';
 import { ParsedCat21 } from './types/parsed-cat21';
 import { ParsedInscription } from './types/parsed-inscription';
+import { ParsedStamp } from './types/parsed-stamp';
+import { isImageContentType } from './inscription/inscription-parser.service.helper';
 import { ParsedRunestone } from './types/parsed-runestone';
 import { BrC20Parsed, getBrc20Flaws, parseBrc20Content } from './types/parsed-brc20';
 import { getSrc20Flaws, ParsedSrc20, parseSrc20Content, Src20Parsed } from './types/parsed-src20';
@@ -651,6 +653,29 @@ export class DigitalArtifactAnalyserService {
 
           // x/y/z are FT UTXO transfers — skipped (needs sat tracking for complete numbers)
         }
+
+        // Content-type bucket flags. An atomical's CBOR payload can carry
+        // multiple files (image asset + JSON metadata is common), so each
+        // bucket flag is OR-set independently across all files.
+        // `getFiles?.() || []` keeps stub-test ParsedAtomical callers working.
+        for (const file of atomical.getFiles?.() ?? []) {
+          const ct = file.contentType;
+          if (isImageContentType(ct)) {
+            flags |= OrdpoolTransactionFlags.ordpool_atomical_image;
+          } else if (
+            ct.startsWith('text/plain') ||
+            ct.startsWith('text/html') ||
+            ct.startsWith('text/markdown') ||
+            ct.startsWith('text/css') ||
+            ct.startsWith('text/javascript') ||
+            ct.startsWith('application/javascript') ||
+            ct.startsWith('application/x-javascript')
+          ) {
+            flags |= OrdpoolTransactionFlags.ordpool_atomical_text;
+          } else if (ct.startsWith('application/json')) {
+            flags |= OrdpoolTransactionFlags.ordpool_atomical_json;
+          }
+        }
         break;
 
       case DigitalArtifactType.Labitbu:
@@ -663,6 +688,27 @@ export class DigitalArtifactAnalyserService {
 
       case DigitalArtifactType.Stamp:
         flags |= OrdpoolTransactionFlags.ordpool_stamp;
+
+        // Content-type bucket flags. ParsedStamp.contentType is always set
+        // (OLGA stamps carry the MIME inline; Counterparty-encoded stamps
+        // resolve via the description-prefix lookup).
+        const stamp = artifact as ParsedStamp;
+        const stampCt = stamp.contentType || '';
+        if (isImageContentType(stampCt)) {
+          flags |= OrdpoolTransactionFlags.ordpool_stamp_image;
+        } else if (
+          stampCt.startsWith('text/plain') ||
+          stampCt.startsWith('text/html') ||
+          stampCt.startsWith('text/markdown') ||
+          stampCt.startsWith('text/css') ||
+          stampCt.startsWith('text/javascript') ||
+          stampCt.startsWith('application/javascript') ||
+          stampCt.startsWith('application/x-javascript')
+        ) {
+          flags |= OrdpoolTransactionFlags.ordpool_stamp_text;
+        } else if (stampCt.startsWith('application/json')) {
+          flags |= OrdpoolTransactionFlags.ordpool_stamp_json;
+        }
         break;
 
       case DigitalArtifactType.Src721:
@@ -688,7 +734,7 @@ export class DigitalArtifactAnalyserService {
         // sets both _mint and _image.
         const contentType = inscription.contentType;
         if (contentType) {
-          if (contentType.startsWith('image/')) {
+          if (isImageContentType(contentType)) {
             flags |= OrdpoolTransactionFlags.ordpool_inscription_image;
           } else if (
             contentType.startsWith('text/plain') ||

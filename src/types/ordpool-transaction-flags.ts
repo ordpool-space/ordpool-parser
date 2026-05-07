@@ -76,6 +76,20 @@ export const OrdpoolTransactionFlags = {
   ordpool_src20_deploy:         1n << 72n,
   ordpool_src20_mint:           1n << 73n,
   ordpool_src20_transfer:       1n << 74n,
+
+  // Stamp content-type buckets (bits 75–77). Set on the same content-type rules
+  // as the inscription buckets, but driven by ParsedStamp.contentType (always
+  // populated for OLGA stamps and Counterparty-encoded stamps).
+  ordpool_stamp_image:          1n << 75n,
+  ordpool_stamp_text:           1n << 76n,
+  ordpool_stamp_json:           1n << 77n,
+
+  // Atomical content-type buckets (bits 78–80). An atomical can carry multiple
+  // files in its CBOR payload, so a single tx can set more than one bucket flag
+  // (e.g. an NFT with both an image asset and a JSON metadata file).
+  ordpool_atomical_image:       1n << 78n,
+  ordpool_atomical_text:        1n << 79n,
+  ordpool_atomical_json:        1n << 80n,
 };
 
 export type OrdpoolTransactionFlag = typeof OrdpoolTransactionFlags[keyof typeof OrdpoolTransactionFlags];

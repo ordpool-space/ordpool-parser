@@ -101,7 +101,7 @@ describe('_ordpoolFlags with real blockchain data (no mocks)', () => {
     expect(flagsBigInt & OrdpoolTransactionFlags.ordpool_brc20_deploy).toBe(OrdpoolTransactionFlags.ordpool_brc20_deploy);
   });
 
-  // Atomical: ATOM DFT reveal
+  // Atomical: ATOM DFT reveal — payload carries an embedded image/png file
   it('should set _ordpoolFlags for an atomical transaction', async () => {
     const tx = readTransaction('1d2f39f54320631d0432fa495a45a4f298a2ca1b18adef8e4356e327d003a694');
 
@@ -112,6 +112,47 @@ describe('_ordpoolFlags with real blockchain data (no mocks)', () => {
 
     const flagsBigInt = BigInt(flags);
     expect(flagsBigInt & OrdpoolTransactionFlags.ordpool_atomical).toBe(OrdpoolTransactionFlags.ordpool_atomical);
+    // Content-type bucket: the DFT reveal includes an image asset in its CBOR
+    // payload (testdata/atomical_dft_atom_image.png), so _atomical_image fires.
+    expect(flagsBigInt & OrdpoolTransactionFlags.ordpool_atomical_image).toBe(OrdpoolTransactionFlags.ordpool_atomical_image);
+    expect(flagsBigInt & OrdpoolTransactionFlags.ordpool_atomical_text).toBe(0n);
+    expect(flagsBigInt & OrdpoolTransactionFlags.ordpool_atomical_json).toBe(0n);
+  });
+
+  // Stamp: PNG (OLGA P2WSH stamp #1383565)
+  it('should set _ordpoolFlags + _stamp_image for a PNG stamp', async () => {
+    const tx = readTransaction('516e62beeffb26fb37f8e95e809274e5bbde76eb75a28357f6bbcd4eedbfe8ca');
+
+    await DigitalArtifactAnalyserService.analyseTransaction(tx, 0n);
+
+    const flagsBigInt = BigInt((tx as any)._ordpoolFlags);
+    expect(flagsBigInt & OrdpoolTransactionFlags.ordpool_stamp).toBe(OrdpoolTransactionFlags.ordpool_stamp);
+    expect(flagsBigInt & OrdpoolTransactionFlags.ordpool_stamp_image).toBe(OrdpoolTransactionFlags.ordpool_stamp_image);
+    expect(flagsBigInt & OrdpoolTransactionFlags.ordpool_stamp_text).toBe(0n);
+    expect(flagsBigInt & OrdpoolTransactionFlags.ordpool_stamp_json).toBe(0n);
+  });
+
+  // Stamp: SVG (image/svg+xml — image bucket, not text)
+  it('should set _stamp_image for an SVG stamp (svg+xml is an image MIME)', async () => {
+    const tx = readTransaction('085e0ccbf674dfd5934eb635d392250afb4b6ce41ceb1347335f6f0e64c2f7d6');
+
+    await DigitalArtifactAnalyserService.analyseTransaction(tx, 0n);
+
+    const flagsBigInt = BigInt((tx as any)._ordpoolFlags);
+    expect(flagsBigInt & OrdpoolTransactionFlags.ordpool_stamp_image).toBe(OrdpoolTransactionFlags.ordpool_stamp_image);
+    expect(flagsBigInt & OrdpoolTransactionFlags.ordpool_stamp_text).toBe(0n);
+  });
+
+  // Stamp: text/html (interactive stamp — text bucket)
+  it('should set _stamp_text for a text/html stamp', async () => {
+    const tx = readTransaction('3dfc964777a27da2b93eddbe5a5da06923a1e1c7a80a386e884187dfb88877ff');
+
+    await DigitalArtifactAnalyserService.analyseTransaction(tx, 0n);
+
+    const flagsBigInt = BigInt((tx as any)._ordpoolFlags);
+    expect(flagsBigInt & OrdpoolTransactionFlags.ordpool_stamp_text).toBe(OrdpoolTransactionFlags.ordpool_stamp_text);
+    expect(flagsBigInt & OrdpoolTransactionFlags.ordpool_stamp_image).toBe(0n);
+    expect(flagsBigInt & OrdpoolTransactionFlags.ordpool_stamp_json).toBe(0n);
   });
 
   // Labitbu: WebP in Taproot control block

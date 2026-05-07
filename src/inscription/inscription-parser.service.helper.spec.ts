@@ -1,4 +1,4 @@
-import { extractInscriptionId, extractPointer, getKnownFieldValue, getKnownFieldValues, getNextInscriptionMark, isValidInscriptionId, measureInscriptionSize } from './inscription-parser.service.helper';
+import { extractInscriptionId, extractPointer, getKnownFieldValue, getKnownFieldValues, getNextInscriptionMark, isImageContentType, isValidInscriptionId, isValidTxid, measureInscriptionSize } from './inscription-parser.service.helper';
 import { hexToBytes } from '../lib/conversions';
 
 describe('getKnownFieldValue', () => {
@@ -362,5 +362,79 @@ describe('isValidInscriptionId', () => {
 
   it('should return false for undefined', () => {
     expect(isValidInscriptionId(undefined as any)).toBe(false);
+  });
+});
+
+describe('isValidTxid', () => {
+  const VALID = '521f8eccffa4c41a3a7728dd012ea5a4a02feed81f41159231251ecf1e5c79da';
+
+  it('returns true for 64 lowercase hex characters', () => {
+    expect(isValidTxid(VALID)).toBe(true);
+  });
+
+  it('accepts uppercase and mixed-case hex (txids are case-insensitive)', () => {
+    expect(isValidTxid(VALID.toUpperCase())).toBe(true);
+    expect(isValidTxid('521F8eccffA4c41a3a7728dd012ea5a4a02feed81f41159231251ecf1e5c79DA')).toBe(true);
+  });
+
+  it('rejects an inscription ID (txid + iN)', () => {
+    expect(isValidTxid(`${VALID}i0`)).toBe(false);
+    expect(isValidTxid(`${VALID}i37`)).toBe(false);
+  });
+
+  it('rejects 63 hex characters (one short)', () => {
+    expect(isValidTxid(VALID.slice(0, 63))).toBe(false);
+  });
+
+  it('rejects 65 hex characters (one too many)', () => {
+    expect(isValidTxid(VALID + 'a')).toBe(false);
+  });
+
+  it('rejects strings with non-hex characters', () => {
+    expect(isValidTxid('g' + VALID.slice(1))).toBe(false);
+  });
+
+  it('rejects empty input and undefined', () => {
+    expect(isValidTxid('')).toBe(false);
+    expect(isValidTxid(undefined as any)).toBe(false);
+  });
+});
+
+describe('isImageContentType', () => {
+  it.each([
+    'image/png',
+    'image/jpeg',
+    'image/gif',
+    'image/webp',
+    'image/svg+xml',
+    'image/avif',
+    'image/x-icon',
+    'image/png; charset=binary',
+  ])('returns true for %s', (ct) => {
+    expect(isImageContentType(ct)).toBe(true);
+  });
+
+  it.each([
+    'application/json',
+    'text/plain',
+    'text/html',
+    'text/markdown',
+    'application/octet-stream',
+    'video/mp4',
+    'audio/mpeg',
+    'application/pdf',
+  ])('returns false for %s', (ct) => {
+    expect(isImageContentType(ct)).toBe(false);
+  });
+
+  it('returns false for empty / undefined / null inputs', () => {
+    expect(isImageContentType('')).toBe(false);
+    expect(isImageContentType(undefined)).toBe(false);
+    expect(isImageContentType(null)).toBe(false);
+  });
+
+  it('does not match on substring (image/ must be the prefix, not just present)', () => {
+    expect(isImageContentType('text/image')).toBe(false);
+    expect(isImageContentType('not-image/png')).toBe(false);
   });
 });

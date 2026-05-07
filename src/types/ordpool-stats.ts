@@ -220,8 +220,15 @@ export interface OrdpoolStats {
 
     counterparty: number;
     stamp: number;
+    stampImage: number;
+    stampText: number;
+    stampJson: number;
     src721: number;
     src101: number;
+
+    atomicalImage: number;
+    atomicalText: number;
+    atomicalJson: number;
   },
 
   fees: {
@@ -351,8 +358,15 @@ export function getEmptyStats(): OrdpoolStats {
 
       counterparty: 0,
       stamp: 0,
+      stampImage: 0,
+      stampText: 0,
+      stampJson: 0,
       src721: 0,
       src101: 0,
+
+      atomicalImage: 0,
+      atomicalText: 0,
+      atomicalJson: 0,
     },
 
     fees: {
@@ -463,7 +477,14 @@ export function getArtifactTypeMap() {
     // gate on the parser side.
     [OrdpoolTransactionFlags.ordpool_counterparty,          'counterparty'],
     [OrdpoolTransactionFlags.ordpool_stamp,                 'stamp'],
+    [OrdpoolTransactionFlags.ordpool_stamp_image,           'stampImage'],
+    [OrdpoolTransactionFlags.ordpool_stamp_text,            'stampText'],
+    [OrdpoolTransactionFlags.ordpool_stamp_json,            'stampJson'],
     [OrdpoolTransactionFlags.ordpool_src721,                'src721'],
     [OrdpoolTransactionFlags.ordpool_src101,                'src101'],
+
+    [OrdpoolTransactionFlags.ordpool_atomical_image,        'atomicalImage'],
+    [OrdpoolTransactionFlags.ordpool_atomical_text,         'atomicalText'],
+    [OrdpoolTransactionFlags.ordpool_atomical_json,         'atomicalJson'],
   ]);
 }

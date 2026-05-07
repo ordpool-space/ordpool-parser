@@ -51,8 +51,14 @@ describe('DigitalArtifacts Parser', () => {
       src20Transfer: 0,
       counterparty: 0,
       stamp: 0,
+      stampImage: 0,
+      stampText: 0,
+      stampJson: 0,
       src721: 0,
       src101: 0,
+      atomicalImage: 0,
+      atomicalText: 0,
+      atomicalJson: 0,
     });
 
     // Per-content-type size aggregates. Bucket priority is json > image > text,

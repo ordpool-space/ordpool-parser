@@ -349,3 +349,26 @@ export function measureInscriptionSize(witness: string[]): number | null {
 export function isValidInscriptionId(id: string): boolean {
   return /^[a-f0-9]{64}i\d{1,}$/.test(id);
 }
+
+/**
+ * Validates whether a given string is a bare transaction ID — 64 hex characters,
+ * no `iN` inscription-index suffix.
+ *
+ * Used by `/stamp-content/`, `/atomical-content/`, and the `/content/<txid>`
+ * "first image-bearing inscription" shortcut to distinguish a bare txid from a
+ * full inscription ID.
+ */
+export function isValidTxid(value: string): boolean {
+  return /^[0-9a-fA-F]{64}$/.test(value);
+}
+
+/**
+ * Returns true if the given content type names an image MIME type.
+ *
+ * Centralised so the rule "what counts as an image we'll render server-side"
+ * lives in one place — extending this (e.g. blocking image/svg+xml for security
+ * reasons, or adding image/heic) takes one edit, not a search across callers.
+ */
+export function isImageContentType(contentType: string | undefined | null): boolean {
+  return !!contentType && contentType.startsWith('image/');
+}
