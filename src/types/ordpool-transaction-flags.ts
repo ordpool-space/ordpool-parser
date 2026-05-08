@@ -7,7 +7,7 @@
  * for every flag because each is a single power of 2 (verified by
  * ordpool/backend/src/mempool.interfaces.test.ts).
  *
- * Layout: bits 48–74. Upstream uses 0–44; bits 45–47 are kept free as a
+ * Layout: bits 48–81. Upstream uses 0–44; bits 45–47 are kept free as a
  * safety margin in case upstream claims more bits in a future merge.
  *
  * - 48–54: top-level type flags (atomical, cat21, inscription, rune, brc20, src20, labitbu)
@@ -18,11 +18,25 @@
  * - 66–68: rune sub-ops (etch, mint, cenotaph)
  * - 69–71: brc20 sub-ops (deploy, mint, transfer)
  * - 72–74: src20 sub-ops (deploy, mint, transfer)
+ * - 75–77: stamp content-type buckets (image, text, json)
+ * - 78–80: atomical content-type buckets (image, text, json)
+ * - 81:    ordpool_ots — set by the BACKEND, never by the parser (see note below)
  *
- * Bits 75–77 reserved for the next protocol.
+ * ## Consumer-set flags
+ *
+ * Almost every flag here is set by the parser from witness/output bytes
+ * alone (stateless, deterministic). `ordpool_ots` is the exception: an
+ * OTS calendar commit looks like `OP_RETURN OP_PUSHBYTES_32 <32 bytes>`
+ * with no magic prefix, so identification requires knowing which txids
+ * came through a public calendar. That data lives in the backend
+ * (ordpool_stats_ots satellite table, populated by the OTS poller). The
+ * backend's pre-enrichment ORs the bit into tx._ordpoolFlags after the
+ * parser has finished, using the same HACK pattern that injects
+ * parser-derived bits into upstream's sync getTransactionFlags().
  *
  * Used in:
  *   - ordpool -> backend/src/mempool.interfaces.ts (spread into TransactionFlags)
+ *   - ordpool -> backend/src/api/ots/ordpool-ots-pre-enrichment.ts (sets ordpool_ots)
  *   - ordpool -> frontend/src/app/shared/filters.utils.ts (filter chips)
  *   - ordpool -> backend/src/api/ordpool-database-migration.ts (DB columns named after flag keys)
  */
@@ -90,6 +104,14 @@ export const OrdpoolTransactionFlags = {
   ordpool_atomical_image:       1n << 78n,
   ordpool_atomical_text:        1n << 79n,
   ordpool_atomical_json:        1n << 80n,
+
+  // OpenTimestamps calendar commit (bit 81). NOT set by the parser -- OTS
+  // commits have no on-chain magic prefix, so identification requires
+  // knowing the calendar txid set (kept in MariaDB satellite table
+  // ordpool_stats_ots, populated by the backend's OTS poller). The
+  // backend's pre-enrichment ORs this bit after parser flags are set.
+  // See doc comment above for the architectural rationale.
+  ordpool_ots:                  1n << 81n,
 };
 
 export type OrdpoolTransactionFlag = typeof OrdpoolTransactionFlags[keyof typeof OrdpoolTransactionFlags];
