@@ -51,3 +51,5 @@ export * from './types/parsed-src101';
 export * from './types/parser-options';
 export * from './types/bitcoin-rpc';
 export * from './types/transaction-simple';
+export * from './ots/parsed-ots';
+export * from './ots/ots-parser.service';
