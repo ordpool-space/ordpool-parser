@@ -14,8 +14,13 @@ global.TextDecoder = util.TextDecoder;
 // add this too
 global.Uint8Array = Uint8Array;
 
-const { DecompressionStream } = require('stream/web');
+const { DecompressionStream, ReadableStream, WritableStream, TransformStream } = require('stream/web');
 global.DecompressionStream = DecompressionStream;
+// jsdom doesn't expose the WHATWG Streams API; sha256Stream() reads
+// `Blob.prototype.stream()` which returns a ReadableStream<Uint8Array>.
+global.ReadableStream = ReadableStream;
+global.WritableStream = WritableStream;
+global.TransformStream = TransformStream;
 
 // WebCrypto polyfill for jsdom -- the OTS verifier uses crypto.subtle.digest
 // for SHA-1 / SHA-256. Real browsers expose this; jsdom doesn't, so we
