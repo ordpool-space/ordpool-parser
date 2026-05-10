@@ -75,12 +75,84 @@ class OtsReader {
  * 31-byte header magic at the start of every .ots file.
  * Source: python-opentimestamps `core/timestamp.py:273`.
  */
-const HEADER_MAGIC = new Uint8Array([
+export const OTS_HEADER_MAGIC = new Uint8Array([
   0x00, 0x4f, 0x70, 0x65, 0x6e, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x73, 0x00,
   0x00, 0x50, 0x72, 0x6f, 0x6f, 0x66, 0x00, 0xbf, 0x89, 0xe2, 0xe8, 0x84, 0xe8, 0x92, 0x94,
 ]);
 
 const MAJOR_VERSION = 1;
+const SHA256_FILE_HASH_TAG = 0x08;
+
+/** True if the byte buffer starts with the 31-byte OTS magic header. */
+export function looksLikeOts(bytes: Uint8Array): boolean {
+  if (bytes.length < OTS_HEADER_MAGIC.length) return false;
+  for (let i = 0; i < OTS_HEADER_MAGIC.length; i++) {
+    if (bytes[i] !== OTS_HEADER_MAGIC[i]) return false;
+  }
+  return true;
+}
+
+/**
+ * Build a complete v1 .ots file from a SHA-256 file digest and one or more
+ * calendar reply subtrees. Each subtree is the raw response body from a
+ * calendar's `/digest` POST or `/timestamp/<commit>` GET. Multiple subtrees
+ * become siblings under the root; the wire format separates siblings with
+ * a 0xff continuation byte (last subtree has no leading 0xff). Throws on
+ * empty input.
+ */
+export function assembleOtsFile(fileHash: Uint8Array, subtrees: Uint8Array[]): Uint8Array {
+  if (subtrees.length === 0) throw new Error('assembleOtsFile: at least one subtree required');
+  let total = OTS_HEADER_MAGIC.length + 1 + 1 + fileHash.length;
+  for (let i = 0; i < subtrees.length; i++) {
+    total += subtrees[i].length + (i < subtrees.length - 1 ? 1 : 0);
+  }
+  const out = new Uint8Array(total);
+  let p = 0;
+  out.set(OTS_HEADER_MAGIC, p); p += OTS_HEADER_MAGIC.length;
+  out[p++] = MAJOR_VERSION;
+  out[p++] = SHA256_FILE_HASH_TAG;
+  out.set(fileHash, p); p += fileHash.length;
+  for (let i = 0; i < subtrees.length; i++) {
+    if (i < subtrees.length - 1) out[p++] = 0xff;
+    out.set(subtrees[i], p); p += subtrees[i].length;
+  }
+  return out;
+}
+
+/**
+ * Walk a single-chain calendar body (the raw reply from `/digest`) forward,
+ * op by op, and return the prefix that contains every op up to (but not
+ * including) the first attestation marker (0x00). Used by upgrade-splice
+ * logic: callers replace [PendingAttestation] with [upgrade response] by
+ * concatenating the slice + the upgrade body.
+ *
+ * Throws if the body has continuations (0xff) or doesn't terminate in an
+ * attestation -- calendar replies are always single chains, so any
+ * deviation is a malformed body.
+ */
+export function sliceOpsBeforeAttestation(body: Uint8Array): Uint8Array {
+  let p = 0;
+  while (p < body.length) {
+    const tag = body[p];
+    if (tag === 0x00) return body.slice(0, p);
+    if (tag === 0xff) throw new Error('OTS body has unexpected continuation');
+    p++;
+    // append (0xf0) and prepend (0xf1) carry varuint-prefixed bytes; every
+    // other op tag has zero-byte payload.
+    if (tag === 0xf0 || tag === 0xf1) {
+      let len = 0, shift = 0;
+      while (true) {
+        const b = body[p++];
+        len |= (b & 0x7f) << shift;
+        if ((b & 0x80) === 0) break;
+        shift += 7;
+        if (shift > 35) throw new Error('OTS varuint overflow');
+      }
+      p += len;
+    }
+  }
+  throw new Error('OTS body has no attestation marker');
+}
 
 /** Op tag bytes (single byte each). */
 const OP_TAG = {
@@ -260,7 +332,7 @@ async function readNode(r: OtsReader, msg: Uint8Array, depth: number): Promise<O
  */
 export async function parseOtsFile(bytes: Uint8Array): Promise<ParsedOtsFile> {
   const r = new OtsReader(bytes);
-  r.expectMagic(HEADER_MAGIC);
+  r.expectMagic(OTS_HEADER_MAGIC);
 
   const major = r.readByte();
   if (major !== MAJOR_VERSION) {
