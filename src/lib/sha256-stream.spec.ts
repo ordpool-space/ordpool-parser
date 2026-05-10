@@ -1,3 +1,4 @@
+import { ReadableStream } from 'stream/web';
 import { sha256Stream, sha256StreamFromIterable } from './sha256-stream';
 import { createHash } from './sha256-uint8array';
 
@@ -37,10 +38,13 @@ function fillRandom(bytes: Uint8Array, seed: number): Uint8Array {
   return bytes;
 }
 
-/** Polyfill a Blob-like object whose `stream()` method emits the given
- *  bytes in chunks of `chunkSize`. Lets us drive sha256Stream() from
- *  test code without depending on the `Blob` constructor's stream
- *  semantics across environments. */
+/** Build a Blob-shaped object whose `.stream()` emits the given bytes in
+ *  `chunkSize`-sized chunks. We construct the ReadableStream from
+ *  `node:stream/web` ourselves rather than relying on `Blob.prototype.stream()`
+ *  -- jsdom's Blob doesn't return a real WHATWG ReadableStream, and we
+ *  deliberately don't pollute the global namespace with a polyfill. By
+ *  importing locally, the spec drives sha256Stream(blob) through the same
+ *  reader/getReader path production code uses in real browsers. */
 function makeChunkedBlob(bytes: Uint8Array, chunkSize: number): Blob {
   return {
     size: bytes.length,
@@ -56,7 +60,9 @@ function makeChunkedBlob(bytes: Uint8Array, chunkSize: number): Blob {
         },
       });
     },
-    // Required Blob methods we don't use; satisfy the type at runtime via casts.
+    // We never call these in production through sha256Stream, but the type
+    // demands them. Stub them out -- a runtime call would surface the
+    // mistake immediately.
     arrayBuffer: async () => bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
     text: async () => '',
     slice: () => new Blob([]),
@@ -156,9 +162,6 @@ describe('sha256Stream — cross-validation vs one-shot hash', () => {
 // junk, so we re-verify on every test run.
 
 describe('sha256Stream — agrees with crypto.subtle.digest (WebCrypto)', () => {
-  // Skip cleanly if WebCrypto isn't present (e.g. very old Node without
-  // the polyfill) -- our jest setup polyfills it, so this should never
-  // skip in practice.
   const cryptoOk = typeof crypto !== 'undefined' && typeof crypto.subtle?.digest === 'function';
   const maybeIt = cryptoOk ? it : it.skip;
 
