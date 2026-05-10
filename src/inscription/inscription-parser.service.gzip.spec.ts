@@ -1,5 +1,8 @@
-import { readInscriptionAsBase64, readTransaction } from '../../testdata/test.helper';
+import { MAX_DECOMPRESSED_SIZE_MESSAGE } from '../lib/brotli-decode';
+import { bytesToBinaryString } from '../lib/conversions';
+import { readBinaryFileAsUint8Array, readInscriptionAsBase64, readTransaction } from '../../testdata/test.helper';
 import { InscriptionParserService } from './inscription-parser.service';
+import { gzipDecode } from './inscription-parser.service.helper';
 
 describe('Inscription parser', () => {
 
@@ -16,9 +19,10 @@ describe('Inscription parser', () => {
     expect(actualFileData).toEqual(expectedFileData);
   });
 
-  /*
-  it('should survive a decompression bomb', () => {
-    // TODO! add mitigations!
+  it('should survive a decompression bomb', async () => {
+    const bomb = readBinaryFileAsUint8Array('gzip-decompression-bomb.txt.gz');
+    const contentRaw = await gzipDecode(bomb);
+    const content = bytesToBinaryString(contentRaw);
+    expect(content).toEqual(MAX_DECOMPRESSED_SIZE_MESSAGE);
   });
-  */
 });

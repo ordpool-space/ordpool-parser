@@ -1,4 +1,4 @@
-import { INVALID_COMPRESSED_DATA_MESSAGE, MAX_DECOMPRESSED_SIZE_MESSAGE, brotliDecode } from "../lib/brotli-decode";
+import { INVALID_COMPRESSED_DATA_MESSAGE, MAX_DECOMPRESSED_SIZE, MAX_DECOMPRESSED_SIZE_MESSAGE, brotliDecode } from "../lib/brotli-decode";
 import { hexToBytes, isStringInArrayOfStrings, littleEndianBytesToNumber } from "../lib/conversions";
 import { bytesToHex } from "../lib/conversions";
 import { OP_ENDIF, OP_FALSE, OP_IF, OP_PUSHBYTES_3 } from "../lib/op-codes";
@@ -217,10 +217,18 @@ export function brotliDecodeUint8Array(bytes: Uint8Array): Uint8Array {
 }
 
 /**
- * Decompresses gzip-encoded bytes via DecompressionStream. Returns
- * INVALID_COMPRESSED_DATA_MESSAGE (UTF-8) on decode failure -- mirrors
- * brotliDecodeUint8Array. Throws only when DecompressionStream itself
- * is unavailable (host environment, not a data problem).
+ * Decompresses gzip-encoded bytes via DecompressionStream. Returns:
+ * - the decompressed bytes on success
+ * - MAX_DECOMPRESSED_SIZE_MESSAGE (UTF-8) if the result would exceed the cap
+ * - INVALID_COMPRESSED_DATA_MESSAGE (UTF-8) on any other decode failure
+ *
+ * Mirrors brotliDecodeUint8Array's behaviour. Decompression-bomb safety: a
+ * malicious gzip payload that expands to gigabytes is aborted as soon as the
+ * streamed output crosses MAX_DECOMPRESSED_SIZE -- we never allocate the full
+ * pathological output.
+ *
+ * Throws only when DecompressionStream itself is unavailable (host
+ * environment, not a data problem).
  */
 export async function gzipDecode(bytes: Uint8Array): Promise<Uint8Array> {
   if (typeof DecompressionStream === 'undefined') {
@@ -232,12 +240,15 @@ export async function gzipDecode(bytes: Uint8Array): Promise<Uint8Array> {
   try {
     const ds = new DecompressionStream('gzip');
 
-    // Write the input bytes to the stream
+    // Write the input bytes to the stream. We swallow the per-call rejections
+    // so that cancelling the reader on a bomb doesn't surface as an
+    // unhandled "ABORT_ERR" from the still-in-flight writer.
     const writer = ds.writable.getWriter();
-    writer.write(bytes);
-    writer.close();
+    writer.write(bytes).catch(() => { /* aborted on bomb cancel */ });
+    writer.close().catch(() => { /* aborted on bomb cancel */ });
 
-    // Read and concatenate the output bytes
+    // Read and concatenate the output bytes, aborting if the running total
+    // would exceed MAX_DECOMPRESSED_SIZE (decompression-bomb mitigation).
     const reader = ds.readable.getReader();
     const chunks: Uint8Array[] = [];
     let totalSize = 0;
@@ -249,6 +260,12 @@ export async function gzipDecode(bytes: Uint8Array): Promise<Uint8Array> {
       if (value) {
         chunks.push(value);
         totalSize += value.byteLength;
+        if (totalSize > MAX_DECOMPRESSED_SIZE) {
+          // Cancel the stream so the underlying DecompressionStream stops
+          // pulling more input -- we don't want to keep decompressing a bomb.
+          await reader.cancel();
+          throw new Error(MAX_DECOMPRESSED_SIZE_MESSAGE);
+        }
       }
     }
 
@@ -261,7 +278,10 @@ export async function gzipDecode(bytes: Uint8Array): Promise<Uint8Array> {
     }
 
     return result;
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.message === MAX_DECOMPRESSED_SIZE_MESSAGE) {
+      return new TextEncoder().encode(MAX_DECOMPRESSED_SIZE_MESSAGE);
+    }
     return new TextEncoder().encode(INVALID_COMPRESSED_DATA_MESSAGE);
   }
 }
