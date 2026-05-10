@@ -21,6 +21,7 @@ export * from './lib/bitcoin-rpc';
 export * from './lib/brotli-decode';
 export * from './lib/cbor';
 export * from './lib/conversions';
+export * from './lib/error';
 export * from './lib/op-codes';
 export * from './lib/reader';
 export * from './lib/script';
