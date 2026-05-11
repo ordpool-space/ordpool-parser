@@ -1,106 +1,96 @@
-import { bytesToHex, isStringInArrayOfStrings } from '../lib/conversions';
+import { bytesToHex } from '../lib/conversions';
 import { IEsploraApi } from '../types/mempool';
 import { removeSpacers } from './rune-parser.service.helper';
 import { findCommitment } from './rune-parser.service.helper.findCommitment';
 import { Rune } from './src/rune';
 
+/**
+ * Real on-chain-shape tests for findCommitment.
+ *
+ * No mocks: removeSpacers, Rune.fromString, bytesToHex, and
+ * isStringInArrayOfStrings all run for real. A mock-heavy version of these
+ * tests would happily pass even if Rune.fromString returned the wrong
+ * commitment bytes -- the whole point of the function is to derive the
+ * right commitment from a rune name and find it inside a witness, so the
+ * derivation has to be exercised.
+ *
+ * The test rune `Z•Z•Z•Z•Z•FEHU•Z•Z•Z•Z•Z` collapses to `ZZZZZFEHUZZZZZ`
+ * whose Rune.commitment hex is `b530368c74df10a303`. That literal value is
+ * pinned below so any change to Rune's encoding logic surfaces here as well.
+ */
 
-jest.mock('../lib/conversions', () => ({
-  isStringInArrayOfStrings: jest.fn(),
-  bytesToHex: jest.fn()
-}));
-
-jest.mock('./rune-parser.service.helper', () => ({
-  removeSpacers: jest.fn(),
-  isStringInArrayOfStrings: jest.fn()
-}));
-
-jest.mock('./src/rune', () => ({
-  Rune: { fromString: jest.fn() }
-}));
+const RUNE_NAME = 'Z•Z•Z•Z•Z•FEHU•Z•Z•Z•Z•Z';
+const COMMITMENT_HEX = 'b530368c74df10a303';
 
 describe('findCommitment', () => {
-  let mockTransaction: { vin: IEsploraApi.Vin[] };
-  let runeName: string;
 
-  beforeEach(() => {
-    jest.resetAllMocks();
+  it('derives the same commitment hex our test data assumes', () => {
+    // Pin the upstream encoding: if Rune.fromString or removeSpacers ever
+    // changes shape, this fires before the other tests start lying.
+    const cleaned = removeSpacers(RUNE_NAME);
+    expect(cleaned).toBe('ZZZZZFEHUZZZZZ');
+    const commitment = Rune.fromString(cleaned).commitment;
+    expect(bytesToHex(commitment)).toBe(COMMITMENT_HEX);
+  });
 
-    // Sample mock transaction structure
-    mockTransaction = {
+  it('returns the first vin whose witness contains the commitment', () => {
+    const tx: { vin: IEsploraApi.Vin[] } = {
       vin: [
-        { witness: ['abcdef', '123456'] },
-        { witness: ['987654', 'fedcba'] },
-      ]
-    } as { vin: IEsploraApi.Vin[] };
-
-    runeName = 'Z•Z•Z•Z•Z•FEHU•Z•Z•Z•Z•Z';
-
-    // Mock the basic helpers
-    (removeSpacers as jest.Mock).mockReturnValue('ZZZZZFEHUZZZZZ');
-    (bytesToHex as jest.Mock).mockReturnValue('123456');
-
-    // Mock Rune.fromString to return the commitment
-    (Rune.fromString as jest.Mock).mockReturnValue({
-      commitment: new Uint8Array([0x12, 0x34, 0x56]),
-    });
-  });
-
-  it('should return the correct vin if commitment is found', () => {
-
-    // Mock the function to return true when a commitment is found
-    (isStringInArrayOfStrings as jest.Mock).mockReturnValue(true);
-
-    const result = findCommitment(mockTransaction, runeName);
-
-    expect(removeSpacers).toHaveBeenCalledWith(runeName);
-    expect(Rune.fromString).toHaveBeenCalledWith('ZZZZZFEHUZZZZZ');
-    expect(bytesToHex).toHaveBeenCalledWith(new Uint8Array([0x12, 0x34, 0x56]));
-    expect(isStringInArrayOfStrings).toHaveBeenCalledWith('123456', mockTransaction.vin[0].witness);
-    expect(result).toEqual(mockTransaction.vin[0]); // The first vin should be returned
-  });
-
-  it('should return null if no commitment is found in any vin', () => {
-
-    // Mock the function to return false when no commitment is found
-    (isStringInArrayOfStrings as jest.Mock).mockReturnValue(false);
-
-    const result = findCommitment(mockTransaction, runeName);
-
-    expect(removeSpacers).toHaveBeenCalledWith(runeName);
-    expect(Rune.fromString).toHaveBeenCalledWith('ZZZZZFEHUZZZZZ');
-    expect(bytesToHex).toHaveBeenCalledWith(new Uint8Array([0x12, 0x34, 0x56]));
-    expect(isStringInArrayOfStrings).toHaveBeenCalledWith('123456', mockTransaction.vin[0].witness);
-    expect(isStringInArrayOfStrings).toHaveBeenCalledWith('123456', mockTransaction.vin[1].witness);
-    expect(result).toBeNull(); // Since no commitment is found, result should be null
-  });
-
-  it('should skip vin if witness is undefined or null', () => {
-    // Update mockTransaction to include a vin without witness
-    mockTransaction = {
-      vin: [
-        { witness: null },
-        { witness: undefined },
-        { witness: ['abcdef', '123456'] }, // Only this one should be checked
+        { witness: ['deadbeef', COMMITMENT_HEX, '99'] } as IEsploraApi.Vin,
+        { witness: ['ffff'] } as IEsploraApi.Vin,
       ],
-    } as { vin: IEsploraApi.Vin[] };
-
-    // Mock the function to return true when a commitment is found
-    (isStringInArrayOfStrings as jest.Mock).mockReturnValue(true);
-
-    const result = findCommitment(mockTransaction, runeName);
-
-    expect(isStringInArrayOfStrings).toHaveBeenCalledWith('123456', mockTransaction.vin[2].witness);
-    expect(result).toEqual(mockTransaction.vin[2]); // Only the third vin should be checked and returned
+    };
+    const result = findCommitment(tx, RUNE_NAME);
+    expect(result).toBe(tx.vin[0]);
   });
 
-  it('should return null if transaction has no vin', () => {
+  it('skips vins until it finds the witness with the commitment', () => {
+    const tx: { vin: IEsploraApi.Vin[] } = {
+      vin: [
+        { witness: ['deadbeef'] } as IEsploraApi.Vin,
+        { witness: ['cafebabe'] } as IEsploraApi.Vin,
+        { witness: [COMMITMENT_HEX] } as IEsploraApi.Vin,
+      ],
+    };
+    expect(findCommitment(tx, RUNE_NAME)).toBe(tx.vin[2]);
+  });
 
-    // Mock an empty vin array
-    mockTransaction = { vin: [] };
+  it('skips vins with null or undefined witness', () => {
+    const tx: { vin: IEsploraApi.Vin[] } = {
+      vin: [
+        { witness: null as unknown as string[] } as IEsploraApi.Vin,
+        { witness: undefined as unknown as string[] } as IEsploraApi.Vin,
+        { witness: [COMMITMENT_HEX] } as IEsploraApi.Vin,
+      ],
+    };
+    expect(findCommitment(tx, RUNE_NAME)).toBe(tx.vin[2]);
+  });
 
-    const result = findCommitment(mockTransaction, runeName);
+  it('returns null when no vin witness contains the commitment', () => {
+    const tx: { vin: IEsploraApi.Vin[] } = {
+      vin: [
+        { witness: ['deadbeef'] } as IEsploraApi.Vin,
+        { witness: ['cafebabe'] } as IEsploraApi.Vin,
+      ],
+    };
+    expect(findCommitment(tx, RUNE_NAME)).toBeNull();
+  });
 
-    expect(result).toBeNull(); // Since no vin exists, result should be null
+  it('returns null when the tx has no vin', () => {
+    expect(findCommitment({ vin: [] }, RUNE_NAME)).toBeNull();
+  });
+
+  it('matches the commitment as a substring inside a larger witness blob', () => {
+    // The function uses isStringInArrayOfStrings (which calls
+    // String.prototype.includes), so the commitment can appear inside a
+    // larger hex string. This is what the ord rune updater does in
+    // practice: the commitment is one push inside a Tapscript blob like
+    // <pushdata><commitment><opdrop>, and we search the assembled hex.
+    const tx: { vin: IEsploraApi.Vin[] } = {
+      vin: [
+        { witness: ['00' + COMMITMENT_HEX + '75'] } as IEsploraApi.Vin,   // <something> commitment OP_DROP
+      ],
+    };
+    expect(findCommitment(tx, RUNE_NAME)).toBe(tx.vin[0]);
   });
 });

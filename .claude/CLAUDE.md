@@ -128,19 +128,13 @@ src/
 └── digital-artifact-analyser.service.ts  # Unified: parse all artifact types at once
 ```
 
-## IMPORTANT: _ordpoolFlags Side Effect Pattern
+## Integration contract: functional, not side-channel
 
-`analyseTransactions()` and `analyseTransaction()` set `tx._ordpoolFlags` as a **side effect** on each transaction object they process. This is intentional and critical for the ordpool/mempool integration.
+`analyseTransaction(tx, flags) -> Promise<bigint>` is the canonical entry point. It takes the consumer's existing flag bigint (typically the upstream-mempool-style transaction flags), ORs in the ordpool artifact bits the parser detected, and returns the merged bigint. Both the ordpool backend (`backend/src/api/common.ts::Common.getTransactionFlags`) and the ordpool frontend (`frontend/src/app/shared/transaction.utils.ts::getTransactionFlags`) call it the same way and rely on the **return value**, not a side-channel.
 
-**Why**: The ordpool backend is a fork of mempool.space. Upstream's `getTransactionFlags()` is **synchronous**, and making it async would cascade `async/await` changes through 15+ upstream files (`classifyTransaction`, `classifyTransactions`, `summarizeBlockTransactions`, `processBlockTemplates`, `dataToMempoolBlocks`, `processClusterMempoolBlocks`, and all their callers). Every upstream merge would re-create these conflicts.
+Both `analyseTransactions()` (per-block) and `analyseTransaction()` (per-tx) DO still assign `tx._ordpoolFlags = Number(combinedOrdpoolFlags)` on the tx object as a side effect. This is no longer load-bearing for the flag-classification path -- callers no longer read it -- but it is kept because the backend's OTS pre-enrichment helper (`backend/src/api/ordpool-ots-flag.ts`) mutates this field to inject the indexer-derived `ordpool_ots` bit before `Common.getTransactionFlags`'s final analyser call. Removing the assignment would silently break OTS flagging.
 
-**How it works**: Instead of making upstream functions async, we pre-compute ordpool flags BEFORE upstream classification runs:
-1. `analyseTransactions(transactions)` iterates all txs, parses artifacts, and sets `tx._ordpoolFlags = Number(combinedOrdpoolFlags)` on each tx object
-2. `analyseTransaction(tx, flags)` does the same for a single tx
-3. Upstream's `getTransactionFlags(tx)` (sync) reads `tx._ordpoolFlags` via a 3-line HACK and ORs them into the flags
-4. Since JavaScript arrays are passed by reference, enriching tx objects in `$getBlockExtended` makes them visible to `summarizeBlockTransactions` which runs next on the same array
-
-**Do NOT remove the `_ordpoolFlags` assignment.** It looks like a weird side effect but it's the only way to inject ordpool flags into the upstream classification pipeline without making 15+ files async.
+History: the original integration was synchronous-only on the backend's `getTransactionFlags`. The parser had to mutate `tx._ordpoolFlags` because it couldn't make the consumer async. That constraint is gone -- both consumers are async now -- but the side-effect mutation remains because OTS is now the legitimate user.
 
 ## Public API
 
@@ -156,12 +150,16 @@ AtomicalParserService.parse(tx): ParsedAtomical | null
 LabitbuParserService.parse(tx): ParsedLabitbu | null
 Src20ParserService.parse(tx): ParsedSrc20 | null
 
-// Analyze a full block's transactions (used by ordpool backend)
-// SIDE EFFECT: sets tx._ordpoolFlags on each transaction (see above)
-DigitalArtifactAnalyserService.analyseTransactions(txs): OrdpoolStats
+// Analyse a full block: returns OrdpoolStats (per-block aggregate).
+// Also assigns tx._ordpoolFlags per tx, kept solely for OTS pre-enrichment
+// (see "Integration contract" above) -- flag classification reads the
+// return value, not the side-effect.
+DigitalArtifactAnalyserService.analyseTransactions(txs): Promise<OrdpoolStats>
 
-// Analyze a single transaction (used for mempool tx pre-enrichment)
-// SIDE EFFECT: sets tx._ordpoolFlags on the transaction (see above)
+// Analyse a single tx: takes the consumer's current flags bigint, returns
+// (flags | ordpool-bits). Both backend Common.getTransactionFlags and
+// frontend transaction.utils.getTransactionFlags use this return-value
+// contract directly.
 DigitalArtifactAnalyserService.analyseTransaction(tx, flags): Promise<bigint>
 ```
 

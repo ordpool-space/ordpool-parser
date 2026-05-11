@@ -27,3 +27,4 @@ global.DecompressionStream = DecompressionStream;
 const { webcrypto } = require('crypto');
 Object.defineProperty(global, 'crypto', { value: webcrypto, configurable: true, writable: true });
 Object.defineProperty(globalThis, 'crypto', { value: webcrypto, configurable: true, writable: true });
+

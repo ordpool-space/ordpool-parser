@@ -162,13 +162,15 @@ describe('sha256Stream — cross-validation vs one-shot hash', () => {
 // junk, so we re-verify on every test run.
 
 describe('sha256Stream — agrees with crypto.subtle.digest (WebCrypto)', () => {
-  const cryptoOk = typeof crypto !== 'undefined' && typeof crypto.subtle?.digest === 'function';
-  const maybeIt = cryptoOk ? it : it.skip;
+
+  // Node 24 ships WebCrypto on globalThis; the browser-jest setup binds
+  // Node's webcrypto into jsdom (see jest.config.browser.setup.js). If
+  // either ever breaks, this test should loudly fail, not silently skip.
 
   const SIZES = [0, 1, 32, 64, 100, 1024, 64 * 1024, 1024 * 1024];
 
   for (const size of SIZES) {
-    maybeIt(`${size} bytes random — streamed digest === WebCrypto digest`, async () => {
+    it(`${size} bytes random — streamed digest === WebCrypto digest`, async () => {
       const data = fillRandom(new Uint8Array(size), 0xa5a5a5 ^ size);
       const wc = new Uint8Array(await crypto.subtle.digest('SHA-256', data as BufferSource));
       const streamed = await sha256Stream(makeChunkedBlob(data, 4096));
@@ -178,7 +180,7 @@ describe('sha256Stream — agrees with crypto.subtle.digest (WebCrypto)', () => 
 
   // Bonus: chunking should not affect the digest. Verify against WC for
   // a single representative size with weird chunk schedules.
-  maybeIt('same digest as WebCrypto regardless of chunk size (50 KB)', async () => {
+  it('same digest as WebCrypto regardless of chunk size (50 KB)', async () => {
     const data = fillRandom(new Uint8Array(50_000), 0x12345678);
     const wc = new Uint8Array(await crypto.subtle.digest('SHA-256', data as BufferSource));
     for (const cs of [1, 13, 64, 4096, 50_000]) {

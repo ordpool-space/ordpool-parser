@@ -26,14 +26,14 @@ npm install ordpool-parser
 
 ## Quick start
 
-The parser expects transactions in Esplora API JSON format (used by mempool.space and blockstream.info).
+The parser expects transactions in Esplora API JSON format (served by `api.ordpool.space`, `mempool.space`, `blockstream.info`, or your own Esplora-compatible backend).
 
 ### Parse everything at once
 
 ```ts
 import { DigitalArtifactsParserService } from 'ordpool-parser';
 
-const response = await fetch(`https://mempool.space/api/tx/${txId}`);
+const response = await fetch(`https://api.ordpool.space/api/tx/${txId}`);
 const tx = await response.json();
 
 // Returns all digital artifacts found in the transaction

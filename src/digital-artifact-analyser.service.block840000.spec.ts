@@ -1,4 +1,3 @@
-import axios from 'axios';
 import { log, warn } from 'console';
 
 import { getBlock840000Txns } from '../testdata/block_840000_txns';
@@ -996,8 +995,8 @@ describe('DigitalArtifacts Parser', () => {
         await new Promise(resolve => setTimeout(resolve, 50));
 
         // console.log('Fetching vin.txid')
-        const response = await axios.get(`https://mempool.space/api/tx/${vin.txid}`);
-        const transaction = response.data as IEsploraApi.Transaction;
+        const response = await fetch(`https://api.ordpool.space/api/tx/${vin.txid}`);
+        const transaction = (await response.json()) as IEsploraApi.Transaction;
         vinTxns.push(transaction);
       }
 
