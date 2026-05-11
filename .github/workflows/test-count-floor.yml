@@ -1,6 +1,6 @@
 # Fails the build LOUDLY when the count of passing tests drops below the
-# committed baseline. The hans-crypto identity is the only one allowed to
-# lower the baseline (by editing .test-count-baseline.json and committing
+# committed baseline. Only an ordpool core maintainer is allowed to lower
+# the baseline (by editing .test-count-baseline.json and committing
 # that edit explicitly). Every other change that reduces test count is
 # treated as an accident and rejected.
 #
@@ -78,7 +78,7 @@ jobs:
             echo "::error::TEST COVERAGE DROPPED. Current passing tests ($CURRENT) is below the committed floor ($BASELINE)."
             echo ""
             echo "This action is intentionally strict: nobody but the maintainer"
-            echo "(@hans-crypto) is authorised to lower the test floor. Reducing"
+            echo "(an ordpool core maintainer) is authorised to lower the test floor. Reducing"
             echo "the baseline requires editing .test-count-baseline.json and"
             echo "committing that edit as an explicit, reviewed decision."
             echo ""
