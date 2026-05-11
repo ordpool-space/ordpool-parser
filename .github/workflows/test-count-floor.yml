@@ -1,0 +1,97 @@
+# Fails the build LOUDLY when the count of passing tests drops below the
+# committed baseline. The hans-crypto identity is the only one allowed to
+# lower the baseline (by editing .test-count-baseline.json and committing
+# that edit explicitly). Every other change that reduces test count is
+# treated as an accident and rejected.
+#
+# Background: on 2026-05-11 three analyse-transactions*.spec.ts files were
+# deleted from this repo on a bad audit-agent recommendation. This action
+# is the safety net that catches the next attempt.
+
+name: Test Count Floor
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+
+  test-count-floor:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm ci
+
+      # Capture jest's full output. The `tee` lets the action surface logs
+      # while still piping the same bytes into the floor check below.
+      - name: Run tests and capture output
+        id: jest
+        run: npm test 2>&1 | tee jest-output.log
+        # `set -o pipefail` is the default in GH Actions for bash; an
+        # underlying jest failure will fail this step regardless of the
+        # floor check below.
+
+      - name: Enforce test-count floor
+        run: |
+          set -euo pipefail
+
+          # Pull the number that appears as "N passed" in jest's summary
+          # line. Both jest configs (node + browser) run via `npm test`, so
+          # the file has two such lines -- we SUM them. The sum is the
+          # right floor invariant: every spec runs in both envs (with the
+          # rare `@jest-environment node` override), so a deleted spec
+          # drops the sum by 2 and a single-env regression drops it by 1.
+          #
+          #   Tests:       7 skipped, 870 passed, 877 total      <- node
+          #   Tests:       7 skipped, 870 passed, 877 total      <- browser
+          #
+          # Sum: 1740 passing.
+          CURRENT=$(grep -E '^Tests:' jest-output.log \
+            | sed -E 's/.*[, ]([0-9]+) passed.*/\1/' \
+            | awk '{ s += $1 } END { print s }')
+
+          if [ -z "$CURRENT" ] || [ "$CURRENT" = "0" ]; then
+            echo "::error::Could not extract a passing-tests count from jest output."
+            echo "First 50 lines of captured log:"
+            head -50 jest-output.log
+            exit 1
+          fi
+
+          BASELINE=$(jq -r '.passing' .test-count-baseline.json)
+          if [ -z "$BASELINE" ] || [ "$BASELINE" = "null" ]; then
+            echo "::error::.test-count-baseline.json is missing 'passing' field."
+            exit 1
+          fi
+
+          echo "Current passing tests: $CURRENT"
+          echo "Committed baseline:    $BASELINE"
+
+          if [ "$CURRENT" -lt "$BASELINE" ]; then
+            echo "::error::TEST COVERAGE DROPPED. Current passing tests ($CURRENT) is below the committed floor ($BASELINE)."
+            echo ""
+            echo "This action is intentionally strict: nobody but the maintainer"
+            echo "(@hans-crypto) is authorised to lower the test floor. Reducing"
+            echo "the baseline requires editing .test-count-baseline.json and"
+            echo "committing that edit as an explicit, reviewed decision."
+            echo ""
+            echo "If you got here by accident (deleted a test, broke a fixture,"
+            echo "merged a stale branch) -- restore the missing tests instead."
+            echo ""
+            echo "Detected diff: $((BASELINE - CURRENT)) tests missing."
+            exit 1
+          fi
+
+          if [ "$CURRENT" -gt "$BASELINE" ]; then
+            echo "::notice::Test count grew (+$((CURRENT - BASELINE)) since baseline)."
+            echo "Consider bumping .test-count-baseline.json to lock in the gain."
+          else
+            echo "Test count matches baseline exactly. All good."
+          fi
