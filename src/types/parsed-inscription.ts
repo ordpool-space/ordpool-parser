@@ -87,10 +87,10 @@ export interface ParsedInscription extends DigitalArtifact {
   getMetaprotocol: () => string | undefined;
 
   /**
-   * Get Note, from tag 15. `Tag::Note` in ord, reserved in PR #3256 because
-   * the chisel.xyz inscribe service was already writing their URL into this
-   * tag in the wild. ord stores it but doesn't display it. We expose it so
-   * explorers (like ordpool.space) can show it as an inscriber-tool watermark.
+   * Get Note, from tag 15 (`Tag::Note` in ord). Free-form string attached
+   * to the inscription. The reference indexer stores it but does not
+   * display it; we expose it so explorers can surface it on inscription
+   * detail pages.
    */
   getNote: () => string | undefined;
 
