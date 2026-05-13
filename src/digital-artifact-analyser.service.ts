@@ -507,14 +507,17 @@ export class DigitalArtifactAnalyserService {
         }
 
         // ** SRC-20 Deployment Attempts — uses src20Content from analyse() (no re-parse!)
+        // The canonical spec accepts numeric fields as either JSON strings or
+        // JSON numbers, but the DB-bound Src20DeployAttempt shape is string-only.
+        // Coerce here so downstream consumers don't have to.
         if ((flags & OrdpoolTransactionFlags.ordpool_src20_deploy) === OrdpoolTransactionFlags.ordpool_src20_deploy) {
           if (src20Content && src20Content.op === 'deploy') {
             src20DeployAttempts.push({
               txId: tx.txid,
               ticker: src20Content.tick ?? 'ERROR',
-              maxSupply: src20Content.max ?? 'ERROR',
-              mintLimit: src20Content.lim ?? 'ERROR',
-              decimals: src20Content.dec,
+              maxSupply: src20Content.max != null ? String(src20Content.max) : 'ERROR',
+              mintLimit: src20Content.lim != null ? String(src20Content.lim) : 'ERROR',
+              decimals: src20Content.dec != null ? String(src20Content.dec) : undefined,
             });
           }
         }

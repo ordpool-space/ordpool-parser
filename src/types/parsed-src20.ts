@@ -12,27 +12,38 @@ export interface ParsedSrc20 extends DigitalArtifact {
 
 export type Src20Operation = 'deploy' | 'mint' | 'transfer';
 
+// Numeric fields on SRC-20 may be encoded as a JSON string OR a JSON number.
+// The canonical spec lists both forms as valid -- see the parser docs link in
+// `src20-parser.service.ts` (stampchain-io/stamps_sdk/docs/src20specs.md,
+// "Valid Examples"):
+//   {"p":"src-20","op":"mint","tick":"X","amt":"100"}   <- string-form
+//   {"p":"src-20","op":"mint","tick":"X","amt":100}     <- number-form
+// "Only numeric values are allowed in the 'max', 'amt', 'lim' fields" --
+// the spec means the VALUE must be numeric; JSON quoting is irrelevant.
+// (This is the SRC-20 / BRC-20 divergence: BRC-20 enforces string-only.)
+export type Src20Numeric = string | number;
+
 export interface Src20Deploy {
   p: 'src-20';
   op: 'deploy';
   tick: string;
-  max: string;
-  lim: string;
-  dec?: string;
+  max: Src20Numeric;
+  lim: Src20Numeric;
+  dec?: Src20Numeric;
 }
 
 export interface Src20Mint {
   p: 'src-20';
   op: 'mint';
   tick: string;
-  amt: string;
+  amt: Src20Numeric;
 }
 
 export interface Src20Transfer {
   p: 'src-20';
   op: 'transfer';
   tick: string;
-  amt: string;
+  amt: Src20Numeric;
 }
 
 export type Src20Parsed = Src20Deploy | Src20Mint | Src20Transfer;
@@ -83,6 +94,22 @@ export function parseSrc20Content(content: string): Src20Parsed | null {
 }
 
 /**
+ * True when `v` is present and looks like a numeric value -- either a finite
+ * JSON number, or a non-empty/non-whitespace string. The string form is NOT
+ * required to parse as a number here; full numeric validation (uint64 range,
+ * decimals, etc.) is out of scope for the flaw checker.
+ */
+function isPresentNumeric(v: unknown): boolean {
+  if (typeof v === 'number') {
+    return Number.isFinite(v);
+  }
+  if (typeof v === 'string') {
+    return v.trim() !== '';
+  }
+  return false;
+}
+
+/**
  * Validates a parsed SRC-20 object and returns a list of flaws (cenotaph-style).
  * Empty array = valid SRC-20. Non-empty = cenotaph (parsed but structurally invalid).
  */
@@ -99,17 +126,20 @@ export function getSrc20Flaws(parsed: Src20Parsed): Src20Flaw[] {
   if (parsed.op === 'deploy') {
     const deploy = parsed as Src20Deploy;
 
-    // max is required for deploy
-    if (!deploy.max || typeof deploy.max !== 'string' || deploy.max.trim() === '') {
+    // max is required for deploy. Accept either a JSON number or a non-empty
+    // string -- the canonical spec treats both forms as valid.
+    if (!isPresentNumeric(deploy.max)) {
       flaws.push('missing_max_supply');
     }
 
-    // lim is required for SRC-20 deploy (unlike BRC-20 where it's optional)
-    if (!deploy.lim || typeof deploy.lim !== 'string' || deploy.lim.trim() === '') {
+    // lim is required for SRC-20 deploy (unlike BRC-20 where it's optional).
+    if (!isPresentNumeric(deploy.lim)) {
       flaws.push('missing_mint_limit');
     }
 
-    // dec must be an integer in 0-18 if specified
+    // dec must be an integer in 0-18 if specified. Accepts string or number;
+    // empty string / null / undefined are treated as "not specified" and skip
+    // validation (spec default = 18).
     if (deploy.dec !== undefined && deploy.dec !== null && deploy.dec !== '') {
       const dec = Number(deploy.dec);
       if (isNaN(dec) || dec < 0 || dec > 18 || !Number.isInteger(dec)) {
@@ -121,8 +151,8 @@ export function getSrc20Flaws(parsed: Src20Parsed): Src20Flaw[] {
   if (parsed.op === 'mint' || parsed.op === 'transfer') {
     const mintOrTransfer = parsed as Src20Mint | Src20Transfer;
 
-    // amt is required for mint and transfer
-    if (!mintOrTransfer.amt || typeof mintOrTransfer.amt !== 'string' || mintOrTransfer.amt.trim() === '') {
+    // amt is required for mint and transfer; either string or number form.
+    if (!isPresentNumeric(mintOrTransfer.amt)) {
       flaws.push('missing_amount');
     }
   }

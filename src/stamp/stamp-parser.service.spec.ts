@@ -1,6 +1,6 @@
 import { readBinaryFileAsUint8Array, readTransaction } from '../../testdata/test.helper';
 import { DigitalArtifactType } from '../types/digital-artifact';
-import { ParsedSrc20 } from '../types/parsed-src20';
+import { getSrc20Flaws, ParsedSrc20, parseSrc20Content } from '../types/parsed-src20';
 import { ParsedSrc721 } from '../types/parsed-src721';
 import { ParsedSrc101 } from '../types/parsed-src101';
 import { ParsedStamp } from '../types/parsed-stamp';
@@ -79,6 +79,14 @@ const SRC101_TXID = '5d18994d0981c421c115bf18a1ec0047cf63c06a4c94384a560ab74d6d0
 // Existing SRC-20 test tx uses ARC4 multisig with key burn, no P2WSH outputs.
 // StampParserService detects both OLGA and multisig stamps now.
 const SRC20_MULTISIG_TXID = '50aeb77245a9483a5b077e4e7506c331dc2f628c22046e7d2b4c6ad6c6236ae1';
+
+// SRC-20 transfer that encodes `amt` as a JSON number (not a quoted string).
+// One of four DEFAI transfers in block 949,225 -- same wallet built all four
+// with `"amt":50000` (numeric). The canonical SRC-20 spec accepts both string
+// and number forms (see stampchain-io/stamps_sdk/docs/src20specs.md, "Valid
+// Examples"). Regression: getSrc20Flaws used to require typeof amt === 'string'
+// which silently dropped these from per-block stats.
+const SRC20_NUMERIC_AMT_TXID = '5972bbcab0b6b3da8f5a68b237cc54fd6f1fd8ed9460357fb0923cc233f75a14';
 
 // CAT-21 genesis tx has no P2WSH outputs
 const CAT21_GENESIS_TXID = '98316dcb21daaa221865208fe0323616ee6dd84e6020b78bc6908e914ac03892';
@@ -358,6 +366,31 @@ describe('StampParserService', () => {
       expect(parsed.op).toBe('transfer');
       expect(parsed.tick).toBe('STEVE');
       expect(parsed.amt).toBe('100000000');
+    });
+
+    it('should treat numeric-amt SRC-20 transfer as a clean (non-flawed) transfer', () => {
+      // Real DEFAI transfer from block 949,225 where the wallet wrote
+      //   {"p":"src-20","op":"transfer","tick":"DEFAI","amt":50000}
+      // with `amt` as a JSON number. The block-overview filter (parent flag
+      // ordpool_src20) fired but the stats panel's strict sub-op counter
+      // (ordpool_src20_transfer) skipped it -- because getSrc20Flaws used to
+      // reject non-string amt. After loosening the validator per the canonical
+      // spec, this tx is a clean transfer with zero flaws.
+      const txn = readTransaction(SRC20_NUMERIC_AMT_TXID);
+      const result = StampParserService.parse(txn) as ParsedSrc20;
+
+      expect(result.type).toBe(DigitalArtifactType.Src20);
+      expect(result.transactionId).toBe(SRC20_NUMERIC_AMT_TXID);
+
+      const content = result.getContent();
+      expect(content).toBe('{"p":"src-20","op":"transfer","tick":"DEFAI","amt":50000}');
+
+      const structured = parseSrc20Content(content);
+      expect(structured).toEqual({
+        p: 'src-20', op: 'transfer', tick: 'DEFAI', amt: 50000,
+      });
+
+      expect(getSrc20Flaws(structured!)).toEqual([]);
     });
   });
 

@@ -170,6 +170,8 @@ describe('_ordpoolFlags with real blockchain data (no mocks)', () => {
 
   // SRC-20 transaction (OLGA P2WSH encoded stamp transfer)
   // tx 04460b... is an SRC-20 transfer, NOT a "normal" tx (it has stamp: data in P2WSH outputs)
+  // Content: {"p":"src-20","op":"transfer","tick":"mbtc","amt":150100} -- numeric amt
+  // form, accepted by the canonical SRC-20 spec.
   it('should set _ordpoolFlags for an SRC-20 transaction', async () => {
     const tx = readTransaction('04460b129b970e53de19860f52a276358b5fe7dffc2bb25f7d35cefa62a1755e');
 
@@ -179,10 +181,13 @@ describe('_ordpoolFlags with real blockchain data (no mocks)', () => {
     expect(typeof flags).toBe('number');
     // SRC-20 is part of the Stamps family -- ordpool_stamp is the parent flag
     // and fires unconditionally on any Src20 artifact (same pattern as
-    // ordpool_inscription parent for ordpool_brc20).
+    // ordpool_inscription parent for ordpool_brc20). The sub-op flag
+    // ordpool_src20_transfer fires because the validator accepts numeric `amt`
+    // per the canonical spec.
     expect(BigInt(flags)).toBe(
       OrdpoolTransactionFlags.ordpool_stamp |
-      OrdpoolTransactionFlags.ordpool_src20
+      OrdpoolTransactionFlags.ordpool_src20 |
+      OrdpoolTransactionFlags.ordpool_src20_transfer
     );
   });
 

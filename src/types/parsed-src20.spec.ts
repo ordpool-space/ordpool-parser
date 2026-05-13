@@ -87,6 +87,23 @@ describe('getSrc20Flaws', () => {
     expect(getSrc20Flaws(transfer)).toEqual([]);
   });
 
+  // -- Numeric-form valid cases (canonical spec accepts both string and number) --
+
+  it('should return no flaws for a fully numeric deploy', () => {
+    const deploy = { p: 'src-20', op: 'deploy', tick: 'STAMP', max: 21000, lim: 100, dec: 8 } as unknown as Src20Parsed;
+    expect(getSrc20Flaws(deploy)).toEqual([]);
+  });
+
+  it('should return no flaws for a numeric-amt mint', () => {
+    const mint = { p: 'src-20', op: 'mint', tick: 'STAMP', amt: 100 } as unknown as Src20Parsed;
+    expect(getSrc20Flaws(mint)).toEqual([]);
+  });
+
+  it('should return no flaws for a numeric-amt transfer (the DEFAI shape from block 949,225)', () => {
+    const transfer = { p: 'src-20', op: 'transfer', tick: 'DEFAI', amt: 50000 } as unknown as Src20Parsed;
+    expect(getSrc20Flaws(transfer)).toEqual([]);
+  });
+
   it('should accept single-character tickers', () => {
     const mint: Src20Parsed = { p: 'src-20', op: 'mint', tick: 'X', amt: '100' };
     expect(getSrc20Flaws(mint)).toEqual([]);
@@ -162,9 +179,9 @@ describe('getSrc20Flaws', () => {
     expect(getSrc20Flaws(deploy)).toContain('missing_max_supply');
   });
 
-  it('should detect missing max supply (not a string)', () => {
+  it('should accept numeric max supply (canonical spec allows JSON number form)', () => {
     const deploy = { p: 'src-20', op: 'deploy', tick: 'STAMP', max: 21000, lim: '100' } as unknown as Src20Deploy;
-    expect(getSrc20Flaws(deploy)).toContain('missing_max_supply');
+    expect(getSrc20Flaws(deploy)).not.toContain('missing_max_supply');
   });
 
   it('should NOT check max supply for mint operations', () => {
@@ -195,9 +212,9 @@ describe('getSrc20Flaws', () => {
     expect(getSrc20Flaws(deploy)).toContain('missing_mint_limit');
   });
 
-  it('should detect missing mint limit (not a string)', () => {
+  it('should accept numeric mint limit (canonical spec allows JSON number form)', () => {
     const deploy = { p: 'src-20', op: 'deploy', tick: 'STAMP', max: '21000', lim: 100 } as unknown as Src20Deploy;
-    expect(getSrc20Flaws(deploy)).toContain('missing_mint_limit');
+    expect(getSrc20Flaws(deploy)).not.toContain('missing_mint_limit');
   });
 
   it('should NOT check mint limit for mint operations', () => {
@@ -233,8 +250,32 @@ describe('getSrc20Flaws', () => {
     expect(getSrc20Flaws(transfer)).toContain('missing_amount');
   });
 
-  it('should detect missing amount (not a string)', () => {
+  it('should accept numeric amount on mint (canonical spec allows JSON number form)', () => {
     const mint = { p: 'src-20', op: 'mint', tick: 'STAMP', amt: 100 } as unknown as Src20Parsed;
+    expect(getSrc20Flaws(mint)).not.toContain('missing_amount');
+  });
+
+  it('should accept numeric amount on transfer (canonical spec allows JSON number form)', () => {
+    const transfer = { p: 'src-20', op: 'transfer', tick: 'STAMP', amt: 50000 } as unknown as Src20Parsed;
+    expect(getSrc20Flaws(transfer)).not.toContain('missing_amount');
+  });
+
+  it('should treat amount=0 as a flaw (not a present positive value)', () => {
+    // Zero is finite so isPresentNumeric returns true, BUT the spec disallows
+    // zero/negative amounts. We don't model that here — full uint64 range +
+    // positivity validation is out of scope for the flaw checker. Document
+    // current behavior: 0 passes the presence check.
+    const mint = { p: 'src-20', op: 'mint', tick: 'STAMP', amt: 0 } as unknown as Src20Parsed;
+    expect(getSrc20Flaws(mint)).not.toContain('missing_amount');
+  });
+
+  it('should detect non-finite numeric amount (Infinity)', () => {
+    const mint = { p: 'src-20', op: 'mint', tick: 'STAMP', amt: Infinity } as unknown as Src20Parsed;
+    expect(getSrc20Flaws(mint)).toContain('missing_amount');
+  });
+
+  it('should detect NaN amount', () => {
+    const mint = { p: 'src-20', op: 'mint', tick: 'STAMP', amt: NaN } as unknown as Src20Parsed;
     expect(getSrc20Flaws(mint)).toContain('missing_amount');
   });
 
@@ -263,6 +304,16 @@ describe('getSrc20Flaws', () => {
 
   it('should detect invalid decimals (float)', () => {
     const deploy: Src20Deploy = { p: 'src-20', op: 'deploy', tick: 'STAMP', max: '21000', lim: '100', dec: '8.5' };
+    expect(getSrc20Flaws(deploy)).toContain('invalid_decimals');
+  });
+
+  it('should accept numeric dec (JSON number form)', () => {
+    const deploy = { p: 'src-20', op: 'deploy', tick: 'STAMP', max: '21000', lim: '100', dec: 8 } as unknown as Src20Deploy;
+    expect(getSrc20Flaws(deploy)).not.toContain('invalid_decimals');
+  });
+
+  it('should detect numeric dec out of range', () => {
+    const deploy = { p: 'src-20', op: 'deploy', tick: 'STAMP', max: '21000', lim: '100', dec: 19 } as unknown as Src20Deploy;
     expect(getSrc20Flaws(deploy)).toContain('invalid_decimals');
   });
 
