@@ -121,7 +121,11 @@ export class Runestone {
           const premine = Tag.take(Tag.PREMINE, fields, 1, ([value]) => Some(value));
 
           const turboResult = Flag.take(flags, Flag.TURBO);
-          const turbo = etchingResult.set;
+          // Upstream magicoss/runestone-lib bug (their runestone.ts:123) reads
+          // `etchingResult.set` here, which is always true inside this lambda
+          // -- so every etching wrongly reports turbo=true. ord's reference
+          // does `turbo: Flag::Turbo.take(&mut flags)`. Use turboResult.set.
+          const turbo = turboResult.set;
           flags = turboResult.flags;
 
           return Some(new Etching(divisibility, rune, spacers, symbol, terms, premine, turbo));

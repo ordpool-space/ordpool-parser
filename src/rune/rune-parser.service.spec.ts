@@ -394,4 +394,36 @@ describe('Rune parser', () => {
     const runestone = RuneParserService.parse(txn);
     expect(runestone).toBe(null);
   });
+
+  // ===========================================================================
+  // Turbo flag — Flag::Turbo (bit 2) in the runestone Flags tag.
+  //
+  // The etcher opts into "all future protocol changes". Reference indexer:
+  // crates/ordinals/src/runestone.rs:86 -- `turbo: Flag::Turbo.take(&mut flags)`.
+  //
+  // Two real mainnet etchings, ground truth confirmed against ordinals.com
+  // (via explorer.ordinalsbot.com/rune/<name>):
+  //   Z•Z•Z•Z•Z•FEHU•Z•Z•Z•Z•Z  --  turbo: true
+  //   DOG•GO•TO•THE•MOON       --  turbo: false
+  // ===========================================================================
+  describe('Etching turbo flag', () => {
+
+    it('should set turbo=true for Z•Z•Z•Z•Z•FEHU•Z•Z•Z•Z•Z (TURBO bit set on chain)', () => {
+      const txn = readTransaction('2bb85f4b004be6da54f766c17c1e855187327112c231ef2ff35ebad0ea67c69e');
+      const runestone = RuneParserService.parse(txn);
+      const etching = runestone?.runestone?.etching;
+
+      expect(etching?.runeName).toBe('Z•Z•Z•Z•Z•FEHU•Z•Z•Z•Z•Z');
+      expect(etching?.turbo).toBe(true);
+    });
+
+    it('should set turbo=false for DOG•GO•TO•THE•MOON (TURBO bit NOT set on chain)', () => {
+      const txn = readTransaction('e79134080a83fe3e0e06ed6990c5a9b63b362313341745707a2bff7d788a1375');
+      const runestone = RuneParserService.parse(txn);
+      const etching = runestone?.runestone?.etching;
+
+      expect(etching?.runeName).toBe('DOG•GO•TO•THE•MOON');
+      expect(etching?.turbo).toBe(false);
+    });
+  });
 });
