@@ -1,4 +1,5 @@
 import { DigitalArtifact } from './digital-artifact';
+import { parseProtocolJson } from './parsed-protocol';
 
 /**
  * SRC-721: Composable layered NFTs on Bitcoin Stamps.
@@ -58,39 +59,15 @@ export type Src721Flaw =
   | 'missing_collection_symbol'  // deploy without tick/symbol
   | 'missing_collection_id';     // mint without c
 
+const SRC721_OPS = ['deploy', 'mint'] as const;
+
 /**
- * Parses raw SRC-721 JSON content into a typed object. Returns null if the
- * content is not valid SRC-721 JSON structure (must be an object with
- * p:'src-721' and a known op).
- *
- * Canonical reference: stampchain-io/btc_stamps src721.py uppercases op and
- * compares to "DEPLOY" / "MINT". We accept lowercase forms only -- matches
- * the spec examples (and our SRC-20 path).
+ * Parses raw SRC-721 JSON content into a typed object. Liberal -- accepts
+ * anything with p:'src-721' and a known op. Lowercase only (canonical
+ * src721.py uppercases for compare, the spec examples are lowercase).
  */
 export function parseSrc721Content(content: string): Src721Parsed | null {
-  if (typeof content !== 'string' || !content) {
-    return null;
-  }
-
-  try {
-    const trimmed = content.trim();
-    if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) {
-      return null;
-    }
-
-    const parsed = JSON.parse(trimmed);
-    if (parsed?.p !== 'src-721') {
-      return null;
-    }
-
-    if (parsed.op === 'deploy' || parsed.op === 'mint') {
-      return parsed as Src721Parsed;
-    }
-
-    return null;
-  } catch {
-    return null;
-  }
+  return parseProtocolJson<Src721Parsed>(content, 'src-721', SRC721_OPS);
 }
 
 /**

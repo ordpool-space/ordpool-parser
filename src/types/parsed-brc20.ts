@@ -1,3 +1,5 @@
+import { parseProtocolJson } from './parsed-protocol';
+
 export type BrC20Operation = 'deploy' | 'mint' | 'transfer';
 
 export interface BrC20Deploy {
@@ -36,33 +38,13 @@ export type BrC20Flaw =
   | 'missing_amount'       // mint/transfer without amt
   | 'invalid_decimals';    // dec not an integer in 0-18
 
+const BRC20_OPS = ['deploy', 'mint', 'transfer'] as const;
+
 /**
  * Type guard: parses raw content string and returns typed BRC-20 object or null.
  */
 export function parseBrc20Content(content: string): BrC20Parsed | null {
-  if (typeof content !== 'string' || !content) {
-    return null;
-  }
-
-  try {
-    const trimmed = content.trim();
-    if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) {
-      return null;
-    }
-
-    const parsed = JSON.parse(trimmed);
-    if (parsed?.p !== 'brc-20') {
-      return null;
-    }
-
-    if (parsed.op === 'deploy' || parsed.op === 'mint' || parsed.op === 'transfer') {
-      return parsed as BrC20Parsed;
-    }
-
-    return null;
-  } catch {
-    return null;
-  }
+  return parseProtocolJson<BrC20Parsed>(content, 'brc-20', BRC20_OPS);
 }
 
 /**

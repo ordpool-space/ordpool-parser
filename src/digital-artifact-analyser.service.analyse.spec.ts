@@ -320,7 +320,7 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
     expect(flags).toBe(OrdpoolTransactionFlags.ordpool_stamp);
   });
 
-  it('should accept numeric-amt SRC-20 transfer (canonical accepts both string and number forms)', async () => {
+  it('should accept numeric-amt SRC-20 transfer', async () => {
     const src20Artifact = {
       type: DigitalArtifactType.Src20,
       getContent: () => JSON.stringify({ p: 'src-20', op: 'transfer', tick: 'STAMP', amt: 50000 }),

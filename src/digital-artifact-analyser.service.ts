@@ -716,27 +716,26 @@ export class DigitalArtifactAnalyserService {
         }
         break;
 
-      case DigitalArtifactType.Src721:
-        // ordpool_stamp is the catch-all: any stamp-shaped artifact lights it
-        // up, even if the SRC-721 payload is structurally broken. The
-        // protocol-specific ordpool_src721 flag only fires when the content
-        // passes the canonical validator (see getSrc721Flaws).
+      // ordpool_stamp is the Stamps-family catch-all: any stamp-shaped
+      // artifact lights it up. The protocol-specific src20 / src721 / src101
+      // flags only fire when the content passes the canonical validator.
+      case DigitalArtifactType.Src721: {
         flags |= OrdpoolTransactionFlags.ordpool_stamp;
-        const src721 = artifact as ParsedSrc721;
-        const src721Parsed = parseSrc721Content(src721.getContent());
-        if (src721Parsed && getSrc721Flaws(src721Parsed).length === 0) {
+        const parsed = parseSrc721Content((artifact as ParsedSrc721).getContent());
+        if (parsed && getSrc721Flaws(parsed).length === 0) {
           flags |= OrdpoolTransactionFlags.ordpool_src721;
         }
         break;
+      }
 
-      case DigitalArtifactType.Src101:
+      case DigitalArtifactType.Src101: {
         flags |= OrdpoolTransactionFlags.ordpool_stamp;
-        const src101 = artifact as ParsedSrc101;
-        const src101Parsed = parseSrc101Content(src101.getContent());
-        if (src101Parsed && getSrc101Flaws(src101Parsed).length === 0) {
+        const parsed = parseSrc101Content((artifact as ParsedSrc101).getContent());
+        if (parsed && getSrc101Flaws(parsed).length === 0) {
           flags |= OrdpoolTransactionFlags.ordpool_src101;
         }
         break;
+      }
 
       case DigitalArtifactType.Inscription:
         const inscription = artifact as ParsedInscription;
@@ -829,32 +828,24 @@ export class DigitalArtifactAnalyserService {
         }
         break;
 
-      case DigitalArtifactType.Src20:
-        const src20 = artifact as ParsedSrc20;
-
-        // ordpool_stamp is the catch-all: any stamp-shaped artifact lights it
-        // up, even if the SRC-20 payload is garbage. The protocol-specific
-        // ordpool_src20 flag and its sub-op flags only fire when the content
-        // passes the canonical validator (see getSrc20Flaws, which matches
-        // stampchain-io/btc_stamps NUMERIC_REGEX + uint64 range checks).
+      case DigitalArtifactType.Src20: {
         flags |= OrdpoolTransactionFlags.ordpool_stamp;
 
-        const src20Parsed = parseSrc20Content(src20.getContent());
-        if (src20Parsed && getSrc20Flaws(src20Parsed).length === 0) {
-          src20Content = src20Parsed;
+        const parsed = parseSrc20Content((artifact as ParsedSrc20).getContent());
+        if (parsed && getSrc20Flaws(parsed).length === 0) {
+          src20Content = parsed;
           flags |= OrdpoolTransactionFlags.ordpool_src20;
 
-          // Sub-op flag mirrors the validated op directly; no second flaws
-          // check needed since the parent gate already enforced it.
-          if (src20Parsed.op === 'deploy') {
+          if (parsed.op === 'deploy') {
             flags |= OrdpoolTransactionFlags.ordpool_src20_deploy;
-          } else if (src20Parsed.op === 'mint') {
+          } else if (parsed.op === 'mint') {
             flags |= OrdpoolTransactionFlags.ordpool_src20_mint;
-          } else if (src20Parsed.op === 'transfer') {
+          } else if (parsed.op === 'transfer') {
             flags |= OrdpoolTransactionFlags.ordpool_src20_transfer;
           }
         }
         break;
+      }
 
       default:
         // No additional flags apply for unsupported types

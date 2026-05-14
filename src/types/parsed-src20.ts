@@ -1,4 +1,5 @@
 import { DigitalArtifact } from "./digital-artifact";
+import { parseProtocolJson } from "./parsed-protocol";
 
 export interface ParsedSrc20 extends DigitalArtifact {
 
@@ -59,38 +60,15 @@ export type Src20Flaw =
   | 'missing_amount'       // mint/transfer without amt
   | 'invalid_decimals';    // dec not an integer in 0-18
 
+const SRC20_OPS = ['deploy', 'mint', 'transfer'] as const;
+
 /**
- * Parses raw SRC-20 JSON content string into a typed object.
- * Returns null if the content is not valid SRC-20 JSON structure.
- *
- * This is the SRC-20 equivalent of parseBrc20Content() -- liberal parsing
- * that accepts anything with p:'src-20' and a valid op, then lets
- * getSrc20Flaws() decide if the content is actually usable.
+ * Parses raw SRC-20 JSON content string into a typed object. Liberal -- accepts
+ * anything with p:'src-20' and a known op. Let getSrc20Flaws() decide whether
+ * the content is actually usable.
  */
 export function parseSrc20Content(content: string): Src20Parsed | null {
-  if (typeof content !== 'string' || !content) {
-    return null;
-  }
-
-  try {
-    const trimmed = content.trim();
-    if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) {
-      return null;
-    }
-
-    const parsed = JSON.parse(trimmed);
-    if (parsed?.p !== 'src-20') {
-      return null;
-    }
-
-    if (parsed.op === 'deploy' || parsed.op === 'mint' || parsed.op === 'transfer') {
-      return parsed as Src20Parsed;
-    }
-
-    return null;
-  } catch {
-    return null;
-  }
+  return parseProtocolJson<Src20Parsed>(content, 'src-20', SRC20_OPS);
 }
 
 // Canonical numeric regex from stampchain-io/btc_stamps
@@ -103,6 +81,11 @@ const SRC20_NUMERIC_REGEX = /^[0-9]+(\.[0-9]*)?$/;
 // per index_core/src20.py:721.
 const SRC20_UINT64_MAX = 18446744073709551615n;
 
+// uint64 max as a Number, used as a fast-path threshold below.
+// 2^53 - 1 fits in a JS double without precision loss; anything wider
+// must take the BigInt route to compare against SRC20_UINT64_MAX.
+const SRC20_NUMBER_SAFE_LIMIT = Number.MAX_SAFE_INTEGER;
+
 /**
  * True when `v` is a valid SRC-20 numeric: either a JSON string matching
  * /^[0-9]+(\.[0-9]*)?$/ or a JSON number that stringifies to that same
@@ -112,12 +95,11 @@ const SRC20_UINT64_MAX = 18446744073709551615n;
 function isCanonicalSrc20Numeric(v: unknown): boolean {
   let str: string;
   if (typeof v === 'number') {
+    // String(v) for large numbers becomes '1e+21', which the regex
+    // correctly rejects below.
     if (!Number.isFinite(v)) {
       return false;
     }
-    // Reject negatives, NaN/Infinity, and scientific notation. JS's
-    // Number->string conversion produces '1e+21' for large numbers, which
-    // the regex correctly rejects.
     str = String(v);
   } else if (typeof v === 'string') {
     str = v;
@@ -129,11 +111,15 @@ function isCanonicalSrc20Numeric(v: unknown): boolean {
     return false;
   }
 
-  // Range check against uint64 max. Use BigInt on the integer part since
-  // strings like '12345.67' would overflow Number.parseFloat for huge
-  // numbers; canonical only cares about the integer portion for the
-  // range check anyway (decimals are bounded by `dec`).
-  const integerPart = str.split('.')[0];
+  // Range check against uint64 max on the integer part only -- canonical
+  // bounds decimals via `dec`, not the regex.
+  const dot = str.indexOf('.');
+  const integerPart = dot < 0 ? str : str.substring(0, dot);
+
+  // Fast path: short numerics fit in a JS double exactly.
+  if (integerPart.length <= 15) {
+    return Number(integerPart) <= SRC20_NUMBER_SAFE_LIMIT;
+  }
   try {
     return BigInt(integerPart) <= SRC20_UINT64_MAX;
   } catch {

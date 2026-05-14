@@ -1,4 +1,5 @@
 import { DigitalArtifact } from './digital-artifact';
+import { parseProtocolJson } from './parsed-protocol';
 
 /**
  * SRC-101: Bitcoin Name Service (Bitname) on Bitcoin Stamps.
@@ -97,41 +98,14 @@ export type Src101Flaw =
   | 'missing_tokenid'           // mint/transfer/renew/setrecord without tokenid array
   | 'missing_hash';             // mint/transfer/renew/setrecord without deploy hash
 
+const SRC101_OPS = ['deploy', 'mint', 'transfer', 'renew', 'setrecord'] as const;
+
 /**
- * Parses raw SRC-101 JSON content into a typed object. Returns null if the
- * content is not valid SRC-101 JSON structure (must be an object with
- * p:'src-101' and a known op).
+ * Parses raw SRC-101 JSON content into a typed object. Liberal -- accepts
+ * anything with p:'src-101' and a known op.
  */
 export function parseSrc101Content(content: string): Src101Parsed | null {
-  if (typeof content !== 'string' || !content) {
-    return null;
-  }
-
-  try {
-    const trimmed = content.trim();
-    if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) {
-      return null;
-    }
-
-    const parsed = JSON.parse(trimmed);
-    if (parsed?.p !== 'src-101') {
-      return null;
-    }
-
-    if (
-      parsed.op === 'deploy' ||
-      parsed.op === 'mint' ||
-      parsed.op === 'transfer' ||
-      parsed.op === 'renew' ||
-      parsed.op === 'setrecord'
-    ) {
-      return parsed as Src101Parsed;
-    }
-
-    return null;
-  } catch {
-    return null;
-  }
+  return parseProtocolJson<Src101Parsed>(content, 'src-101', SRC101_OPS);
 }
 
 /**
@@ -160,12 +134,12 @@ export function getSrc101Flaws(parsed: Src101Parsed): Src101Flaw[] {
 
   // mint, transfer, renew, setrecord all reference an existing deploy and
   // a tokenid array.
-  const op = parsed as Src101Mint | Src101Transfer | Src101Renew | Src101SetRecord;
+  const nonDeploy = parsed as Src101Mint | Src101Transfer | Src101Renew | Src101SetRecord;
 
-  if (typeof op.hash !== 'string' || op.hash.trim() === '') {
+  if (typeof nonDeploy.hash !== 'string' || nonDeploy.hash.trim() === '') {
     flaws.push('missing_hash');
   }
-  if (!Array.isArray(op.tokenid) || op.tokenid.length === 0) {
+  if (!Array.isArray(nonDeploy.tokenid) || nonDeploy.tokenid.length === 0) {
     flaws.push('missing_tokenid');
   }
 
