@@ -6,8 +6,7 @@ import { OnParseError } from '../types/parser-options';
 import {
   extractLabitbuImage,
   hasLabitbu,
-  LABITBU_FIRST_HEIGHT,
-  LABITBU_LAST_HEIGHT,
+  isLabitbuRange,
 } from './labitbu-parser.service.helper';
 
 /**
@@ -23,11 +22,11 @@ export class LabitbuParserService {
    * Parses a transaction and returns a ParsedLabitbu if a Labitbu image is found.
    *
    * Detection is gated by block height to the historical Labitbu mint window
-   * [LABITBU_FIRST_HEIGHT, LABITBU_LAST_HEIGHT]. The protocol is dead — those
-   * blocks are mined and no new Labitbu images will ever appear. Passing a
-   * height outside the window, or omitting the height (which means the tx
-   * isn't confirmed yet — mempool txs can't be inside an already-mined
-   * window by definition), short-circuits to null without scanning witnesses.
+   * (see `isLabitbuRange`). The minting is complete; only blocks inside the
+   * window can carry a Labitbu image. Passing a height outside the window, or
+   * omitting the height (which means the tx isn't confirmed yet — mempool txs
+   * can't be inside an already-mined window by definition), short-circuits
+   * to null without scanning witnesses.
    */
   static parse(transaction: {
     txid: string,
@@ -37,7 +36,7 @@ export class LabitbuParserService {
     // Outside try/catch — see InscriptionParserService.parse for rationale.
     assertEsploraShape(transaction, 'LabitbuParserService.parse');
 
-    if (blockHeight === undefined || blockHeight < LABITBU_FIRST_HEIGHT || blockHeight > LABITBU_LAST_HEIGHT) {
+    if (!isLabitbuRange(blockHeight)) {
       return null;
     }
 
@@ -96,7 +95,7 @@ export class LabitbuParserService {
     vin: { witness?: string[] }[]
   }, blockHeight?: number): boolean {
 
-    if (blockHeight === undefined || blockHeight < LABITBU_FIRST_HEIGHT || blockHeight > LABITBU_LAST_HEIGHT) {
+    if (!isLabitbuRange(blockHeight)) {
       return false;
     }
 

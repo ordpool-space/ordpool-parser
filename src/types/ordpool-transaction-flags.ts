@@ -29,14 +29,14 @@
  * OTS calendar commit looks like `OP_RETURN OP_PUSHBYTES_32 <32 bytes>`
  * with no magic prefix, so identification requires knowing which txids
  * came through a public calendar. That data lives in the backend
- * (ordpool_stats_ots satellite table, populated by the OTS poller). The
- * backend's pre-enrichment ORs the bit into tx._ordpoolFlags after the
- * parser has finished, using the same HACK pattern that injects
- * parser-derived bits into upstream's sync getTransactionFlags().
+ * (`ordpool_stats_ots` satellite table, populated by the OTS poller).
+ * The backend's `Common.getTransactionFlags` ORs the bit into the
+ * returned flags bigint via `getOtsFlag(tx.txid)` (a pure function
+ * against the in-memory `ordpoolOtsTxidSet`).
  *
  * Used in:
  *   - ordpool -> backend/src/mempool.interfaces.ts (spread into TransactionFlags)
- *   - ordpool -> backend/src/api/ots/ordpool-ots-pre-enrichment.ts (sets ordpool_ots)
+ *   - ordpool -> backend/src/api/ordpool-ots-flag.ts (`getOtsFlag` returns ordpool_ots when the txid is in `ordpoolOtsTxidSet`)
  *   - ordpool -> frontend/src/app/shared/filters.utils.ts (filter chips)
  *   - ordpool -> backend/src/api/ordpool-database-migration.ts (DB columns named after flag keys)
  */
