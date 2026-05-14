@@ -169,9 +169,9 @@ describe('_ordpoolFlags with real blockchain data (no mocks)', () => {
   });
 
   // SRC-20 transaction (OLGA P2WSH encoded stamp transfer)
-  // tx 04460b... is an SRC-20 transfer, NOT a "normal" tx (it has stamp: data in P2WSH outputs)
-  // Content: {"p":"src-20","op":"transfer","tick":"mbtc","amt":150100} -- numeric amt
-  // form, accepted by the canonical SRC-20 spec.
+  // tx 04460b... is an SRC-20 transfer with content
+  // {"p":"src-20","op":"transfer","tick":"mbtc","amt":150100} (numeric amt,
+  // accepted by the canonical spec).
   it('should set _ordpoolFlags for an SRC-20 transaction', async () => {
     const tx = readTransaction('04460b129b970e53de19860f52a276358b5fe7dffc2bb25f7d35cefa62a1755e');
 
@@ -179,16 +179,43 @@ describe('_ordpoolFlags with real blockchain data (no mocks)', () => {
 
     const flags = (tx as any)._ordpoolFlags;
     expect(typeof flags).toBe('number');
-    // SRC-20 is part of the Stamps family -- ordpool_stamp is the parent flag
-    // and fires unconditionally on any Src20 artifact (same pattern as
-    // ordpool_inscription parent for ordpool_brc20). The sub-op flag
-    // ordpool_src20_transfer fires because the validator accepts numeric `amt`
-    // per the canonical spec.
+    // ordpool_stamp is the catch-all (always fires on any stamp-shaped
+    // artifact). ordpool_src20 fires because the content passes canonical
+    // validation. The sub-op flag mirrors op.
     expect(BigInt(flags)).toBe(
       OrdpoolTransactionFlags.ordpool_stamp |
       OrdpoolTransactionFlags.ordpool_src20 |
       OrdpoolTransactionFlags.ordpool_src20_transfer
     );
+  });
+
+  // SRC-721 mint (stamp #1383566)
+  // Content: {"p":"src-721","op":"mint","c":"A1473703777372088053","ts":[1,4,8,4,5,4,7,0,6,6]}
+  // Passes getSrc721Flaws (has `c`), so ordpool_src721 fires alongside the
+  // ordpool_stamp catch-all.
+  it('should set _ordpoolFlags for an SRC-721 mint', async () => {
+    const tx = readTransaction('b74313d300902c0cdf88dc101fb8f4c9ab7ad89c978edd30ca4ee7987cccdedd');
+
+    await DigitalArtifactAnalyserService.analyseTransaction(tx, 0n);
+
+    const flags = (tx as any)._ordpoolFlags;
+    expect(typeof flags).toBe('number');
+    expect(BigInt(flags) & OrdpoolTransactionFlags.ordpool_stamp).toBe(OrdpoolTransactionFlags.ordpool_stamp);
+    expect(BigInt(flags) & OrdpoolTransactionFlags.ordpool_src721).toBe(OrdpoolTransactionFlags.ordpool_src721);
+  });
+
+  // SRC-101 DEPLOY (BitNameService, block 871,022)
+  // Content: {"p":"src-101","op":"deploy","root":"btc","name":"BitNameService",...}
+  // Passes getSrc101Flaws (has both `name` and `root`).
+  it('should set _ordpoolFlags for an SRC-101 deploy', async () => {
+    const tx = readTransaction('5d18994d0981c421c115bf18a1ec0047cf63c06a4c94384a560ab74d6d0552f9');
+
+    await DigitalArtifactAnalyserService.analyseTransaction(tx, 0n);
+
+    const flags = (tx as any)._ordpoolFlags;
+    expect(typeof flags).toBe('number');
+    expect(BigInt(flags) & OrdpoolTransactionFlags.ordpool_stamp).toBe(OrdpoolTransactionFlags.ordpool_stamp);
+    expect(BigInt(flags) & OrdpoolTransactionFlags.ordpool_src101).toBe(OrdpoolTransactionFlags.ordpool_src101);
   });
 
   // Full block integration: analyseTransactions sets _ordpoolFlags on every tx

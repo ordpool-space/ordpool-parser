@@ -17,3 +17,119 @@ export interface ParsedSrc721 extends DigitalArtifact {
    */
   getContent: () => string;
 }
+
+// -- Structured types for SRC-721 content validation --
+
+export type Src721Operation = 'deploy' | 'mint';
+
+export interface Src721Deploy {
+  p: 'src-721';
+  op: 'deploy';
+  // Collection symbol. Canonical accepts either `tick` or legacy `symbol`
+  // (index_core/src721.py:40-41 renames `symbol` -> `tick`). We accept both.
+  tick?: string;
+  symbol?: string;
+  name?: string;
+  description?: string;
+  website?: string;
+  // Recursive-collection version marker ("r0"). Optional.
+  v?: string | number;
+}
+
+export interface Src721Mint {
+  p: 'src-721';
+  op: 'mint';
+  // Collection id reference. Required by canonical mint path
+  // (create_src721_mint_svg).
+  c?: string;
+  // Layer indices into the deploy's trait pools.
+  ts?: unknown;
+}
+
+export type Src721Parsed = Src721Deploy | Src721Mint;
+
+/**
+ * Flaw types for invalid SRC-721 transactions. Cenotaph-style: a parseable
+ * SRC-721-shaped JSON with non-empty flaws is recorded as a stamp but not
+ * promoted to ordpool_src721 in the flag set.
+ */
+export type Src721Flaw =
+  | 'unknown_op'        // op is missing or not in {deploy, mint}
+  | 'missing_collection_symbol'  // deploy without tick/symbol
+  | 'missing_collection_id';     // mint without c
+
+/**
+ * Parses raw SRC-721 JSON content into a typed object. Returns null if the
+ * content is not valid SRC-721 JSON structure (must be an object with
+ * p:'src-721' and a known op).
+ *
+ * Canonical reference: stampchain-io/btc_stamps src721.py uppercases op and
+ * compares to "DEPLOY" / "MINT". We accept lowercase forms only -- matches
+ * the spec examples (and our SRC-20 path).
+ */
+export function parseSrc721Content(content: string): Src721Parsed | null {
+  if (typeof content !== 'string' || !content) {
+    return null;
+  }
+
+  try {
+    const trimmed = content.trim();
+    if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) {
+      return null;
+    }
+
+    const parsed = JSON.parse(trimmed);
+    if (parsed?.p !== 'src-721') {
+      return null;
+    }
+
+    if (parsed.op === 'deploy' || parsed.op === 'mint') {
+      return parsed as Src721Parsed;
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Validates a parsed SRC-721 object and returns a list of flaws.
+ * Empty array = valid SRC-721. Non-empty = parseable but structurally invalid;
+ * caller should NOT set the ordpool_src721 flag in that case.
+ *
+ * Mirrors what canonical's validate_src721_and_process actually gates on
+ * (op + structural minimum). We deliberately do NOT replicate canonical's
+ * downstream business rules (does the referenced collection exist on chain,
+ * does the deploy have a parent stamp, etc.) -- those depend on indexed state.
+ */
+export function getSrc721Flaws(parsed: Src721Parsed): Src721Flaw[] {
+  const flaws: Src721Flaw[] = [];
+
+  if (parsed.op !== 'deploy' && parsed.op !== 'mint') {
+    flaws.push('unknown_op');
+    return flaws;
+  }
+
+  if (parsed.op === 'deploy') {
+    const deploy = parsed as Src721Deploy;
+    // Canonical accepts `tick` or legacy `symbol`. Require at least one
+    // non-empty string -- otherwise the deploy has no identity at all.
+    const tickStr = typeof deploy.tick === 'string' ? deploy.tick.trim() : '';
+    const symbolStr = typeof deploy.symbol === 'string' ? deploy.symbol.trim() : '';
+    if (!tickStr && !symbolStr) {
+      flaws.push('missing_collection_symbol');
+    }
+  }
+
+  if (parsed.op === 'mint') {
+    const mint = parsed as Src721Mint;
+    // Mints reference a deploy via `c`. Without it, the canonical mint path
+    // can't render anything and won't accept the stamp.
+    if (typeof mint.c !== 'string' || mint.c.trim() === '') {
+      flaws.push('missing_collection_id');
+    }
+  }
+
+  return flaws;
+}

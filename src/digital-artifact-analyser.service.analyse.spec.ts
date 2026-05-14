@@ -261,44 +261,75 @@ describe('DigitalArtifactAnalyserService.analyse', () => {
     expect(flags).toBe(OrdpoolTransactionFlags.ordpool_stamp);
   });
 
-  // -- Invalid SRC-20: operation flags are skipped, only top-level src20+stamp flags are set --
+  // -- Invalid SRC-20: only ordpool_stamp fires (catch-all). The
+  // protocol-specific ordpool_src20 flag and its sub-op flags are gated
+  // on canonical validation passing.
 
-  it('should skip deploy flag for SRC-20 with missing ticker', async () => {
+  it('should set only ordpool_stamp for SRC-20 with missing ticker', async () => {
     const src20Artifact = {
       type: DigitalArtifactType.Src20,
       getContent: () => JSON.stringify({ p: 'src-20', op: 'deploy', max: '21000', lim: '100' }),
     } as ParsedSrc20;
     const { flags } = await DigitalArtifactAnalyserService.analyse(src20Artifact);
-    expect(flags).toBe(
-      OrdpoolTransactionFlags.ordpool_stamp |
-      OrdpoolTransactionFlags.ordpool_src20
-      // NO ordpool_src20_deploy -- invalid SRC-20 is silently skipped
-    );
+    expect(flags).toBe(OrdpoolTransactionFlags.ordpool_stamp);
   });
 
-  it('should skip deploy flag for SRC-20 with missing lim (required for SRC-20)', async () => {
+  it('should set only ordpool_stamp for SRC-20 with missing lim', async () => {
     const src20Artifact = {
       type: DigitalArtifactType.Src20,
       getContent: () => JSON.stringify({ p: 'src-20', op: 'deploy', tick: 'STAMP', max: '21000' }),
     } as ParsedSrc20;
     const { flags } = await DigitalArtifactAnalyserService.analyse(src20Artifact);
-    expect(flags).toBe(
-      OrdpoolTransactionFlags.ordpool_stamp |
-      OrdpoolTransactionFlags.ordpool_src20
-      // NO ordpool_src20_deploy -- missing lim
-    );
+    expect(flags).toBe(OrdpoolTransactionFlags.ordpool_stamp);
   });
 
-  it('should skip mint flag for SRC-20 with missing amount', async () => {
+  it('should set only ordpool_stamp for SRC-20 with missing amount', async () => {
     const src20Artifact = {
       type: DigitalArtifactType.Src20,
       getContent: () => JSON.stringify({ p: 'src-20', op: 'mint', tick: 'STAMP' }),
     } as ParsedSrc20;
     const { flags } = await DigitalArtifactAnalyserService.analyse(src20Artifact);
+    expect(flags).toBe(OrdpoolTransactionFlags.ordpool_stamp);
+  });
+
+  it('should set only ordpool_stamp for SRC-20 with non-numeric amount', async () => {
+    const src20Artifact = {
+      type: DigitalArtifactType.Src20,
+      getContent: () => JSON.stringify({ p: 'src-20', op: 'mint', tick: 'STAMP', amt: 'abc' }),
+    } as ParsedSrc20;
+    const { flags } = await DigitalArtifactAnalyserService.analyse(src20Artifact);
+    expect(flags).toBe(OrdpoolTransactionFlags.ordpool_stamp);
+  });
+
+  it('should set only ordpool_stamp for SRC-20 with negative amount', async () => {
+    const src20Artifact = {
+      type: DigitalArtifactType.Src20,
+      getContent: () => JSON.stringify({ p: 'src-20', op: 'mint', tick: 'STAMP', amt: -100 }),
+    } as ParsedSrc20;
+    const { flags } = await DigitalArtifactAnalyserService.analyse(src20Artifact);
+    expect(flags).toBe(OrdpoolTransactionFlags.ordpool_stamp);
+  });
+
+  it('should set only ordpool_stamp for SRC-20 with amount above uint64_max', async () => {
+    // 2^64 = 18446744073709551616 (one above uint64 max). Canonical rejects.
+    const src20Artifact = {
+      type: DigitalArtifactType.Src20,
+      getContent: () => '{"p":"src-20","op":"mint","tick":"STAMP","amt":"18446744073709551616"}',
+    } as ParsedSrc20;
+    const { flags } = await DigitalArtifactAnalyserService.analyse(src20Artifact);
+    expect(flags).toBe(OrdpoolTransactionFlags.ordpool_stamp);
+  });
+
+  it('should accept numeric-amt SRC-20 transfer (canonical accepts both string and number forms)', async () => {
+    const src20Artifact = {
+      type: DigitalArtifactType.Src20,
+      getContent: () => JSON.stringify({ p: 'src-20', op: 'transfer', tick: 'STAMP', amt: 50000 }),
+    } as ParsedSrc20;
+    const { flags } = await DigitalArtifactAnalyserService.analyse(src20Artifact);
     expect(flags).toBe(
       OrdpoolTransactionFlags.ordpool_stamp |
-      OrdpoolTransactionFlags.ordpool_src20
-      // NO ordpool_src20_mint -- missing amt
+      OrdpoolTransactionFlags.ordpool_src20 |
+      OrdpoolTransactionFlags.ordpool_src20_transfer
     );
   });
 });

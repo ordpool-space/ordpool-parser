@@ -31,6 +31,8 @@ import { isImageContentType } from './inscription/inscription-parser.service.hel
 import { ParsedRunestone } from './types/parsed-runestone';
 import { BrC20Parsed, getBrc20Flaws, parseBrc20Content } from './types/parsed-brc20';
 import { getSrc20Flaws, ParsedSrc20, parseSrc20Content, Src20Parsed } from './types/parsed-src20';
+import { getSrc721Flaws, ParsedSrc721, parseSrc721Content } from './types/parsed-src721';
+import { getSrc101Flaws, ParsedSrc101, parseSrc101Content } from './types/parsed-src101';
 import { OrdpoolFlagged, TransactionSimple, TransactionSimplePlus } from './types/transaction-simple';
 
 
@@ -715,15 +717,25 @@ export class DigitalArtifactAnalyserService {
         break;
 
       case DigitalArtifactType.Src721:
-        // SRC-721 is a Stamps-family protocol -- always set ordpool_stamp as parent
-        // (same pattern as ordpool_inscription parent for ordpool_brc20).
+        // ordpool_stamp is the catch-all: any stamp-shaped artifact lights it
+        // up, even if the SRC-721 payload is structurally broken. The
+        // protocol-specific ordpool_src721 flag only fires when the content
+        // passes the canonical validator (see getSrc721Flaws).
         flags |= OrdpoolTransactionFlags.ordpool_stamp;
-        flags |= OrdpoolTransactionFlags.ordpool_src721;
+        const src721 = artifact as ParsedSrc721;
+        const src721Parsed = parseSrc721Content(src721.getContent());
+        if (src721Parsed && getSrc721Flaws(src721Parsed).length === 0) {
+          flags |= OrdpoolTransactionFlags.ordpool_src721;
+        }
         break;
 
       case DigitalArtifactType.Src101:
         flags |= OrdpoolTransactionFlags.ordpool_stamp;
-        flags |= OrdpoolTransactionFlags.ordpool_src101;
+        const src101 = artifact as ParsedSrc101;
+        const src101Parsed = parseSrc101Content(src101.getContent());
+        if (src101Parsed && getSrc101Flaws(src101Parsed).length === 0) {
+          flags |= OrdpoolTransactionFlags.ordpool_src101;
+        }
         break;
 
       case DigitalArtifactType.Inscription:
@@ -820,27 +832,26 @@ export class DigitalArtifactAnalyserService {
       case DigitalArtifactType.Src20:
         const src20 = artifact as ParsedSrc20;
 
-        // SRC-20 is a Stamps-family protocol -- always set ordpool_stamp as parent
-        // (same pattern as ordpool_inscription parent for ordpool_brc20).
+        // ordpool_stamp is the catch-all: any stamp-shaped artifact lights it
+        // up, even if the SRC-20 payload is garbage. The protocol-specific
+        // ordpool_src20 flag and its sub-op flags only fire when the content
+        // passes the canonical validator (see getSrc20Flaws, which matches
+        // stampchain-io/btc_stamps NUMERIC_REGEX + uint64 range checks).
         flags |= OrdpoolTransactionFlags.ordpool_stamp;
 
-        src20Content = parseSrc20Content(src20.getContent()) ?? undefined;
-        if (src20Content) {
-
+        const src20Parsed = parseSrc20Content(src20.getContent());
+        if (src20Parsed && getSrc20Flaws(src20Parsed).length === 0) {
+          src20Content = src20Parsed;
           flags |= OrdpoolTransactionFlags.ordpool_src20;
 
-          // Validate SRC-20 content -- skip operation flags for invalid SRC-20 (garbage JSON).
-          // Same pattern as BRC-20: invalid SRC-20 still gets the top-level flag,
-          // but without operation flags it won't pollute stats or DB inserts.
-          const src20Flaws = getSrc20Flaws(src20Content);
-          if (src20Flaws.length === 0) {
-            if (src20Content.op === 'deploy') {
-              flags |= OrdpoolTransactionFlags.ordpool_src20_deploy;
-            } else if (src20Content.op === 'mint') {
-              flags |= OrdpoolTransactionFlags.ordpool_src20_mint;
-            } else if (src20Content.op === 'transfer') {
-              flags |= OrdpoolTransactionFlags.ordpool_src20_transfer;
-            }
+          // Sub-op flag mirrors the validated op directly; no second flaws
+          // check needed since the parent gate already enforced it.
+          if (src20Parsed.op === 'deploy') {
+            flags |= OrdpoolTransactionFlags.ordpool_src20_deploy;
+          } else if (src20Parsed.op === 'mint') {
+            flags |= OrdpoolTransactionFlags.ordpool_src20_mint;
+          } else if (src20Parsed.op === 'transfer') {
+            flags |= OrdpoolTransactionFlags.ordpool_src20_transfer;
           }
         }
         break;

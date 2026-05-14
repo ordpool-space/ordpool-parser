@@ -279,6 +279,51 @@ describe('getSrc20Flaws', () => {
     expect(getSrc20Flaws(mint)).toContain('missing_amount');
   });
 
+  // -- Canonical NUMERIC_REGEX + uint64 range checks (v2.4.6) --
+
+  it('should detect non-numeric amt string ("abc")', () => {
+    const mint = { p: 'src-20', op: 'mint', tick: 'STAMP', amt: 'abc' } as unknown as Src20Parsed;
+    expect(getSrc20Flaws(mint)).toContain('missing_amount');
+  });
+
+  it('should detect negative amt (canonical regex forbids minus)', () => {
+    const mint = { p: 'src-20', op: 'mint', tick: 'STAMP', amt: -100 } as unknown as Src20Parsed;
+    expect(getSrc20Flaws(mint)).toContain('missing_amount');
+  });
+
+  it('should detect amt above uint64 max', () => {
+    // 2^64 = 18446744073709551616 (one above uint64 max)
+    const mint = { p: 'src-20', op: 'mint', tick: 'STAMP', amt: '18446744073709551616' } as unknown as Src20Parsed;
+    expect(getSrc20Flaws(mint)).toContain('missing_amount');
+  });
+
+  it('should accept amt exactly at uint64 max', () => {
+    const mint = { p: 'src-20', op: 'mint', tick: 'STAMP', amt: '18446744073709551615' } as unknown as Src20Parsed;
+    expect(getSrc20Flaws(mint)).not.toContain('missing_amount');
+  });
+
+  it('should detect mixed-content amt strings ("100abc")', () => {
+    // Canonical pre-block-833000 forgiving path strips non-numeric chars,
+    // but post-OLGA strict path rejects. We use the strict rule.
+    const mint = { p: 'src-20', op: 'mint', tick: 'STAMP', amt: '100abc' } as unknown as Src20Parsed;
+    expect(getSrc20Flaws(mint)).toContain('missing_amount');
+  });
+
+  it('should detect scientific notation amt', () => {
+    const mint = { p: 'src-20', op: 'mint', tick: 'STAMP', amt: '1e10' } as unknown as Src20Parsed;
+    expect(getSrc20Flaws(mint)).toContain('missing_amount');
+  });
+
+  it('should accept decimal amt ("100.5")', () => {
+    const mint = { p: 'src-20', op: 'mint', tick: 'STAMP', amt: '100.5' } as unknown as Src20Parsed;
+    expect(getSrc20Flaws(mint)).not.toContain('missing_amount');
+  });
+
+  it('should detect commas in amt ("100,000")', () => {
+    const mint = { p: 'src-20', op: 'mint', tick: 'STAMP', amt: '100,000' } as unknown as Src20Parsed;
+    expect(getSrc20Flaws(mint)).toContain('missing_amount');
+  });
+
   it('should NOT check amount for deploy operations', () => {
     const deploy: Src20Deploy = { p: 'src-20', op: 'deploy', tick: 'STAMP', max: '21000', lim: '100', dec: '8' };
     expect(getSrc20Flaws(deploy)).not.toContain('missing_amount');

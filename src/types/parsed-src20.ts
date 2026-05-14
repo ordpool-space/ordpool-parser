@@ -93,20 +93,52 @@ export function parseSrc20Content(content: string): Src20Parsed | null {
   }
 }
 
+// Canonical numeric regex from stampchain-io/btc_stamps
+// (indexer/src/index_core/src20.py:29). Matches what their indexer accepts
+// for `amt`, `max`, `lim`: digits, optional decimal point + more digits.
+// No minus sign, no scientific notation, no garbage. Empty string fails.
+const SRC20_NUMERIC_REGEX = /^[0-9]+(\.[0-9]*)?$/;
+
+// uint64 maximum (2^64 - 1). Canonical rejects values outside [0, uint64_max]
+// per index_core/src20.py:721.
+const SRC20_UINT64_MAX = 18446744073709551615n;
+
 /**
- * True when `v` is present and looks like a numeric value -- either a finite
- * JSON number, or a non-empty/non-whitespace string. The string form is NOT
- * required to parse as a number here; full numeric validation (uint64 range,
- * decimals, etc.) is out of scope for the flaw checker.
+ * True when `v` is a valid SRC-20 numeric: either a JSON string matching
+ * /^[0-9]+(\.[0-9]*)?$/ or a JSON number that stringifies to that same
+ * pattern. Value must fall in [0, 2^64-1]. Mirrors the canonical indexer's
+ * NUMERIC_REGEX + range check (index_core/src20.py:76, 721).
  */
-function isPresentNumeric(v: unknown): boolean {
+function isCanonicalSrc20Numeric(v: unknown): boolean {
+  let str: string;
   if (typeof v === 'number') {
-    return Number.isFinite(v);
+    if (!Number.isFinite(v)) {
+      return false;
+    }
+    // Reject negatives, NaN/Infinity, and scientific notation. JS's
+    // Number->string conversion produces '1e+21' for large numbers, which
+    // the regex correctly rejects.
+    str = String(v);
+  } else if (typeof v === 'string') {
+    str = v;
+  } else {
+    return false;
   }
-  if (typeof v === 'string') {
-    return v.trim() !== '';
+
+  if (!SRC20_NUMERIC_REGEX.test(str)) {
+    return false;
   }
-  return false;
+
+  // Range check against uint64 max. Use BigInt on the integer part since
+  // strings like '12345.67' would overflow Number.parseFloat for huge
+  // numbers; canonical only cares about the integer portion for the
+  // range check anyway (decimals are bounded by `dec`).
+  const integerPart = str.split('.')[0];
+  try {
+    return BigInt(integerPart) <= SRC20_UINT64_MAX;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -126,20 +158,17 @@ export function getSrc20Flaws(parsed: Src20Parsed): Src20Flaw[] {
   if (parsed.op === 'deploy') {
     const deploy = parsed as Src20Deploy;
 
-    // max is required for deploy. Accept either a JSON number or a non-empty
-    // string -- the canonical spec treats both forms as valid.
-    if (!isPresentNumeric(deploy.max)) {
+    if (!isCanonicalSrc20Numeric(deploy.max)) {
       flaws.push('missing_max_supply');
     }
 
     // lim is required for SRC-20 deploy (unlike BRC-20 where it's optional).
-    if (!isPresentNumeric(deploy.lim)) {
+    if (!isCanonicalSrc20Numeric(deploy.lim)) {
       flaws.push('missing_mint_limit');
     }
 
-    // dec must be an integer in 0-18 if specified. Accepts string or number;
-    // empty string / null / undefined are treated as "not specified" and skip
-    // validation (spec default = 18).
+    // dec is optional; empty string / null / undefined => spec default of 18.
+    // When specified, must be an integer in [0, 18].
     if (deploy.dec !== undefined && deploy.dec !== null && deploy.dec !== '') {
       const dec = Number(deploy.dec);
       if (isNaN(dec) || dec < 0 || dec > 18 || !Number.isInteger(dec)) {
@@ -151,8 +180,7 @@ export function getSrc20Flaws(parsed: Src20Parsed): Src20Flaw[] {
   if (parsed.op === 'mint' || parsed.op === 'transfer') {
     const mintOrTransfer = parsed as Src20Mint | Src20Transfer;
 
-    // amt is required for mint and transfer; either string or number form.
-    if (!isPresentNumeric(mintOrTransfer.amt)) {
+    if (!isCanonicalSrc20Numeric(mintOrTransfer.amt)) {
       flaws.push('missing_amount');
     }
   }
