@@ -1,14 +1,13 @@
-import { concatUint8Arrays, hexToBytes, isStringInArrayOfStrings } from '../lib/conversions';
-import { OP_ENDIF } from '../lib/op-codes';
+import { bytesToHex, concatUint8Arrays, hexToBytes, isStringInArrayOfStrings } from '../lib/conversions';
+import { OP_ENDIF, OP_IF, OP_PUSHBYTES_4 } from '../lib/op-codes';
 import { readPushdata } from '../lib/reader';
 
-// OP_IF (0x63), OP_PUSHBYTES_4 (0x04), 'a', 't', 'o', 'm' (0x61, 0x74, 0x6f, 0x6d).
 // Mirrors atomicals-electrumx parse_protocols_operations_from_witness_for_input,
-// which scans for any OP_IF followed by push4 "atom". The byte before OP_IF
-// is usually OP_FALSE (0x00) in standard tapscript templates, but the
-// reference indexer doesn't require it -- only the 6-byte trailer matters.
-const ATOMICAL_MARK = new Uint8Array([0x63, 0x04, 0x61, 0x74, 0x6f, 0x6d]);
-const ATOMICAL_MARK_HEX = '630461746f6d';
+// which scans for any OP_IF followed by push4 "atom" -- regardless of the
+// byte preceding OP_IF (standard tapscript uses OP_FALSE, but the reference
+// indexer doesn't require it).
+const ATOMICAL_MARK = new Uint8Array([OP_IF, OP_PUSHBYTES_4, 0x61, 0x74, 0x6f, 0x6d]); // 0x61, 0x74, 0x6f, 0x6d = 'a','t','o','m'
+const ATOMICAL_MARK_HEX = bytesToHex(ATOMICAL_MARK);
 
 /**
  * Checks if an atomical mark is found within a witness array.

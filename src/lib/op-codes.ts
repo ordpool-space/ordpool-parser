@@ -7,6 +7,7 @@ export const OP_IF = 0x63;
 export const OP_0 = 0x00;
 
 export const OP_PUSHBYTES_3 = 0x03; //  3 -- not an actual opcode, but used in documentation --> pushes the next 3 bytes onto the stack.
+export const OP_PUSHBYTES_4 = 0x04; //  4 -- same as OP_PUSHBYTES_3 but for 4 bytes.
 export const OP_PUSHDATA1 = 0x4c;   // 76 -- The next byte contains the number of bytes to be pushed onto the stack.
 export const OP_PUSHDATA2 = 0x4d;   // 77 -- The next two bytes contain the number of bytes to be pushed onto the stack in little endian order.
 export const OP_PUSHDATA4 = 0x4e;   // 78 -- The next four bytes contain the number of bytes to be pushed onto the stack in little endian order.

@@ -292,9 +292,6 @@ export class InscriptionParserService {
 
         getParents: (): string[] => {
           const parentsRaw = getKnownFieldValues(fields, knownFields.parent);
-          // ord uses filter_map over parents -- malformed ones are silently
-          // dropped, same approach we mirror here. See
-          // src/inscriptions/inscription.rs:283.
           return parentsRaw
             .map(parentRaw => extractInscriptionId(parentRaw))
             .filter((id): id is string => id !== null);
