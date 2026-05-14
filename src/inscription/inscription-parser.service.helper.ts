@@ -288,25 +288,39 @@ export async function gzipDecode(bytes: Uint8Array): Promise<Uint8Array> {
 
 
 /**
- * Extracts an inscription ID from a field in an inscription.
- * (used for parent instriptions and for delegate inscriptions)
- * The value consists of a 32-byte transaction ID (TXID) followed by a four-byte little-endian index.
- * The TXID part is reversed in order, and trailing zeroes are omitted.
+ * Extracts an inscription ID from a field in an inscription. Used for parent
+ * inscriptions, delegate inscriptions, and gallery items.
  *
- * @param parentField - The field containing the parent inscription data.
- * @returns The inscription ID as a string.
+ * Mirrors ord's `InscriptionId::from_value` (`src/inscriptions/inscription_id.rs:21`):
+ *   - 32 bytes is the txid alone (index defaults to 0)
+ *   - 33-36 bytes is txid + variable-length little-endian index
+ *   - 36 bytes is the fixed-length form (last byte may be 0)
+ *   - Variable-length forms (33-35 bytes) MUST NOT end with a 0 byte --
+ *     ord rejects, otherwise the encoding wouldn't be canonical
+ *
+ * Returns null when the input doesn't match these rules. Callers should
+ * filter nulls the same way ord uses `filter_map` over the parents list.
  */
-export function extractInscriptionId(value: Uint8Array): string {
+export function extractInscriptionId(value: Uint8Array): string | null {
+  if (value.length < 32 || value.length > 36) {
+    return null;
+  }
 
-  // Reverse the TXID part and convert it to hexadecimal
-  const txId = value.slice(0, 32).reverse();
-  const txIdHex = bytesToHex(txId);
+  // Variable-length form: index < 4 bytes. Last byte must not be zero,
+  // otherwise the canonical encoding would have dropped that trailing zero.
+  if (value.length > 32 && value.length < 36 && value[value.length - 1] === 0) {
+    return null;
+  }
 
-  // Convert the 4-byte little-endian index to a decimal number
-  const indexBytes = value.slice(32, 36); // Get the index part
+  // Reverse the txid bytes for hex display (witness encoding is little-endian
+  // / "reversed" relative to the display format).
+  const txIdHex = bytesToHex(value.slice(0, 32).reverse());
+
+  // Pad the variable-length index up to 4 bytes for u32 LE decode.
+  const indexBytes = new Uint8Array(4);
+  indexBytes.set(value.slice(32));
   const index = littleEndianBytesToNumber(indexBytes);
 
-  // Combine TXID and index to form the parent inscription ID
   return txIdHex + 'i' + index;
 }
 

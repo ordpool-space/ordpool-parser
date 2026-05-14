@@ -246,6 +246,25 @@ describe('AtomicalParserService', () => {
       const raw = hexToBytes(txn.vin[0].witness![0]);
       expect(extractAtomicalEnvelope(raw)).toBeNull();
     });
+
+    it('should accept an atomical without leading OP_FALSE (matches reference indexer)', () => {
+      // atomicals-electrumx scans for OP_IF + push4 "atom" regardless of the
+      // preceding byte. Real on-chain atomicals all use the standard
+      // OP_FALSE OP_IF tapscript template, but a hand-crafted script that
+      // begins with the OP_IF byte directly should still parse.
+      //
+      // Bytes:
+      //   0x63           OP_IF
+      //   0x04 6174 6f6d push4 "atom"
+      //   0x03 6e 6674   push3 "nft"
+      //   0x01 ff        push1 0xff (1-byte CBOR payload)
+      //   0x68           OP_ENDIF
+      const raw = hexToBytes('630461746f6d036e667401ff68');
+      const envelope = extractAtomicalEnvelope(raw)!;
+      expect(envelope.operation).toBe('nft');
+      expect(envelope.payload.length).toBe(1);
+      expect(envelope.payload[0]).toBe(0xff);
+    });
   });
 
   describe('extractAtomicalEnvelopeFromWitness', () => {

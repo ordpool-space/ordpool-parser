@@ -80,10 +80,16 @@ export async function parseProperties(fields: { tag: number; value: Uint8Array }
 
     let inscriptionId: string | undefined;
 
-    // Try inline ID first (key 0: 32-36 byte inscription ID)
+    // Try inline ID first (key 0: 32-36 byte inscription ID). The length
+    // gate here is a cheap pre-check; extractInscriptionId does the full
+    // canonical validation (including the no-trailing-zero rule for
+    // variable-length indices) and returns null on failure.
     const inlineId = rawItem[0];
     if (ArrayBuffer.isView(inlineId) && inlineId.byteLength >= 32 && inlineId.byteLength <= 36) {
-      inscriptionId = extractInscriptionId(new Uint8Array(inlineId.buffer, inlineId.byteOffset, inlineId.byteLength));
+      const id = extractInscriptionId(new Uint8Array(inlineId.buffer, inlineId.byteOffset, inlineId.byteLength));
+      if (id !== null) {
+        inscriptionId = id;
+      }
     }
 
     // Fall back to packed encoding (txid from Properties[2], index from Item[2])

@@ -2,9 +2,13 @@ import { concatUint8Arrays, hexToBytes, isStringInArrayOfStrings } from '../lib/
 import { OP_ENDIF } from '../lib/op-codes';
 import { readPushdata } from '../lib/reader';
 
-// OP_FALSE (0x00), OP_IF (0x63), OP_PUSHBYTES_4 (0x04), 'a', 't', 'o', 'm' (0x61, 0x74, 0x6f, 0x6d)
-const ATOMICAL_MARK = new Uint8Array([0x00, 0x63, 0x04, 0x61, 0x74, 0x6f, 0x6d]);
-const ATOMICAL_MARK_HEX = '00630461746f6d';
+// OP_IF (0x63), OP_PUSHBYTES_4 (0x04), 'a', 't', 'o', 'm' (0x61, 0x74, 0x6f, 0x6d).
+// Mirrors atomicals-electrumx parse_protocols_operations_from_witness_for_input,
+// which scans for any OP_IF followed by push4 "atom". The byte before OP_IF
+// is usually OP_FALSE (0x00) in standard tapscript templates, but the
+// reference indexer doesn't require it -- only the 6-byte trailer matters.
+const ATOMICAL_MARK = new Uint8Array([0x63, 0x04, 0x61, 0x74, 0x6f, 0x6d]);
+const ATOMICAL_MARK_HEX = '630461746f6d';
 
 /**
  * Checks if an atomical mark is found within a witness array.
@@ -128,7 +132,7 @@ export const ATOMICAL_OPERATION_LABELS: Record<AtomicalOperation, string> = {
 /**
  * Finds the atomical mark in raw witness bytes and extracts the operation type.
  *
- * After the 7-byte mark, the next pushdata contains the operation identifier.
+ * After the 6-byte mark, the next pushdata contains the operation identifier.
  * Common operations use single-byte ASCII: 'm' (0x6d), 'u' (0x75), 'x' (0x78), etc.
  * Some use multi-byte strings like 'nft', 'ft', 'dft', 'mod', 'evt', 'dat', 'sl'.
  *
@@ -205,7 +209,7 @@ export function getNextAtomicalMark(raw: Uint8Array, startPosition: number): num
  * Uses readPushdata() to correctly handle multi-chunk payloads (>520 bytes),
  * same approach as the inscription parser's body extraction.
  *
- * Envelope layout after the 7-byte mark:
+ * Envelope layout after the 6-byte mark:
  *   <pushdata: operation string>    e.g., 03 "dft"
  *   <pushdata: CBOR chunk 1>       up to 520 bytes each
  *   <pushdata: CBOR chunk 2>

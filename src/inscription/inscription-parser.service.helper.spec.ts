@@ -165,18 +165,52 @@ recognized and tracked by old versions of `ord`.
 A collection can be closed by burning the collection's parent inscription,
 which guarantees that no more items in the collection can be issued.
 */
-describe('extractParent', () => {
+describe('extractInscriptionId', () => {
 
-  it('should correctly extract parent inscription ID (000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fi255)', () => {
+  it('should correctly extract parent inscription ID (...i255, variable-length single index byte)', () => {
     const value = hexToBytes('1f1e1d1c1b1a191817161514131211100f0e0d0c0b0a09080706050403020100ff');
     const expected = '000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fi255';
     expect(extractInscriptionId(value)).toEqual(expected);
   });
 
-  it('should correctly extract parent inscription ID (000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fi256)', () => {
+  it('should correctly extract parent inscription ID (...i256, variable-length two index bytes)', () => {
     const value = hexToBytes('1f1e1d1c1b1a191817161514131211100f0e0d0c0b0a090807060504030201000001');
     const expected = '000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fi256';
     expect(extractInscriptionId(value)).toEqual(expected);
+  });
+
+  it('should accept 32 bytes alone (index = 0 implicit)', () => {
+    const value = hexToBytes('1f1e1d1c1b1a191817161514131211100f0e0d0c0b0a09080706050403020100');
+    expect(extractInscriptionId(value)).toEqual('000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fi0');
+  });
+
+  it('should accept the 36-byte fixed-length form with trailing zero in index', () => {
+    // Fixed-length form: ord accepts a 4-byte index even if the last byte is
+    // zero. Variable-length forms (length < 36) must NOT end in zero.
+    const value = hexToBytes('1f1e1d1c1b1a191817161514131211100f0e0d0c0b0a09080706050403020100ff000000');
+    expect(extractInscriptionId(value)).toEqual('000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fi255');
+  });
+
+  it('should return null for values shorter than 32 bytes', () => {
+    expect(extractInscriptionId(hexToBytes(''))).toBeNull();
+    expect(extractInscriptionId(hexToBytes('1f1e1d1c1b1a191817161514131211100f0e0d0c0b0a0908070605040302'))).toBeNull();
+  });
+
+  it('should return null for values longer than 36 bytes', () => {
+    const value = hexToBytes('1f1e1d1c1b1a191817161514131211100f0e0d0c0b0a09080706050403020100ff00000000');
+    expect(extractInscriptionId(value)).toBeNull();
+  });
+
+  it('should return null for variable-length forms ending in zero (non-canonical)', () => {
+    // 33-byte form ending in 0 -- canonical encoding would have dropped the
+    // trailing zero, so this byte sequence isn't a valid inscription ID.
+    const value = hexToBytes('1f1e1d1c1b1a191817161514131211100f0e0d0c0b0a09080706050403020100' + '00');
+    expect(extractInscriptionId(value)).toBeNull();
+  });
+
+  it('should return null for 35-byte form ending in zero', () => {
+    const value = hexToBytes('1f1e1d1c1b1a191817161514131211100f0e0d0c0b0a09080706050403020100' + 'ff0000');
+    expect(extractInscriptionId(value)).toBeNull();
   });
 });
 

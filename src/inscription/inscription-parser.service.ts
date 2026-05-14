@@ -292,7 +292,12 @@ export class InscriptionParserService {
 
         getParents: (): string[] => {
           const parentsRaw = getKnownFieldValues(fields, knownFields.parent);
-          return parentsRaw.map(parentRaw => extractInscriptionId(parentRaw));
+          // ord uses filter_map over parents -- malformed ones are silently
+          // dropped, same approach we mirror here. See
+          // src/inscriptions/inscription.rs:283.
+          return parentsRaw
+            .map(parentRaw => extractInscriptionId(parentRaw))
+            .filter((id): id is string => id !== null);
         },
 
         getMetadata: (): unknown => {
@@ -332,7 +337,9 @@ export class InscriptionParserService {
 
         getDelegates: (): string[] => {
           const delegatesRaw = getKnownFieldValues(fields, knownFields.delegate);
-          return delegatesRaw.map(parentRaw => extractInscriptionId(parentRaw));
+          return delegatesRaw
+            .map(parentRaw => extractInscriptionId(parentRaw))
+            .filter((id): id is string => id !== null);
         },
 
         getRune: (): Uint8Array | undefined => {
