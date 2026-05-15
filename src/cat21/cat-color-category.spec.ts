@@ -40,14 +40,14 @@ describe('hueToColorCategory', () => {
 describe('getCatColorCategory', () => {
 
   // The genesis cat: real mainnet txid + block hash from
-  // cat21-parser.service.spec.ts. Should bucket as gray because
-  // bytes[0] === 79 short-circuits the hue branch.
+  // cat21-parser.service.spec.ts. Returns null because genesis cats have
+  // no body hue — they get a hand-picked b/w palette.
   const GENESIS_TXID    = '98316dcb21daaa221865208fe0323616ee6dd84e6020b78bc6908e914ac03892';
   const GENESIS_BLOCKID = '000000000000000000018e3ea447b11385e3330348010e1b2418d0d8ae4e0ac7';
   const GENESIS_FEE_RATE = 40834 / (705 / 4);
 
-  it('buckets the genesis cat as gray', () => {
-    expect(getCatColorCategory(GENESIS_TXID, GENESIS_BLOCKID, GENESIS_FEE_RATE)).toBe('gray');
+  it('returns null for the genesis cat (no body hue to bucket)', () => {
+    expect(getCatColorCategory(GENESIS_TXID, GENESIS_BLOCKID, GENESIS_FEE_RATE)).toBeNull();
   });
 
   it('is deterministic — same inputs always yield the same bucket', () => {
@@ -56,17 +56,18 @@ describe('getCatColorCategory', () => {
     expect(a).toBe(b);
   });
 
-  it('returns one of the documented bucket names for arbitrary inputs', () => {
+  it('returns one of the seven documented buckets (or null) for arbitrary inputs', () => {
     const txId   = 'a'.repeat(64);
     const blockId = '0'.repeat(64);
     const result = getCatColorCategory(txId, blockId, 17.5);
-    expect(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'gray']).toContain(result);
+    if (result !== null) {
+      expect(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink']).toContain(result);
+    }
   });
 
-  it('agrees with the parsed cat traits for the genesis cat (genesis flag matches gray bucket)', () => {
+  it('agrees with the parsed cat traits for the genesis cat (genesis flag matches null bucket)', () => {
     // Cross-check against the parser's own `genesis` trait: any cat the
-    // parser flags `genesis: true` must bucket gray here. If the parser
-    // ever changed genesis-detection logic this test would catch the drift.
+    // parser flags `genesis: true` must return null here.
     const txn = {
       txid: GENESIS_TXID,
       locktime: 21,
@@ -77,7 +78,7 @@ describe('getCatColorCategory', () => {
     const parsed = Cat21ParserService.parse(txn);
     const traits = parsed?.getTraits();
     expect(traits?.genesis).toBe(true);
-    expect(getCatColorCategory(txn.txid, txn.status.block_hash, GENESIS_FEE_RATE)).toBe('gray');
+    expect(getCatColorCategory(txn.txid, txn.status.block_hash, GENESIS_FEE_RATE)).toBeNull();
   });
 
   it('throws for malformed txid / blockId (delegated to createCatHash)', () => {

@@ -9,12 +9,17 @@ import { RGBToHSL } from './mooncat-parser.helper';
  * CAT-21 cats have a single body color derived from the fee rate
  * (`feeRateToColor` in mooncat-parser.colors) seeded by `bytes[1]` of the
  * `SHA256(txId + blockId)` cat hash. The 5-entry `catColors` palette is
- * just lighter/darker shades of that same hue. The search UX needs one
- * named bucket per cat ("show me red cats"), so this helper recomputes
+ * just lighter/darker shades of that single hue. This helper recomputes
  * the body hue using the parser's own primitives and maps it to one of
- * nine buckets. Genesis cats sit outside the hue-derivation path (they
- * get a hand-picked grayscale palette in mooncat-parser.ts) and bucket
- * as `gray`.
+ * seven buckets so a search UX can filter "red cats" etc.
+ *
+ * Genesis cats sit outside the hue-derivation path — they get a
+ * hand-picked black/white palette with a pink accent. `getCatColorCategory`
+ * returns `null` for them; callers who want to surface genesis cats in
+ * search filter on the `genesis` trait, not on color.
+ *
+ * `feeRateToColor` always emits saturated body colors (saturation in
+ * [0.75, 1.0]), so there are no "gray" cats — no such bucket.
  *
  * NOT part of the frozen CAT-21 spec. New utility built on top of the
  * frozen primitives without modifying them.
@@ -27,14 +32,9 @@ export type CatColorCategory =
   | 'green'
   | 'blue'
   | 'purple'
-  | 'pink'
-  | 'gray';
+  | 'pink';
 
-/**
- * Maps an HSL hue (0..360) to a named bucket. Saturation isn't a factor
- * here — the caller decides whether to short-circuit to `gray` for
- * genesis cats first.
- */
+/** Maps an HSL hue (0..360) to a named bucket. */
 export function hueToColorCategory(hue: number): CatColorCategory {
   // Normalize into [0, 360).
   const h = ((hue % 360) + 360) % 360;
@@ -68,12 +68,13 @@ export function getCatColorCategory(
   txId: string,
   blockId: string,
   feeRate: number,
-): CatColorCategory {
+): CatColorCategory | null {
   const catHash = createCatHash(txId, blockId);
   const bytes = hexToBytes(catHash);
 
   // Byte 0 === 79 is the genesis flag (matches mooncat-parser.ts:76).
-  if (bytes[0] === 79) return 'gray';
+  // Genesis cats have no body hue; callers filter via the `genesis` trait.
+  if (bytes[0] === 79) return null;
 
   // Byte 1 is the saturation seed used by feeRateToColor.
   const saturationSeed = bytes[1];
