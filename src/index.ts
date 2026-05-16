@@ -1,6 +1,7 @@
 export * from './atomical/atomical-parser.service.helper';
 export * from './atomical/atomical-parser.service';
 export * from './cat21/cat-color-category';
+export * from './rarity/open-rarity';
 export * from './cat21/cat21-parser.service.helper';
 export * from './cat21/cat21-parser.service';
 export * from './cat21/mooncat-parser.colors';
