@@ -40,14 +40,26 @@ describe('hueToColorCategory', () => {
 describe('getCatColorCategory', () => {
 
   // The genesis cat: real mainnet txid + block hash from
-  // cat21-parser.service.spec.ts. Returns null because genesis cats have
-  // no body hue — they get a hand-picked b/w palette.
+  // cat21-parser.service.spec.ts.
   const GENESIS_TXID    = '98316dcb21daaa221865208fe0323616ee6dd84e6020b78bc6908e914ac03892';
   const GENESIS_BLOCKID = '000000000000000000018e3ea447b11385e3330348010e1b2418d0d8ae4e0ac7';
   const GENESIS_FEE_RATE = 40834 / (705 / 4);
 
-  it('returns null for the genesis cat (no body hue to bucket)', () => {
-    expect(getCatColorCategory(GENESIS_TXID, GENESIS_BLOCKID, GENESIS_FEE_RATE)).toBeNull();
+  // Synthetic non-genesis IDs for fee-rate easter-egg tests. bytes[0] is
+  // 245 for this pair (verified via SHA-256), so the genesis branch is
+  // skipped and the feeRate path runs.
+  const NON_GENESIS_TXID = '0'.repeat(64);
+  const NON_GENESIS_BLOCKID = '0'.repeat(64);
+
+  it('returns white for the genesis cat (bytes[1]=152 ≥ 128 → inverted palette)', () => {
+    expect(getCatColorCategory(GENESIS_TXID, GENESIS_BLOCKID, GENESIS_FEE_RATE)).toBe('white');
+  });
+
+  it('genesis wins over fee-rate easter eggs', () => {
+    // Even if a genesis cat had paid a fire-cat fee rate, it'd render as
+    // the hardcoded genesis palette. Bucket follows the visual.
+    expect(getCatColorCategory(GENESIS_TXID, GENESIS_BLOCKID, 69.5)).toBe('white');
+    expect(getCatColorCategory(GENESIS_TXID, GENESIS_BLOCKID, 420.5)).toBe('white');
   });
 
   it('is deterministic — same inputs always yield the same bucket', () => {
@@ -56,18 +68,7 @@ describe('getCatColorCategory', () => {
     expect(a).toBe(b);
   });
 
-  it('returns one of the seven documented buckets (or null) for arbitrary inputs', () => {
-    const txId   = 'a'.repeat(64);
-    const blockId = '0'.repeat(64);
-    const result = getCatColorCategory(txId, blockId, 17.5);
-    if (result !== null) {
-      expect(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink']).toContain(result);
-    }
-  });
-
-  it('agrees with the parsed cat traits for the genesis cat (genesis flag matches null bucket)', () => {
-    // Cross-check against the parser's own `genesis` trait: any cat the
-    // parser flags `genesis: true` must return null here.
+  it('agrees with the parsed cat traits for the genesis cat (genesis flag matches white bucket)', () => {
     const txn = {
       txid: GENESIS_TXID,
       locktime: 21,
@@ -78,7 +79,40 @@ describe('getCatColorCategory', () => {
     const parsed = Cat21ParserService.parse(txn);
     const traits = parsed?.getTraits();
     expect(traits?.genesis).toBe(true);
-    expect(getCatColorCategory(txn.txid, txn.status.block_hash, GENESIS_FEE_RATE)).toBeNull();
+    expect(getCatColorCategory(txn.txid, txn.status.block_hash, GENESIS_FEE_RATE)).toBe('white');
+  });
+
+  describe('fee-rate easter eggs', () => {
+
+    it("returns 'fire' for fee rates in [69, 70) on non-genesis cats", () => {
+      expect(getCatColorCategory(NON_GENESIS_TXID, NON_GENESIS_BLOCKID, 69)).toBe('fire');
+      expect(getCatColorCategory(NON_GENESIS_TXID, NON_GENESIS_BLOCKID, 69.5)).toBe('fire');
+      expect(getCatColorCategory(NON_GENESIS_TXID, NON_GENESIS_BLOCKID, 69.999)).toBe('fire');
+    });
+
+    it("does NOT return 'fire' outside the [69, 70) window", () => {
+      expect(getCatColorCategory(NON_GENESIS_TXID, NON_GENESIS_BLOCKID, 68.999)).not.toBe('fire');
+      expect(getCatColorCategory(NON_GENESIS_TXID, NON_GENESIS_BLOCKID, 70)).not.toBe('fire');
+    });
+
+    it("returns 'saturated' for fee rates in [420, 421) on non-genesis cats", () => {
+      expect(getCatColorCategory(NON_GENESIS_TXID, NON_GENESIS_BLOCKID, 420)).toBe('saturated');
+      expect(getCatColorCategory(NON_GENESIS_TXID, NON_GENESIS_BLOCKID, 420.5)).toBe('saturated');
+      expect(getCatColorCategory(NON_GENESIS_TXID, NON_GENESIS_BLOCKID, 420.999)).toBe('saturated');
+    });
+
+    it("does NOT return 'saturated' outside the [420, 421) window", () => {
+      expect(getCatColorCategory(NON_GENESIS_TXID, NON_GENESIS_BLOCKID, 419.999)).not.toBe('saturated');
+      expect(getCatColorCategory(NON_GENESIS_TXID, NON_GENESIS_BLOCKID, 421)).not.toBe('saturated');
+    });
+  });
+
+  it('returns one of the eleven documented buckets for arbitrary non-genesis inputs', () => {
+    const result = getCatColorCategory(NON_GENESIS_TXID, NON_GENESIS_BLOCKID, 17.5);
+    expect([
+      'red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink',
+      'black', 'white', 'fire', 'saturated',
+    ]).toContain(result);
   });
 
   it('throws for malformed txid / blockId (delegated to createCatHash)', () => {

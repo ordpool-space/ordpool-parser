@@ -10,13 +10,27 @@ import { RGBToHSL } from './mooncat-parser.helper';
  * (`feeRateToColor` in mooncat-parser.colors) seeded by `bytes[1]` of the
  * `SHA256(txId + blockId)` cat hash. The 5-entry `catColors` palette is
  * just lighter/darker shades of that single hue. This helper recomputes
- * the body hue using the parser's own primitives and maps it to one of
- * seven buckets so a search UX can filter "red cats" etc.
+ * the body hue using the parser's own primitives and maps it to a
+ * search-facing bucket so a UX can filter "red cats" etc.
  *
- * Genesis cats sit outside the hue-derivation path — they get a
- * hand-picked black/white palette with a pink accent. `getCatColorCategory`
- * returns `null` for them; callers who want to surface genesis cats in
- * search filter on the `genesis` trait, not on color.
+ * The bucket list intentionally goes beyond the hue wheel:
+ *
+ * - `'black'` / `'white'`: the two hardcoded genesis palettes. Genesis
+ *   cats short-circuit the hue path and get one of these two looks
+ *   depending on `bytes[1] >= 128` (the `inverted` flag in the parser).
+ *   The parser renders genesis cats this way regardless of fee rate, so
+ *   the bucket follows: genesis wins.
+ * - `'fire'`: cats whose mint paid a fee rate in `[69, 70)` sat/vB. The
+ *   parser repaints body slots 1..3 to red/orange/yellow — the
+ *   easter-egg "fire cat 🔥". Without a dedicated bucket these would be
+ *   mis-tagged as `'orange'` based on raw hue.
+ * - `'saturated'`: cats whose mint paid a fee rate in `[420, 421)`
+ *   sat/vB. The parser bumps the body saturation to 42.0 (joke value).
+ *   Visually a "loud" version of whatever hue they'd otherwise have.
+ *
+ * These are not traits — the parser's `CatTraits` shape is unchanged.
+ * The bucket name just describes faithfully what the cat looks like, so
+ * search returns the set spotters expect.
  *
  * `feeRateToColor` always emits saturated body colors (saturation in
  * [0.75, 1.0]), so there are no "gray" cats — no such bucket.
@@ -32,10 +46,16 @@ export type CatColorCategory =
   | 'green'
   | 'blue'
   | 'purple'
-  | 'pink';
+  | 'pink'
+  | 'black'
+  | 'white'
+  | 'fire'
+  | 'saturated';
 
-/** Maps an HSL hue (0..360) to a named bucket. */
-export function hueToColorCategory(hue: number): CatColorCategory {
+/** Maps an HSL hue (0..360) to a named hue bucket. */
+export function hueToColorCategory(
+  hue: number,
+): 'red' | 'orange' | 'yellow' | 'green' | 'blue' | 'purple' | 'pink' {
   // Normalize into [0, 360).
   const h = ((hue % 360) + 360) % 360;
   // Red wraps the 0/360 seam.
@@ -49,38 +69,45 @@ export function hueToColorCategory(hue: number): CatColorCategory {
 }
 
 /**
- * Computes the dominant color bucket for a CAT-21 cat. Reproduces the
- * body-color derivation from `mooncat-parser.ts` exactly:
+ * Computes the dominant color bucket for a CAT-21 cat. Precedence
+ * matches what the parser renders: genesis cats win the bucket
+ * regardless of fee rate; otherwise the fee-rate easter eggs override
+ * the hue path; otherwise the hue path runs.
  *
- *   1. catHash  = SHA256(txId || blockId)
- *   2. genesis  = bytes[0] === 79  (genesis cats short-circuit to gray)
- *   3. seed     = bytes[1]
- *   4. rgb      = feeRateToColor(feeRate, seed).rgb     (0..1 floats)
- *   5. hue      = RGBToHSL(...).h
- *   6. category = hueToColorCategory(hue)
+ *   1. catHash = SHA256(txId || blockId)
+ *   2. bytes[0] === 79     → genesis → 'white' if bytes[1] >= 128 else 'black'
+ *   3. feeRate ∈ [69, 70)  → 'fire'
+ *   4. feeRate ∈ [420, 421)→ 'saturated'
+ *   5. else                → hue bucket from feeRateToColor → RGBToHSL
  *
- * `feeRate` is sat/vB (fee / vsize); the same scalar the mooncat-parser
- * is given. The function throws for malformed inputs (non-hex txid /
- * blockId, wrong length) to match `createCatHash` — that's the right
- * shape because the inputs come from the indexer's typed schema.
+ * `feeRate` is sat/vB (fee / vsize). Throws for malformed inputs
+ * (non-hex txid / blockId, wrong length) to match `createCatHash`.
  */
 export function getCatColorCategory(
   txId: string,
   blockId: string,
   feeRate: number,
-): CatColorCategory | null {
+): CatColorCategory {
   const catHash = createCatHash(txId, blockId);
   const bytes = hexToBytes(catHash);
 
-  // Byte 0 === 79 is the genesis flag (matches mooncat-parser.ts:76).
-  // Genesis cats have no body hue; callers filter via the `genesis` trait.
-  if (bytes[0] === 79) return null;
+  // Genesis wins. The parser overwrites the body palette with one of
+  // two hardcoded looks (see mooncat-parser.ts:236 — `colors = [...]`
+  // inside `if (genesis)`), gated by the same `bytes[1] >= 128`
+  // `inverted` flag the design index uses.
+  if (bytes[0] === 79) {
+    return bytes[1] >= 128 ? 'white' : 'black';
+  }
 
-  // Byte 1 is the saturation seed used by feeRateToColor.
+  // Fee-rate easter eggs. Half-open windows; only feeRate == 69.x or
+  // 420.x respectively qualify. Same conditions the parser uses in
+  // mooncat-parser.ts:230 and mooncat-parser.colors.ts:66.
+  if (feeRate >= 69 && feeRate < 70) return 'fire';
+  if (feeRate >= 420 && feeRate < 421) return 'saturated';
+
+  // Standard hue path.
   const saturationSeed = bytes[1];
-
   const { rgb } = feeRateToColor(feeRate, saturationSeed);
   const [hue] = RGBToHSL(rgb[0], rgb[1], rgb[2]);
-
   return hueToColorCategory(hue);
 }
