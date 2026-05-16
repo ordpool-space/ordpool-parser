@@ -400,4 +400,55 @@ describe('open-rarity / scoreAndRank', () => {
       expect(typeof ranked[0].id).toBe('number');
     });
   });
+
+  describe('tiebreaker option', () => {
+
+    it('breaks identical-score ties via the supplied comparator (strict total order)', () => {
+      // Two identical tokens — same trait set → same score → would tie
+      // without a tiebreaker. With `(a, b) => a - b` (lower id wins),
+      // they get distinct ranks; id=1 ranks above id=2.
+      const tokens: RarityToken<number>[] = [
+        { id: 2, attrs: { x: 'a', y: 'b' } },
+        { id: 1, attrs: { x: 'a', y: 'b' } },
+      ];
+      const ranked = scoreAndRank(tokens, { tiebreaker: (a, b) => a - b });
+      const by = (id: number) => ranked.find((r) => r.id === id)!;
+
+      expect(by(1).rank).toBe(1);
+      expect(by(2).rank).toBe(2);
+      // Scores still identical — the tiebreaker only affects rank
+      // assignment, not the underlying math.
+      expect(by(1).score).toBeCloseTo(by(2).score, 9);
+      expect(by(1).bits).toBeCloseTo(by(2).bits, 9);
+    });
+
+    it('default behaviour (no tiebreaker) still merges score ties into a shared rank', () => {
+      const tokens: RarityToken<number>[] = [
+        { id: 2, attrs: { x: 'a', y: 'b' } },
+        { id: 1, attrs: { x: 'a', y: 'b' } },
+      ];
+      const ranked = scoreAndRank(tokens);
+      const by = (id: number) => ranked.find((r) => r.id === id)!;
+
+      expect(by(1).rank).toBe(by(2).rank);
+    });
+
+    it('tiebreaker does not override the primary uniqueAttrCount sort key', () => {
+      // Token id=1 has uniqueAttrCount=0; token id=2 has uniqueAttrCount=2.
+      // Even though the tiebreaker prefers lower ids, the primary sort
+      // wins — id=2 should still rank above id=1.
+      const tokens: RarityToken<number>[] = [
+        { id: 1, attrs: { x: 'common', y: 'common' } },
+        { id: 2, attrs: { x: 'unique-x', y: 'unique-y' } },
+        { id: 3, attrs: { x: 'common', y: 'common' } },
+      ];
+      const ranked = scoreAndRank(tokens, { tiebreaker: (a, b) => a - b });
+      const by = (id: number) => ranked.find((r) => r.id === id)!;
+
+      expect(by(2).rank).toBe(1);
+      // Tiebreaker breaks the 1-vs-3 tie: id=1 wins.
+      expect(by(1).rank).toBe(2);
+      expect(by(3).rank).toBe(3);
+    });
+  });
 });

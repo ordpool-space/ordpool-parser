@@ -24,8 +24,8 @@
  *      (attribute, value) pair (including synthesized `Null`).
  *   5. Token score = `bits / H` (or `bits / 1` if `H == 0`, the
  *      single-token edge case).
- *   6. Rank tokens by `(uniqueAttrCount DESC, score DESC)`. Tied scores
- *      get the same rank (next rank skips, classic 1-2-2-4 ordering).
+ *   6. Rank tokens by `(uniqueAttrCount DESC, score DESC)`. Cats with
+ *      the same score share a rank.
  *
  * ## Semantics worth knowing
  *
@@ -82,10 +82,31 @@ export interface ScoredToken<TId = string> {
   /** Normalized score `bits / collectionEntropy`. Same ranks as `bits`,
    *  but more meaningful as a cross-collection number. */
   score: number;
-  /** 1-based rank within the collection. Ties get equal ranks. */
+  /** 1-based rank within the collection. When a `tiebreaker` is
+   *  supplied, ranks are a strict total ordering (1, 2, 3, …, n).
+   *  Without one, identical scores share a rank. */
   rank: number;
   /** Number of attributes whose value occurs exactly once in the collection. */
   uniqueAttrCount: number;
+}
+
+export interface ScoreAndRankOptions<TId = string> {
+  /**
+   * Optional deterministic tiebreaker. Applied when two tokens land on
+   * the same `(uniqueAttrCount, score)`. Same shape as `Array.sort`'s
+   * comparator: return negative if `a` should rank higher, positive if
+   * `b` should rank higher. Returning 0 leaves the rank-tied behaviour
+   * intact for that pair.
+   *
+   * When provided, identical-score tokens get distinct ranks instead
+   * of a shared rank — the strict total ordering means there are no
+   * ties at all. This is an extension to OpenRarity's reference
+   * algorithm, useful when the caller has a natural seniority key
+   * (mint order, ordinal number, etc.).
+   *
+   * Example for cat21: `(a, b) => a - b` — lower `catNumber` wins.
+   */
+  tiebreaker?: (a: TId, b: TId) => number;
 }
 
 /**
@@ -96,8 +117,10 @@ export interface ScoredToken<TId = string> {
  */
 export function scoreAndRank<TId = string>(
   inputTokens: readonly RarityToken<TId>[],
+  options?: ScoreAndRankOptions<TId>,
 ): ScoredToken<TId>[] {
   if (inputTokens.length === 0) return [];
+  const tiebreaker = options?.tiebreaker;
 
   // Step 1: clone + inject trait_count. Avoids mutating caller input.
   const tokens = withTraitCount(inputTokens);
@@ -119,19 +142,25 @@ export function scoreAndRank<TId = string>(
     return { id: t.id, bits, score, uniqueAttrCount };
   });
 
-  // Step 6: sort by (uniqueAttrCount DESC, score DESC) then assign ranks
-  // with score-only tiebreak (NOT unique-count tiebreak — that matches
-  // the Python ranker exactly).
-  features.sort((a, b) =>
-    b.uniqueAttrCount - a.uniqueAttrCount ||
-    b.score - a.score,
-  );
+  // Step 6: sort by (uniqueAttrCount DESC, score DESC), then apply the
+  // caller's tiebreaker if any. Without a tiebreaker, identical-score
+  // tokens keep their input order (Array.sort is stable in modern JS)
+  // and the rank-assignment loop merges them into shared ranks. With a
+  // tiebreaker, the comparator imposes a strict total order, so ranks
+  // are assigned 1..n without merging.
+  features.sort((a, b) => {
+    const byUnique = b.uniqueAttrCount - a.uniqueAttrCount;
+    if (byUnique !== 0) return byUnique;
+    const byScore = b.score - a.score;
+    if (byScore !== 0) return byScore;
+    return tiebreaker ? tiebreaker(a.id, b.id) : 0;
+  });
 
   const ranked: ScoredToken<TId>[] = [];
   for (let i = 0; i < features.length; i++) {
     const f = features[i];
     let rank = i + 1;
-    if (i > 0) {
+    if (i > 0 && !tiebreaker) {
       const prev = ranked[i - 1];
       if (scoresClose(f.score, prev.score)) {
         rank = prev.rank;
