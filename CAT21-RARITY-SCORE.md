@@ -144,14 +144,32 @@ binary trait at 50/50 contributes at most 1 bit; a 4-way trait at
 ~0.4% contributes ~8 bits.
 
 `rarityRank` is the 1-based position when the category's cats are
-sorted by `(uniqueAttrCount DESC, rarityBits DESC)` — the
-`uniqueAttrCount` primary key matches OpenRarity's reference
+sorted by `(uniqueAttrCount DESC, rarityBits DESC, catNumber ASC)` —
+the `uniqueAttrCount` primary key matches OpenRarity's reference
 implementation; it surfaces cats that have a one-of-a-kind value in
 some trait even when their raw bit total isn't the highest.
 
+### Tiebreaker: lower catNumber wins
+
+The 11-dimension scored trait surface is finite. With enough cats in
+a category, two different cats can roll the same combination of
+scored values (different `feeRate` or `catHash` bytes, same enum
+values for every searchable trait). Generic OpenRarity treats those
+as a shared rank — but cat21 doesn't.
+
+**When two cats tie on `(uniqueAttrCount, rarityBits)`, the lower
+`catNumber` wins.** Older cat is rarer. Strict total order — no
+two cats ever share a rank.
+
+`rarityBits` is unaffected by the tiebreaker. Both cats still report
+the same float for `bits` and `score`; only the rank label is split
+deterministically. Anyone running the algorithm with the
+`(a, b) => a - b` comparator on a cat's id gets the same answer.
+
 Implementation lives in `src/rarity/open-rarity.ts` (this repo). Test
-coverage is in `src/rarity/open-rarity.spec.ts` — 20 tests, including
-the exact-float regression cases ported from the upstream Python.
+coverage is in `src/rarity/open-rarity.spec.ts` — including the
+exact-float regression cases ported from the upstream Python and the
+cat21-specific tiebreaker tests.
 
 ### What's included in scoring
 
