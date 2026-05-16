@@ -15,11 +15,12 @@ import { RGBToHSL } from './mooncat-parser.helper';
  *
  * The bucket list intentionally goes beyond the hue wheel:
  *
- * - `'black'` / `'white'`: the two hardcoded genesis palettes. Genesis
- *   cats short-circuit the hue path and get one of these two looks
- *   depending on `bytes[1] >= 128` (the `inverted` flag in the parser).
- *   The parser renders genesis cats this way regardless of fee rate, so
- *   the bucket follows: genesis wins.
+ * - `'black'` / `'white'`: the two hardcoded genesis palettes. The
+ *   parser's `genesis` trait fires when `catHash[0] === 79` — a ~0.4%
+ *   visual variant that hits hundreds of cats out of the full supply,
+ *   not just cat #0. Affected cats short-circuit the hue path and get
+ *   one of these two looks depending on `bytes[1] >= 128` (the
+ *   `inverted` flag). Genesis wins regardless of fee rate.
  * - `'fire'`: cats whose mint paid a fee rate in `[69, 70)` sat/vB. The
  *   parser repaints body slots 1..3 to red/orange/yellow — the
  *   easter-egg "fire cat 🔥". Without a dedicated bucket these would be
