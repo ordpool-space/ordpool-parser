@@ -103,8 +103,12 @@ Each cat belongs to exactly one category, derived from its `catNumber`:
 | `< 1 000 000`          | `sub1M`  | 500 000 cats               |
 | `≥ 1 000 000`          | (TBD)    | unbounded — opens at #1 000 000 |
 
-Source: `ordpool/official_dune_dasboard_query.sql`, the canonical
-Dune dashboard query mirror.
+Category derivation lives in the indexer at
+`cat21-indexer/backend/src/modules/sync/sync.service.ts` —
+`deriveCategory(catNumber)`. **This doc is the authority for the
+category model**; the legacy Dune dashboard at
+`dune.com/ethspresso/cat21` introduced the names but is stale on
+several points (an updated v2 dashboard is in progress).
 
 The CASE WHEN falls through smallest-first, so a cat numbered 500 is
 `sub1k` and **only** `sub1k`, never also `sub10k`. The `sub10k` label
@@ -212,43 +216,27 @@ OpenRarity wins for CAT-21 because:
 
 ## The Genesis Cat Bonus
 
-**There are many `genesis: true` cats. There is only one Genesis Cat.**
+**Cat #0 is rank 1 in sub1k. Always.**
 
-Cat #0 is the first `nLockTime=21` transaction in Bitcoin history.
-Block 824 205. Holder of sat `596964966600565`. The mother of the
-protocol.
+There are many `genesis: true` cats. There is only one Genesis Cat.
+Cat #0 is the first `nLockTime=21` transaction in Bitcoin history,
+revealed at block 824 205, carrying sat `596964966600565` and the
+protocol's governance per the CAT-21 spec. The genesis cat holder
+has spoken: rank 1 is decreed.
 
-Its specialness is **historical, not statistical**. No trait-frequency
-math can manufacture protocol significance, and we don't try.
+This is law, not math. We don't argue with it.
 
-OpenRarity ranks cat #0 around **rank 8** in sub1k by trait math
-alone. The genesis trait carries ~8 bits, but cat #0's secondaries —
-Standing pose, Red laser eyes, no crown, no glasses — are common; cat
-#802 wins the natural rank with rare secondaries on top of the
-genesis trait (Cool glasses + Green eyes + Pouncing pose + Whitepaper
-background).
-
-We **pin cat #0 at rank 1 inside sub1k**. Always.
-
-Implementation: in `recomputeRarityForCategory`, after `scoreAndRank`
-returns the natural order, if `category === 'sub1k'`, cat #0 is moved
-to position 0 of the ranked array and ranks renumber sequentially.
-
-**The `rarityBits` field is untouched.** Cat #0's score still reports
-its honest natural value (~29.6 bits). Only the *rank label* is
-pinned. A degen reading the API can see both:
-
-- `rarityBits: 29.626…` — the trait math, fair and transparent.
-- `rarityRank: 1` — the rank, with the Genesis Cat Bonus applied.
-
-We're not faking the math. We're saying: rank is a community-facing
-number that should reflect the protocol's truth, and the protocol's
-truth is that there's one Genesis Cat. Bits stay honest. Anyone
-suspicious can compute `rarityBits` themselves from the parser and
-see we're not hiding anything.
+The `rarityBits` field still reports cat #0's natural trait-math
+score (~29.6 bits) — bits never lie. The rank label is the only
+thing pinned. Both numbers ship in the API, side by side; they're
+not the same thing and they don't pretend to be.
 
 Limited strictly to sub1k. No other category contains the Genesis
-Cat, so no other category has the bonus.
+Cat.
+
+Implementation: in `recomputeRarityForCategory`, after `scoreAndRank`
+returns the natural order, when `category === 'sub1k'` cat #0 moves
+to position 0 and ranks renumber sequentially.
 
 ## Trust — the math is mathing
 
@@ -261,8 +249,9 @@ Cat, so no other category has the bonus.
 - The rarity algorithm is **open source** (`src/rarity/open-rarity.ts`)
   and a faithful port of OpenRarity's Python reference. Tests pin the
   exact-float behaviour against the upstream test vectors.
-- The category derivation is **a single CASE WHEN** mirrored from the
-  Dune dashboard query at `ordpool/official_dune_dasboard_query.sql`.
+- The category derivation is **a single CASE WHEN** — the seven
+  thresholds listed in the "Categories" section above. The whole
+  function is ten lines.
 - The Genesis Cat Bonus is **explicitly documented** (this section).
   No hidden "rarity boosts" anywhere else; the only override exists
   for cat #0 in sub1k, and it touches the rank label only.
