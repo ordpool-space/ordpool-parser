@@ -44,6 +44,7 @@ export type CatColorCategory =
   | 'orange'
   | 'yellow'
   | 'green'
+  | 'cyan'
   | 'blue'
   | 'purple'
   | 'pink'
@@ -55,7 +56,7 @@ export type CatColorCategory =
 /** Maps an HSL hue (0..360) to a named hue bucket. */
 export function hueToColorCategory(
   hue: number,
-): 'red' | 'orange' | 'yellow' | 'green' | 'blue' | 'purple' | 'pink' {
+): 'red' | 'orange' | 'yellow' | 'green' | 'cyan' | 'blue' | 'purple' | 'pink' {
   // Normalize into [0, 360).
   const h = ((hue % 360) + 360) % 360;
   // Red wraps the 0/360 seam.
@@ -63,7 +64,8 @@ export function hueToColorCategory(
   if (h < 45) return 'orange';
   if (h < 70) return 'yellow';
   if (h < 165) return 'green';
-  if (h < 255) return 'blue';      // includes cyan; one-bucket consolidation per the search plan
+  if (h < 195) return 'cyan';      // ~180°: distinct enough from blue to be its own bucket
+  if (h < 255) return 'blue';
   if (h < 285) return 'purple';
   return 'pink';
 }

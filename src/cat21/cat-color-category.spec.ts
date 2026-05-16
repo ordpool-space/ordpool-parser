@@ -16,6 +16,7 @@ describe('hueToColorCategory', () => {
     expect(hueToColorCategory(30)).toBe('orange');
     expect(hueToColorCategory(60)).toBe('yellow');
     expect(hueToColorCategory(120)).toBe('green');
+    expect(hueToColorCategory(180)).toBe('cyan');
     expect(hueToColorCategory(210)).toBe('blue');
     expect(hueToColorCategory(270)).toBe('purple');
     expect(hueToColorCategory(315)).toBe('pink');
@@ -27,8 +28,9 @@ describe('hueToColorCategory', () => {
     expect(hueToColorCategory(360)).toBe('red');
   });
 
-  it('treats cyan as blue (one-bucket consolidation per the search plan)', () => {
-    expect(hueToColorCategory(180)).toBe('blue');
+  it('splits cyan from blue at hue 195', () => {
+    expect(hueToColorCategory(194)).toBe('cyan');
+    expect(hueToColorCategory(195)).toBe('blue');
   });
 
   it('normalizes out-of-range hues into [0, 360)', () => {
@@ -107,10 +109,10 @@ describe('getCatColorCategory', () => {
     });
   });
 
-  it('returns one of the eleven documented buckets for arbitrary non-genesis inputs', () => {
+  it('returns one of the twelve documented buckets for arbitrary non-genesis inputs', () => {
     const result = getCatColorCategory(NON_GENESIS_TXID, NON_GENESIS_BLOCKID, 17.5);
     expect([
-      'red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink',
+      'red', 'orange', 'yellow', 'green', 'cyan', 'blue', 'purple', 'pink',
       'black', 'white', 'fire', 'saturated',
     ]).toContain(result);
   });
