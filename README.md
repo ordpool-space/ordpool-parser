@@ -4,7 +4,7 @@ Yes, Bitcoin is money. Everything else is an attack on Bitcoin. We get it. [BIP 
 
 But you still want to know what's inside your blocks, don't you? Know your enemy! ;-)
 
-**ordpool-parser** is a zero-dependency TypeScript parser that detects and extracts digital artifacts from raw Bitcoin transactions: **Inscriptions**, **Runes**, **BRC-20**, **SRC-20 Stamps**, **CAT-21**, **Atomicals**, and **Labitbu**.
+**ordpool-parser** is a zero-dependency TypeScript parser that detects and extracts digital artifacts from raw Bitcoin transactions: **Inscriptions**, **Runes** (including **Alkanes**), **BRC-20**, **SRC-20 Stamps**, **CAT-21**, **Atomicals**, and **Labitbu**.
 
 Works in **Node.js** and **browsers** out of the box. Used by [ordpool.space](https://ordpool.space).
 
@@ -17,7 +17,7 @@ npm install ordpool-parser
 | Protocol | What it detects | Key data extracted |
 |----------|----------------|-------------------|
 | **Inscriptions** | `OP_FALSE OP_IF "ord"` envelope in witness | Content, content type, metadata, parents, delegates, **galleries** (tag 17 properties with items + traits) |
-| **Runes** | `OP_RETURN` runestone | Etching, mint, transfers, cenotaphs |
+| **Runes** | `OP_RETURN` runestone | Etching, mint, transfers, cenotaphs; also surfaces **Alkanes** (sub-protocol via Runestone tag 16383 Protostones) |
 | **BRC-20** | JSON inscriptions with `"p": "brc-20"` | Deploy, mint, transfer operations |
 | **SRC-20** | RC4-encrypted stamp data in multisig outputs | Deploy, mint, transfer operations |
 | **CAT-21** | Transactions with `nLockTime == 21` | Deterministic cat image (SVG) + traits |
