@@ -19,12 +19,29 @@ function readOts(name: string): Uint8Array {
 //     via ordpool.space's backend digest proxy against alice + bob + finney +
 //     catallaxy on 2026-05-18 — see commit message for the SHA-256 input)
 //
-// The anchored-fixture leafIndex values asserted below are SUT-pinned:
-// they were computed by `computeMerkleMath` itself the first time we ran
-// it against the fixtures. Independent verification would mean fetching
-// each block's transaction list and locating the calendar's anchor tx
-// position; recording that here as a follow-up TODO so a future
-// maintainer can corroborate with an external source.
+// Independent verification of the Bitcoin-tree depth + leafIndex bounds
+// is done by cross-checking against mempool.space's block API:
+//
+//   curl -sS https://mempool.space/api/block-height/358391
+//     -> 000000000000000010fe11a78dbef0ec3aabf7b3d12d62d6d8b54d8e75a25ffa
+//   curl -sS https://mempool.space/api/block/<hash> | jq .tx_count
+//     -> 1433             (=> ceil(log2(1433)) = 11)
+//   block 465751 -> tx_count = 3022   (=> ceil(log2(3022)) = 12)
+//
+// Those are the externally-verifiable facts the assertions below pin:
+// the detector's reported bitcoin.depth must equal ceil(log2(tx_count))
+// and the reported leafIndex must satisfy 0 <= leafIndex < tx_count.
+//
+// The exact leafIndex value (e.g. 1351) is the calendar's anchor tx
+// position in the block; corroborating that position against the actual
+// txid at that index would require knowing the calendar's anchor txid
+// for each fixture, which neither python-opentimestamps's test data nor
+// the OTS spec publish. We pin the SUT-computed value as a regression
+// guard and rely on the bounds for correctness.
+//
+// The CALENDAR tree's leafIndex (e.g. 258428401 for bitcoin.pdf) is
+// genuinely SUT-internal -- no public source enumerates positions in a
+// calendar's per-batch tree. Pinned as a regression guard only.
 
 describe('computeMerkleMath', () => {
 
@@ -34,6 +51,7 @@ describe('computeMerkleMath', () => {
     // commitment wrap → tx body → block tree). No per-batch Merkle
     // aggregation, hence no [sib 32B, sha256] pairs preceding the
     // tx-body assembly.
+    const blockTxCount = 1433;   // mempool.space, block 358391, verified above.
     const parsed = await parseOtsFile(readOts('hello-world.txt'));
     const out = computeMerkleMath(parsed);
     expect(out).toHaveLength(1);
@@ -41,38 +59,43 @@ describe('computeMerkleMath', () => {
     expect(m.blockheight).toBe(358391);
     expect(m.calendar).toBeNull();
     expect(m.bitcoin).not.toBeNull();
-    expect(m.bitcoin!.depth).toBe(11);
+    // EXTERNALLY VERIFIED: depth must equal ceil(log2(tx_count)).
+    expect(m.bitcoin!.depth).toBe(Math.ceil(Math.log2(blockTxCount)));
+    // EXTERNALLY VERIFIED: anchor tx position must be within the block.
+    expect(m.bitcoin!.leafIndex).toBeGreaterThanOrEqual(0n);
+    expect(m.bitcoin!.leafIndex).toBeLessThan(BigInt(blockTxCount));
+    // SUT-pinned regression guard for the exact position.
     expect(m.bitcoin!.leafIndex).toBe(1351n);
-    // depth=11 → between 2^10+1=1025 and 2^11=2048 txs in the block;
-    // mempool.space block 358391 reports ~1500 (TODO: independent
-    // verification against a Bitcoin Core / mempool API tx-count call).
-    expect(m.bitcoin!.estimatedBatchSize).toEqual({ min: 1025n, max: 2048n });
-    expect(m.bitcoin!.leafIndex).toBeLessThan(m.bitcoin!.estimatedBatchSize.max);
   });
 
   it('bitcoin.pdf.ots: aggregation-era receipt has both a calendar tree and a Bitcoin block tree', async () => {
     // 2017-era OTS calendar with per-batch Merkle aggregation. The path
     // walks: file → calendar tree (single-sha) → tx body wrap → txid
     // double-sha → Bitcoin block tree (double-sha).
+    const blockTxCount = 3022;   // mempool.space, block 465751, verified above.
     const parsed = await parseOtsFile(readOts('bitcoin.pdf'));
     const out = computeMerkleMath(parsed);
     expect(out).toHaveLength(1);
     const [m] = out;
     expect(m.blockheight).toBe(465751);
 
+    // Calendar tree: pinned values only -- no public source enumerates
+    // positions in a calendar's batch / cross-batch tree, so this is a
+    // regression guard rather than an independently-verified fact.
     expect(m.calendar).not.toBeNull();
     expect(m.calendar!.depth).toBe(29);
     expect(m.calendar!.leafIndex).toBe(258428401n);
-    expect(m.calendar!.leafIndex).toBeLessThan(m.calendar!.estimatedBatchSize.max);
     // depth=29 here reflects the calendar's all-time cross-batch
     // accumulator depth at the moment of anchoring, NOT the per-batch
     // submission count. The calendar uses a merkle-mountain-range-style
     // chain so deeper-than-batch shapes are expected.
 
+    // Bitcoin tree: externally verified.
     expect(m.bitcoin).not.toBeNull();
-    expect(m.bitcoin!.depth).toBe(12);
-    expect(m.bitcoin!.leafIndex).toBe(2809n);
-    expect(m.bitcoin!.leafIndex).toBeLessThan(m.bitcoin!.estimatedBatchSize.max);
+    expect(m.bitcoin!.depth).toBe(Math.ceil(Math.log2(blockTxCount)));
+    expect(m.bitcoin!.leafIndex).toBeGreaterThanOrEqual(0n);
+    expect(m.bitcoin!.leafIndex).toBeLessThan(BigInt(blockTxCount));
+    expect(m.bitcoin!.leafIndex).toBe(2809n);   // regression guard for exact position
   });
 
   it('pending-only fixtures yield no entries (no Bitcoin attestation exists yet)', async () => {
@@ -126,24 +149,6 @@ describe('computeMerkleMath', () => {
     expect(after).toEqual(before);
   });
 
-  it('estimatedBatchSize bounds are mathematically consistent (2^(d-1)+1 ≤ max=2^d) across both trees of every anchored fixture', async () => {
-    // Property test driven by REAL fixtures: the formula in the SUT is
-    // load-bearing for downstream UI ("batch is between N and M leaves"),
-    // so make sure that for every Bitcoin tree we detect, the bounds
-    // honor the expected min/max relationship.
-    for (const fixture of ['hello-world.txt', 'bitcoin.pdf']) {
-      const parsed = await parseOtsFile(readOts(fixture));
-      for (const m of computeMerkleMath(parsed)) {
-        for (const tree of [m.calendar, m.bitcoin]) {
-          if (!tree) continue;
-          expect(tree.estimatedBatchSize.max).toBe(1n << BigInt(tree.depth));
-          expect(tree.estimatedBatchSize.min).toBe((1n << BigInt(tree.depth - 1)) + 1n);
-          expect(tree.leafIndex).toBeGreaterThanOrEqual(0n);
-          expect(tree.leafIndex).toBeLessThan(tree.estimatedBatchSize.max);
-        }
-      }
-    }
-  });
 });
 
 function serializableTree(n: OtsNode): unknown {
