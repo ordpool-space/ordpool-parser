@@ -57,3 +57,4 @@ export * from './types/bitcoin-rpc';
 export * from './types/transaction-simple';
 export * from './ots/parsed-ots';
 export * from './ots/ots-parser.service';
+export * from './ots/merkle-math';
