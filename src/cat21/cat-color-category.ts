@@ -29,6 +29,10 @@ import { RGBToHSL } from './mooncat-parser.helper';
  *   sat/vB. The parser bumps the body saturation to 42.0 (joke value).
  *   Visually a "loud" version of whatever hue they'd otherwise have.
  *
+ * There's no `'cyan'` bucket: `feeRateToColor` sweeps green → yellow →
+ * orange → red → blue and never produces a hue in the [165°, 195°)
+ * teal range. That range folds into blue.
+ *
  * These are not traits — the parser's `CatTraits` shape is unchanged.
  * The bucket name just describes faithfully what the cat looks like, so
  * search returns the set spotters expect.
@@ -45,7 +49,6 @@ export type CatColorCategory =
   | 'orange'
   | 'yellow'
   | 'green'
-  | 'cyan'
   | 'blue'
   | 'purple'
   | 'pink'
@@ -54,10 +57,15 @@ export type CatColorCategory =
   | 'fire'
   | 'saturated';
 
-/** Maps an HSL hue (0..360) to a named hue bucket. */
+/** Maps an HSL hue (0..360) to a named hue bucket.
+ *
+ *  No `cyan` bucket: `feeRateToColor` sweeps green → yellow → orange →
+ *  red → blue and never produces a hue in the teal range, so the bucket
+ *  would always be empty. The [165°, 195°) range is folded into blue.
+ */
 export function hueToColorCategory(
   hue: number,
-): 'red' | 'orange' | 'yellow' | 'green' | 'cyan' | 'blue' | 'purple' | 'pink' {
+): 'red' | 'orange' | 'yellow' | 'green' | 'blue' | 'purple' | 'pink' {
   // Normalize into [0, 360).
   const h = ((hue % 360) + 360) % 360;
   // Red wraps the 0/360 seam.
@@ -65,7 +73,6 @@ export function hueToColorCategory(
   if (h < 45) return 'orange';
   if (h < 70) return 'yellow';
   if (h < 165) return 'green';
-  if (h < 195) return 'cyan';      // ~180°: distinct enough from blue to be its own bucket
   if (h < 255) return 'blue';
   if (h < 285) return 'purple';
   return 'pink';

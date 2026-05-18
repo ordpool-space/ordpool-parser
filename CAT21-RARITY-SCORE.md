@@ -51,7 +51,7 @@ These are the only inputs to the rarity score. Color palettes
 (`catColors`, `backgroundColors`, `glassesColors`) themselves aren't
 scored individually — they're derivative of other values. Instead, we
 score the **dominant color bucket** (see "Color buckets" below), which
-is a coarse classification: red, orange, yellow, green, cyan, blue,
+is a coarse classification: red, orange, yellow, green, blue,
 purple, pink, black, white, plus the two easter-egg buckets `fire` and
 `saturated`.
 
@@ -181,15 +181,18 @@ eyes · background · crown · glasses · color
 ```
 
 `color` here is the **dominant color bucket**, not the raw hex
-palette. The bucket has 12 possible values: 8 hue bands
-(red/orange/yellow/green/cyan/blue/purple/pink), 2 genesis palettes
+palette. The bucket has 11 possible values: 7 hue bands
+(red/orange/yellow/green/blue/purple/pink), 2 genesis palettes
 (black/white — the parser's hardcoded looks when `catHash[0] === 79`),
-and 2 easter-egg buckets (fire/saturated). See
-`src/cat21/cat-color-category.ts` for the assignment logic.
+and 2 easter-egg buckets (fire/saturated). There's no `cyan` band:
+`feeRateToColor` sweeps green → yellow → orange → red → blue and
+never produces a hue in the [165°, 195°) teal range, so that range
+folds into blue. See `src/cat21/cat-color-category.ts` for the
+assignment logic.
 
 Why a bucket and not the raw palette: the 5-hex palette is largely
 deterministic from a single hue + saturation; the meaningful "what
-color is this cat" question collapses to one of those 12 buckets.
+color is this cat" question collapses to one of those 11 buckets.
 
 ### What's not in scoring
 
