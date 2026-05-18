@@ -1,0 +1,51 @@
+{
+    "txid": "972c41e6b564a5aa9663d94cd1b3cebcddd6ee8eae429c075ac50c841e3701d6",
+    "version": 2,
+    "locktime": 0,
+    "vin": [
+        {
+            "txid": "e03cd0c44c0d29ff42e1e1db0f9eddd315d6335d205f83cc4a8a3834152e662b",
+            "vout": 1,
+            "prevout": {
+                "scriptpubkey": "0014a1d4c897e4d72ea18758bc62da1c76d68536c9e4",
+                "scriptpubkey_asm": "OP_0 OP_PUSHBYTES_20 a1d4c897e4d72ea18758bc62da1c76d68536c9e4",
+                "scriptpubkey_type": "v0_p2wpkh",
+                "scriptpubkey_address": "bc1q582v39ly6uh2rp6ch33d58rk66zndj0yl8hsvy",
+                "value": 4896
+            },
+            "scriptsig": "",
+            "scriptsig_asm": "",
+            "witness": [
+                "3045022100aba1cb14c9e2d1d1512cdc422d27d5fa5a3a0a84458353b768458e8d6a10c117022045c662e70b1fffb5d8bcfd313edb19aaba5ddb25520830b66b0f9e30d618a65601",
+                "035fb9465e0dd6d9d939fb9041ee4ed894d5cf4fcefd00e5b541b3710e2bc6f740"
+            ],
+            "is_coinbase": false,
+            "sequence": 4294967293
+        }
+    ],
+    "vout": [
+        {
+            "scriptpubkey": "0014a1d4c897e4d72ea18758bc62da1c76d68536c9e4",
+            "scriptpubkey_asm": "OP_0 OP_PUSHBYTES_20 a1d4c897e4d72ea18758bc62da1c76d68536c9e4",
+            "scriptpubkey_type": "v0_p2wpkh",
+            "scriptpubkey_address": "bc1q582v39ly6uh2rp6ch33d58rk66zndj0yl8hsvy",
+            "value": 4714
+        },
+        {
+            "scriptpubkey": "6a5d1214011400ff7f818cec82d08bc0a88281d215",
+            "scriptpubkey_asm": "OP_RETURN OP_PUSHNUM_13 OP_PUSHBYTES_18 14011400ff7f818cec82d08bc0a88281d215",
+            "scriptpubkey_type": "op_return",
+            "value": 0
+        }
+    ],
+    "size": 222,
+    "weight": 558,
+    "sigops": 1,
+    "fee": 182,
+    "status": {
+        "confirmed": true,
+        "block_height": 949000,
+        "block_hash": "00000000000000000001a70c3574d45a1f338035850ddb8ebb681b6085a5e8bb",
+        "block_time": 1778535158
+    }
+}

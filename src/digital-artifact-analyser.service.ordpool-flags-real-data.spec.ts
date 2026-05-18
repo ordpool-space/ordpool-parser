@@ -39,6 +39,19 @@ describe('_ordpoolFlags with real blockchain data (no mocks)', () => {
     expect(flagsBigInt & OrdpoolTransactionFlags.ordpool_rune_etch).toBe(OrdpoolTransactionFlags.ordpool_rune_etch);
   });
 
+  // Alkanes is a sub-protocol of Runes carried via Runestone PROTOCOL tag
+  // (16383). Real mainnet tx in block 949000 with a protocol_tag = 1
+  // Protostone -- both ordpool_rune and ordpool_alkanes fire.
+  it('should set _ordpoolFlags for an alkanes transaction (Runestone + protocol_tag=1)', async () => {
+    const tx = readTransaction('972c41e6b564a5aa9663d94cd1b3cebcddd6ee8eae429c075ac50c841e3701d6');
+
+    await DigitalArtifactAnalyserService.analyseTransaction(tx, 0n);
+
+    const flags = BigInt((tx as any)._ordpoolFlags);
+    expect(flags & OrdpoolTransactionFlags.ordpool_rune).toBe(OrdpoolTransactionFlags.ordpool_rune);
+    expect(flags & OrdpoolTransactionFlags.ordpool_alkanes).toBe(OrdpoolTransactionFlags.ordpool_alkanes);
+  });
+
   // Inscription: OrdRain gallery (image/webp inscription)
   it('should set _ordpoolFlags for an inscription transaction', async () => {
     const tx = readTransaction('f6d848b3dc15955a82eb738f2de38e56a0346303444600f0e0726c678632c055');
