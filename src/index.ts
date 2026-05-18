@@ -1,3 +1,5 @@
+export * from './alkanes/alkanes-parser.service.helper';
+export * from './alkanes/alkanes-parser.service';
 export * from './atomical/atomical-parser.service.helper';
 export * from './atomical/atomical-parser.service';
 export * from './cat21/cat-color-category';
