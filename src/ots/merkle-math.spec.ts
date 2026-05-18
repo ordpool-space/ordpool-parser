@@ -18,6 +18,11 @@ function readOts(name: string): Uint8Array {
 //   - ots_merkle-math-fixture.txt.pending.ots (pending-only, freshly stamped
 //     via ordpool.space's backend digest proxy against alice + bob + finney +
 //     catallaxy on 2026-05-18 — see commit message for the SHA-256 input)
+//   - ots_user-stamped-pending.png.ots (mixed: stamped via ordpool.space
+//     against alice + bob + catallaxy; alice and bob both upgraded into
+//     block 949,779, catallaxy still pending at the time the fixture was
+//     captured. The only fixture exercising distinct subtreeIndex values
+//     across multiple Bitcoin attestations in one receipt.)
 //
 // Independent verification of the Bitcoin-tree depth + leafIndex bounds
 // is done by cross-checking against mempool.space's block API:
@@ -103,6 +108,53 @@ describe('computeMerkleMath', () => {
     // bitcoin.pdf.ots is a single-calendar receipt with one Bitcoin anchor.
     expect(m.subtreeIndex).toBe(0);
     expect(m.subtreeCount).toBe(1);
+  });
+
+  it('user-stamped-pending.png.ots: multi-anchor receipt — two calendars upgraded, one still pending', async () => {
+    // Real-world fixture stamped via ordpool.space on 2026-05-18 against
+    // alice/bob/catallaxy. By the time the user dropped it on the verify
+    // panel, alice and bob had both published in block 949,779; catallaxy
+    // was still pending. This makes it the only fixture we have that
+    // exercises ALL of:
+    //   - multi-subtree (subtreeCount > 1)
+    //   - multiple Bitcoin attestations in one receipt
+    //   - distinct subtreeIndex values per attestation
+    //   - mixed pending + bitcoin attestations co-existing in one tree
+    const parsed = await parseOtsFile(readOts('user-stamped-pending.png'));
+    expect(parsed.root.children.length).toBe(3);
+
+    // Walk for pending URIs (the catallaxy subtree hasn't upgraded yet).
+    const pending: string[] = [];
+    const visit = (n: OtsNode): void => {
+      for (const a of n.attestations) if (a.kind === 'pending') pending.push(a.uri);
+      for (const c of n.children) visit(c.node);
+    };
+    visit(parsed.root);
+    expect(pending).toEqual(['https://btc.calendar.catallaxy.com']);
+
+    const out = computeMerkleMath(parsed);
+    expect(out).toHaveLength(2);
+
+    // Both anchors landed in the same block.
+    expect(out.map(m => m.blockheight)).toEqual([949779, 949779]);
+
+    // Every entry carries the same subtreeCount (= root.children.length).
+    expect(out.every(m => m.subtreeCount === 3)).toBe(true);
+
+    // The two Bitcoin attestations descend from DIFFERENT top-level
+    // subtrees -- that's the structural fact a multi-anchor verifier
+    // needs to disambiguate them when calendar URIs are gone.
+    const subtreeIndices = out.map(m => m.subtreeIndex).sort();
+    expect(subtreeIndices).toEqual([0, 1]);
+    expect(subtreeIndices[0]).not.toBe(subtreeIndices[1]);
+
+    // Both have a calendar tree + Bitcoin tree (aggregation-era).
+    for (const m of out) {
+      expect(m.calendar).not.toBeNull();
+      expect(m.bitcoin).not.toBeNull();
+      expect(m.bitcoin!.depth).toBeGreaterThan(0);
+      expect(m.bitcoin!.leafIndex).toBeGreaterThanOrEqual(0n);
+    }
   });
 
   it('merkle-math-fixture.txt.pending.ots: four top-level subtrees (one per calendar)', async () => {
