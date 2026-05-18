@@ -14,6 +14,20 @@ export interface MerkleMath {
   /** Bitcoin block this attestation anchors to. */
   blockheight: number;
 
+  /** 0-based index of the receipt's TOP-LEVEL subtree this attestation
+   *  descends from. A multi-calendar .ots has one root subtree per
+   *  calendar (separated by the 0xff continuation byte at assembly
+   *  time), so `subtreeIndex` plus the consumer's knowledge of which
+   *  calendar was assembled at which index recovers the calendar
+   *  identity even after upgrade -- the pending URI itself is gone
+   *  from an upgraded subtree, so subtree position is the only handle
+   *  the verifier still has on "whose anchor is this?". */
+  subtreeIndex: number;
+
+  /** Total number of top-level subtrees in the receipt. Same value for
+   *  every MerkleMath in the same parse. */
+  subtreeCount: number;
+
   /** The Merkle root the OTS path terminates at -- 32 bytes in OTS
    *  INTERNAL byte order (NOT the display byte order used by explorers).
    *  Equal to `node.msg` at the attestation node. Callers verifying
@@ -102,21 +116,39 @@ export function estimatedBatchSize(depth: number): { min: bigint; max: bigint } 
 export function computeMerkleMath(file: ParsedOtsFile): MerkleMath[] {
   const out: MerkleMath[] = [];
   const pathOps: PathOp[] = [];   // mutable stack; snapshotted at each attestation
+  const subtreeCount = Math.max(1, file.root.children.length);
 
-  const visit = (node: OtsNode): void => {
+  // root.children.length is the number of top-level subtrees (one per
+  // calendar in a multi-calendar receipt; 1 for single-chain). When we
+  // descend into root.children[i] the subtreeIndex is fixed at i for
+  // every attestation found inside.
+  const visit = (node: OtsNode, subtreeIndex: number): void => {
     for (const att of node.attestations) {
       if (att.kind === 'bitcoin') {
-        out.push(buildMath(att, node.msg, pathOps.slice()));
+        out.push(buildMath(att, node.msg, pathOps.slice(), subtreeIndex, subtreeCount));
       }
     }
     for (const c of node.children) {
       pathOps.push(opToPathOp(c.op));
-      visit(c.node);
+      visit(c.node, subtreeIndex);
       pathOps.pop();
     }
   };
 
-  visit(file.root);
+  // Special case: the root may itself carry an attestation (a degenerate
+  // single-leaf receipt). Treat that as subtree 0 of 1.
+  for (const att of file.root.attestations) {
+    if (att.kind === 'bitcoin') {
+      out.push(buildMath(att, file.root.msg, [], 0, subtreeCount));
+    }
+  }
+  // Descend into each top-level subtree, carrying the subtree index.
+  for (let i = 0; i < file.root.children.length; i++) {
+    const c = file.root.children[i];
+    pathOps.push(opToPathOp(c.op));
+    visit(c.node, i);
+    pathOps.pop();
+  }
   return out;
 }
 
@@ -137,6 +169,8 @@ function buildMath(
   att: Extract<OtsAttestation, { kind: 'bitcoin' }>,
   attNodeMsg: Uint8Array,
   pathOps: PathOp[],
+  subtreeIndex: number,
+  subtreeCount: number,
 ): MerkleMath {
   let hashRoundCount = 0;
   let proofPayloadBytes = 0;
@@ -160,6 +194,8 @@ function buildMath(
 
   return {
     blockheight: att.height,
+    subtreeIndex,
+    subtreeCount,
     merkleRootInternal: attNodeMsg,
     pathOps,
     hashRoundCount,

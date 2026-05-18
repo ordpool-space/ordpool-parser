@@ -66,6 +66,9 @@ describe('computeMerkleMath', () => {
     expect(m.bitcoin!.leafIndex).toBeLessThan(BigInt(blockTxCount));
     // SUT-pinned regression guard for the exact position.
     expect(m.bitcoin!.leafIndex).toBe(1351n);
+    // Single-subtree receipt: index 0 of 1.
+    expect(m.subtreeIndex).toBe(0);
+    expect(m.subtreeCount).toBe(1);
   });
 
   it('bitcoin.pdf.ots: aggregation-era receipt has both a calendar tree and a Bitcoin block tree', async () => {
@@ -96,6 +99,21 @@ describe('computeMerkleMath', () => {
     expect(m.bitcoin!.leafIndex).toBeGreaterThanOrEqual(0n);
     expect(m.bitcoin!.leafIndex).toBeLessThan(BigInt(blockTxCount));
     expect(m.bitcoin!.leafIndex).toBe(2809n);   // regression guard for exact position
+
+    // bitcoin.pdf.ots is a single-calendar receipt with one Bitcoin anchor.
+    expect(m.subtreeIndex).toBe(0);
+    expect(m.subtreeCount).toBe(1);
+  });
+
+  it('merkle-math-fixture.txt.pending.ots: four top-level subtrees (one per calendar)', async () => {
+    const parsed = await parseOtsFile(readOts('merkle-math-fixture.txt.pending'));
+    // Even with no Bitcoin attestations, the receipt's structure is
+    // observable: four root subtrees, one per calendar we POSTed to.
+    expect(parsed.root.children.length).toBe(4);
+    // computeMerkleMath returns no entries (pending-only), but the
+    // root.children.length is what the next anchored multi-calendar
+    // verification will use as subtreeCount.
+    expect(computeMerkleMath(parsed)).toEqual([]);
   });
 
   it('pending-only fixtures yield no entries (no Bitcoin attestation exists yet)', async () => {
