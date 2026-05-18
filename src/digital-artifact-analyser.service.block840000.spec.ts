@@ -58,6 +58,7 @@ describe('DigitalArtifacts Parser', () => {
       atomicalImage: 0,
       atomicalText: 0,
       atomicalJson: 0,
+      alkanes: 0,
     });
 
     // Per-content-type size aggregates. Bucket priority is json > image > text,

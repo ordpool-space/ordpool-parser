@@ -229,6 +229,8 @@ export interface OrdpoolStats {
     atomicalImage: number;
     atomicalText: number;
     atomicalJson: number;
+
+    alkanes: number;
   },
 
   fees: {
@@ -367,6 +369,8 @@ export function getEmptyStats(): OrdpoolStats {
       atomicalImage: 0,
       atomicalText: 0,
       atomicalJson: 0,
+
+      alkanes: 0,
     },
 
     fees: {
@@ -486,5 +490,7 @@ export function getArtifactTypeMap() {
     [OrdpoolTransactionFlags.ordpool_atomical_image,        'atomicalImage'],
     [OrdpoolTransactionFlags.ordpool_atomical_text,         'atomicalText'],
     [OrdpoolTransactionFlags.ordpool_atomical_json,         'atomicalJson'],
+
+    [OrdpoolTransactionFlags.ordpool_alkanes,               'alkanes'],
   ]);
 }

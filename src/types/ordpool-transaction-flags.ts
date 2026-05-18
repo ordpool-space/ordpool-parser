@@ -112,6 +112,12 @@ export const OrdpoolTransactionFlags = {
   // backend's pre-enrichment ORs this bit after parser flags are set.
   // See doc comment above for the architectural rationale.
   ordpool_ots:                  1n << 81n,
+
+  // Alkanes (bit 82). Sub-protocol of Runes -- lives inside a Runestone's
+  // PROTOCOL tag (16383) as a Protostone with protocol_tag = 1. Genesis
+  // block 880000. We don't break it down by op (deploy / call / transfer)
+  // yet; this is the visibility flag only.
+  ordpool_alkanes:              1n << 82n,
 };
 
 export type OrdpoolTransactionFlag = typeof OrdpoolTransactionFlags[keyof typeof OrdpoolTransactionFlags];

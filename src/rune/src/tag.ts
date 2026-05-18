@@ -21,6 +21,12 @@ export enum Tag {
   DIVISIBILITY = 1,
   SPACERS = 3,
   SYMBOL = 5,
+  // Protocol extension tag, introduced by the Protorunes spec
+  // (kungfuflex/protorune). Carries one or more Protostones --
+  // sub-protocols that share the Runestone envelope. Alkanes
+  // (protocol_tag = 1) is the most active consumer.
+  // Tag is odd, so unconsumed values do not produce a cenotaph.
+  PROTOCOL = 16383,
   NOP = 127,
 }
 
@@ -56,5 +62,17 @@ export namespace Tag {
     }
 
     return Some(optionValue.unwrap());
+  }
+
+  // Consume EVERY value stored under `tag`, regardless of count. Used for
+  // PROTOCOL (16383) where Protorunes packs an arbitrary number of u128s.
+  export function takeAll(tag: Tag, fields: Map<u128, u128[]>): u128[] {
+    const field = fields.get(u128(tag));
+    if (field === undefined || field.length === 0) {
+      return [];
+    }
+    const values = field.slice();
+    fields.delete(u128(tag));
+    return values;
   }
 }

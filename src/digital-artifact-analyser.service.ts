@@ -1,3 +1,4 @@
+import { hasAlkanesProtostone } from './alkanes/alkanes-parser.service.helper';
 import { AtomicalParserService } from './atomical/atomical-parser.service';
 import { Cat21ParserService } from './cat21/cat21-parser.service';
 import { convertToActivities, contructRuneEtchAttempt, isFlagSetOnTransaction, constructCat21Mint, parseJsonObject } from './digital-artifact-analyser.service.helper';
@@ -818,6 +819,11 @@ export class DigitalArtifactAnalyserService {
           }
           if (runestone.runestone.mint) {
             flags |= OrdpoolTransactionFlags.ordpool_rune_mint;
+          }
+          // Alkanes piggybacks on Runestones via tag PROTOCOL (16383),
+          // carrying a Protostone with protocol_tag = 1.
+          if (hasAlkanesProtostone(runestone.runestone.protocol)) {
+            flags |= OrdpoolTransactionFlags.ordpool_alkanes;
           }
         }
 

@@ -18,6 +18,10 @@ export type RunestoneSpec = {
     amount: bigint;
     output: number;
   }[];
+  // Raw u128 list from the Protocol tag (Protorunes / Alkanes payload).
+  // Present (possibly empty array) on every parsed Runestone; consumers
+  // that don't care can ignore it.
+  protocol?: bigint[];
 };
 
 export type Flaw =
@@ -156,6 +160,9 @@ export function tryDecodeRunestone(tx: RunestoneTx): RunestoneSpec | Cenotaph | 
               output: Number(edict.output),
             })),
           }
+        : {}),
+      ...(runestone.protocol.length
+        ? { protocol: runestone.protocol.map((v) => BigInt(v)) }
         : {}),
     };
   } else {

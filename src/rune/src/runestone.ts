@@ -33,7 +33,11 @@ export class Runestone {
     readonly mint: Option<RuneId>,
     readonly pointer: Option<u32>,
     readonly edicts: Edict[],
-    readonly etching: Option<Etching>
+    readonly etching: Option<Etching>,
+    // Raw u128 list from the Protocol tag (16383). Carries Protostone-
+    // encoded sub-protocol payloads (Protorunes / Alkanes / ...). Empty
+    // if the Runestone has no protocol extension.
+    readonly protocol: u128[] = [],
   ) {}
 
   static decipher(transaction: RunestoneTx): Option<Artifact> {
@@ -161,6 +165,12 @@ export class Runestone {
       flaws.push(Flaw.UNRECOGNIZED_FLAG);
     }
 
+    // Protorunes / Alkanes piggyback on the Runestone envelope via tag
+    // PROTOCOL (16383). Read all values out of the map BEFORE the
+    // unrecognized-tag flaw scan -- the tag is odd so it wouldn't trigger
+    // a cenotaph anyway, but consuming it keeps fields tidy.
+    const protocol = Tag.takeAll(Tag.PROTOCOL, fields);
+
     if ([...fields.keys()].find((tag) => tag % 2n === 0n) !== undefined) {
       flaws.push(Flaw.UNRECOGNIZED_EVEN_TAG);
     }
@@ -175,7 +185,7 @@ export class Runestone {
       );
     }
 
-    return Some(new Runestone(mint, pointer, edicts, etching));
+    return Some(new Runestone(mint, pointer, edicts, etching, protocol));
   }
 
   static payload(transaction: RunestoneTx): Option<Payload> {
