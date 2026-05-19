@@ -1,13 +1,8 @@
 import { u128 } from '../rune/src/integer';
-import { Runestone } from '../rune/src/runestone';
-import { protocolFieldToBytes } from './alkanes-parser.service.helper';
+import { decodeProtostoneU128Stream, walkProtostones } from './alkanes-parser.service.helper';
 
-// Tags used inside a Protostone payload. Distinct from the outer Runestone
-// Tag enum -- these only have meaning between the (protocol_tag, length)
-// marker and the next protostone. See alkanes-rs
-// crates/ordinals/src/runestone/tag.rs (Burn / Message / Refund /
-// ProtoPointer / From) and crates/protorune-support/src/protostone.rs
-// for the wire format.
+// Tags used inside a Protostone payload. See alkanes-rs
+// crates/ordinals/src/runestone/tag.rs.
 const TAG_BURN          = 83n;
 const TAG_MESSAGE       = 81n;
 const TAG_REFUND        = 93n;
@@ -24,11 +19,9 @@ export interface AlkaneId {
 }
 
 /**
- * Decoded contents of a Protostone's `message` field. The first two u128s
- * of the (re-decoded) message byte stream identify the target contract;
- * `inputs[0]` is the function selector by convention, the rest are
- * arguments. Argument semantics are contract-specific -- decoding them
- * requires the contract's WASM bytecode or an out-of-band ABI.
+ * Decoded `message` field. `inputs[0]` is the function selector by
+ * convention; the rest are arguments. Argument types are
+ * contract-specific.
  */
 export interface Cellpack {
   target: AlkaneId;
@@ -42,11 +35,7 @@ export interface ProtostoneEdict {
   output: bigint;
 }
 
-/**
- * One decoded Protostone -- a sub-protocol payload carried in a Runestone's
- * tag PROTOCOL (16383). The wire format mirrors alkanes-rs'
- * `crates/protorune-support/src/protostone.rs::Protostone`.
- */
+/** One decoded Protostone. Mirrors alkanes-rs `Protostone`. */
 export interface ParsedProtostone {
   protocolTag: bigint;
   message: Cellpack | null;
@@ -58,57 +47,17 @@ export interface ParsedProtostone {
 }
 
 /**
- * Decode every Protostone carried in a Runestone's protocol field.
- * Mirrors `Protostone::decipher` in alkanes-rs: the outer u128 list is
- * byte-packed (15 bytes per u128), then LEB128-decoded back to a flat
- * u128 stream, then walked as `(protocol_tag, length, ...length u128s)`
- * tuples until a protocol_tag of 0 terminates.
+ * Decode every Protostone in a Runestone's protocol field. Mirrors
+ * `Protostone::decipher` in alkanes-rs.
  */
 export function decodeProtostones(protocol: bigint[]): ParsedProtostone[] {
-  if (protocol.length === 0) {
-    return [];
-  }
-
-  const bytes = protocolFieldToBytes(protocol);
-  const decoded = Runestone.integers(bytes);
-  if (decoded.isNone()) {
-    return [];
-  }
-
-  const values = decoded.unwrap();
   const result: ParsedProtostone[] = [];
-
-  let i = 0;
-  while (i < values.length) {
-    const protocolTag = values[i];
-    if (protocolTag === 0n) {
-      break;
-    }
-    if (i + 1 >= values.length) {
-      break;
-    }
-    const length = values[i + 1];
-    const start = i + 2;
-    const end = start + Number(length);
-
-    if (end > values.length) {
-      break;
-    }
-
-    const payload = values.slice(start, end);
-    result.push(parsePayload(protocolTag, payload));
-    i = end;
+  for (const { tag, payload } of walkProtostones(decodeProtostoneU128Stream(protocol))) {
+    result.push(parsePayload(tag, payload));
   }
-
   return result;
 }
 
-/**
- * Decode a single Protostone's payload u128s into structured fields. Same
- * tag-value pair grouping as the outer Runestone: pairs `(tag, value)` are
- * collected into a map until tag = 0 (BODY) is encountered, at which point
- * the remaining values are the body (edicts).
- */
 function parsePayload(protocolTag: bigint, payload: u128[]): ParsedProtostone {
   const fields = new Map<bigint, u128[]>();
   let idx = 0;
@@ -162,34 +111,17 @@ function takeU32(fields: Map<bigint, u128[]>, tag: bigint): number | undefined {
 }
 
 /**
- * Decode the message field as a Cellpack. Message values are themselves
- * byte-packed: pack the u128 list back to bytes via the same 15-byte
- * packing the outer Protocol field uses, LEB-decode to a u128 stream, then
- * read the first two as target AlkaneId and the rest as inputs.
- *
- * Trailing zero inputs from the byte-packing padding are stripped --
- * they're noise, not arguments. The contract typically reads only as many
- * inputs as it expects.
+ * Decode the message field as a Cellpack. Message values are byte-packed
+ * the same way as the outer protocol field.
  */
 export function decodeCellpack(messageValues: bigint[]): Cellpack | null {
-  if (messageValues.length === 0) {
-    return null;
-  }
-
-  const bytes = protocolFieldToBytes(messageValues);
-  const decoded = Runestone.integers(bytes);
-  if (decoded.isNone()) {
-    return null;
-  }
-  const stream = decoded.unwrap();
+  const stream = decodeProtostoneU128Stream(messageValues);
   if (stream.length < 2) {
     return null;
   }
 
-  // Strip trailing zeros from inputs -- padding artifact of the u128
-  // byte-packing. The target AlkaneId itself (first two u128s) is kept
-  // verbatim; `{block: 0, tx: 0}` is the legitimate self-reference target
-  // for some contract patterns, so we don't drop those zeros.
+  // Trailing zeros in `inputs` are padding from the 15-byte u128 packing,
+  // not arguments. Target zeros are kept (0:0 is a legitimate self-ref).
   let end = stream.length;
   while (end > 2 && stream[end - 1] === 0n) {
     end--;
@@ -201,12 +133,7 @@ export function decodeCellpack(messageValues: bigint[]): Cellpack | null {
   };
 }
 
-/**
- * Decode the body (tag 0) as a list of edicts. Same delta-encoding as
- * standard Rune edicts (alkanes-rs
- * `crates/protorune-support/src/protostone.rs::protostone_edicts_from_integers`).
- * Each edict is 4 u128s: block-delta, tx-delta-or-absolute, amount, output.
- */
+/** Decode the body as edicts (same delta-encoding as standard Rune edicts). */
 function decodeEdicts(body: bigint[]): ProtostoneEdict[] {
   if (body.length === 0 || body.length % 4 !== 0) {
     return [];

@@ -1,18 +1,13 @@
 import { Runestone } from '../rune/src/runestone';
 import { u128 } from '../rune/src/integer';
 
-// Alkanes claims protocol_tag = 1 inside a Protostone (kungfuflex/alkanes-rs
-// crates/protorune-support/src/protostone.rs and crates/alkanes/src/...).
-// Other protorunes-based subprotocols can in principle claim other tag
-// values, but in practice alkanes is the only one with mainnet activity.
+// Alkanes is the only protorunes subprotocol with mainnet activity. Other
+// protocol_tag values are reserved.
 export const ALKANES_PROTOCOL_TAG = 1n;
 
 /**
- * Re-encodes one u128 as 15 little-endian bytes. The Protorunes wire format
- * packs an arbitrary byte stream into a u128[] by storing 15 bytes of
- * payload per u128 (the 16th byte is reserved -- the encoding guarantees
- * the terminal-byte bitfields aren't truncated). See
- * crates/protorune-support/src/protostone.rs::split_bytes / join_to_bytes.
+ * Reverse of split_bytes: 15 bytes per u128, low-byte first, 16th byte
+ * dropped (reserved by the encoding).
  */
 function snapTo15Bytes(value: bigint): Uint8Array {
   const out = new Uint8Array(15);
@@ -24,10 +19,6 @@ function snapTo15Bytes(value: bigint): Uint8Array {
   return out;
 }
 
-/**
- * Reverse of split_bytes: rebuild the byte stream from the u128 list
- * stored under Runestone tag PROTOCOL (16383).
- */
 export function protocolFieldToBytes(protocol: bigint[]): Uint8Array {
   const result = new Uint8Array(protocol.length * 15);
   for (let i = 0; i < protocol.length; i++) {
@@ -37,58 +28,60 @@ export function protocolFieldToBytes(protocol: bigint[]): Uint8Array {
 }
 
 /**
- * Walks the decoded Protostone byte stream and returns the list of
- * protocol_tag values it contains. Each protostone is laid out as
- *   `[protocol_tag (u128), length (u128), ...length u128 payload values]`.
- * A protocol_tag of 0 terminates the list (trailing zero padding from the
- * outer split_bytes packing).
- *
- * This is structural-only -- we don't decode the payload of each protostone
- * (edicts, message bytes, refund pointer, etc.). All we need is "is there
- * at least one protostone with protocol_tag = 1?".
+ * Round-trip the byte-packing both the outer Protocol field and the inner
+ * Message field use: 15-byte-per-u128 pack -> LEB128 decode.
  */
-export function protostoneProtocolTags(protocol: bigint[]): bigint[] {
-  if (protocol.length === 0) {
+export function decodeProtostoneU128Stream(values: bigint[]): u128[] {
+  if (values.length === 0) {
     return [];
   }
-
-  const bytes = protocolFieldToBytes(protocol);
+  const bytes = protocolFieldToBytes(values);
   const decoded = Runestone.integers(bytes);
-  if (decoded.isNone()) {
-    return [];
-  }
-
-  const values: u128[] = decoded.unwrap();
-  const tags: bigint[] = [];
-
-  let i = 0;
-  while (i < values.length) {
-    const protocolTag = values[i];
-    if (protocolTag === 0n) {
-      break;
-    }
-    if (i + 1 >= values.length) {
-      break;
-    }
-    const length = values[i + 1];
-    tags.push(protocolTag);
-    // Skip the payload. Use Number(length) is safe because realistic
-    // lengths are well below 2^53; if the value is corrupt and too large,
-    // we'd just walk past the end of the array, which is fine -- the
-    // while loop terminates on the next iteration.
-    i += 2 + Number(length);
-  }
-
-  return tags;
+  return decoded.isNone() ? [] : decoded.unwrap();
 }
 
 /**
- * True when the Runestone carries at least one protostone tagged with
- * protocol_tag = 1 (Alkanes).
+ * Walk a decoded protostone stream as (tag, length, ...length payload).
+ * Yields each protostone; tag = 0 terminates iteration.
  */
+export function* walkProtostones(stream: u128[]): Generator<{ tag: bigint; payload: u128[] }> {
+  let i = 0;
+  while (i < stream.length) {
+    const tag = stream[i];
+    if (tag === 0n) {
+      return;
+    }
+    if (i + 1 >= stream.length) {
+      return;
+    }
+    const length = stream[i + 1];
+    const start = i + 2;
+    const end = start + Number(length);
+    if (end > stream.length) {
+      return;
+    }
+    yield { tag, payload: stream.slice(start, end) };
+    i = end;
+  }
+}
+
+export function protostoneProtocolTags(protocol: bigint[]): bigint[] {
+  const tags: bigint[] = [];
+  for (const { tag } of walkProtostones(decodeProtostoneU128Stream(protocol))) {
+    tags.push(tag);
+  }
+  return tags;
+}
+
+/** True if the Runestone carries at least one protocol_tag = 1 Protostone. */
 export function hasAlkanesProtostone(protocol: bigint[] | undefined): boolean {
   if (!protocol || protocol.length === 0) {
     return false;
   }
-  return protostoneProtocolTags(protocol).includes(ALKANES_PROTOCOL_TAG);
+  for (const { tag } of walkProtostones(decodeProtostoneU128Stream(protocol))) {
+    if (tag === ALKANES_PROTOCOL_TAG) {
+      return true;
+    }
+  }
+  return false;
 }
