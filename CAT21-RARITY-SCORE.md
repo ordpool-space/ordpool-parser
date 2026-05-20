@@ -75,12 +75,11 @@ change to the parser's mapping changes every cat's appearance — which
 is exactly why the parser is SHA-pinned in every consumer and never
 bumped without a deliberate "reveal the cats differently" decision.
 
-### Visual easter eggs (lore, not extra traits)
+### Visual easter eggs (lore overlays on the 14 traits)
 
-Two fee-rate-triggered visual overrides exist. They are **not new
-traits** — the cat carries the same 14-dimension `CatTraits` shape
-either way. They just render differently and get their own color
-bucket so search returns the set spotters expect.
+Two fee-rate-triggered visual overrides sit on top of the 14-trait
+`CatTraits` shape — same trait dimensions, different render and a
+dedicated color bucket so search surfaces the set spotters expect.
 
 | Easter egg        | Trigger                       | Effect                             |
 |-------------------|-------------------------------|------------------------------------|
@@ -119,11 +118,11 @@ only `sub1`), cat #500 is `sub1k` (and only `sub1k`), never also
 under 10k") but the storage model is mutually exclusive. The Cat
 detail page on cat21.space spells out the ranges on hover.
 
-**Categories don't nest. Each is a distinct collection.** Holding the
-Genesis Cat is membership in a 1-cat closed drop (`sub1`). Holding a
-`sub1k` cat is membership in a 999-cat closed drop. Holding a `sub10k`
-cat is membership in a 9 000-cat closed drop. They're not overlapping
-shelves; they're different shelves.
+**Categories partition the supply — each cat sits on exactly one
+shelf.** Holding the Genesis Cat is membership in a 1-cat closed drop
+(`sub1`). Holding a `sub1k` cat is membership in a 999-cat closed
+drop. Holding a `sub10k` cat is membership in a 9 000-cat closed drop.
+Different shelves, different markets, different price discovery.
 
 That's why rarity is **scored per category**. A sub1k cat is ranked
 against the other 998 sub1k cats; a sub10k cat against the other 8 999
@@ -158,17 +157,16 @@ some trait even when their raw bit total isn't the highest.
 The 11-dimension scored trait surface is finite. With enough cats in
 a category, two different cats can roll the same combination of
 scored values (different `feeRate` or `catHash` bytes, same enum
-values for every searchable trait). Generic OpenRarity treats those
-as a shared rank — but cat21 doesn't.
+values for every searchable trait). cat21 breaks those ties with a
+strict total order so every cat gets a unique rank.
 
 **When two cats tie on `(uniqueAttrCount, rarityBits)`, the lower
-`catNumber` wins.** Older cat is rarer. Strict total order — no
-two cats ever share a rank.
+`catNumber` wins.** Older cat is rarer.
 
-`rarityBits` is unaffected by the tiebreaker. Both cats still report
-the same float for `bits` and `score`; only the rank label is split
-deterministically. Anyone running the algorithm with the
-`(a, b) => a - b` comparator on a cat's id gets the same answer.
+`rarityBits` carries the same float for both tied cats; the
+tiebreaker only assigns the rank label. Anyone running the
+algorithm with the `(a, b) => a - b` comparator on a cat's id
+gets the same answer.
 
 Implementation lives in `src/rarity/open-rarity.ts` (this repo). Test
 coverage is in `src/rarity/open-rarity.spec.ts` — including the
@@ -229,7 +227,8 @@ OpenRarity wins for CAT-21 because:
 
 - **It handles "None" values gracefully.** `Crown=None` (~90% of
   cats) contributes `-log₂(0.9) ≈ 0.15` bits — basically nothing.
-  `Crown=Gold` (~1%) contributes ~6.6 bits. No special-casing needed.
+  `Crown=Gold` (~1%) contributes ~6.6 bits. The math fits both rare
+  and common values without per-trait tuning.
 - **The rare `genesis` trait automatically dominates.** ~8 bits from
   that one boolean. The math itself recognises it.
 - **Mixed-cardinality traits just work.** Binary, 4-way, 5-way —
@@ -255,8 +254,8 @@ category structure itself: cat #0 is the only inhabitant of its
 collection, by the same smallest-first math that puts cat 500 in
 `sub1k` and cat 5000 in `sub10k`.
 
-The `rarityBits` field still reports cat #0's natural trait-math
-score (~29.6 bits) — bits never lie. The comparison set has size 1.
+The `rarityBits` field reports cat #0's natural trait-math score
+(~29.6 bits) — computed against a comparison set of size 1.
 
 ## Trust — the math is mathing
 
