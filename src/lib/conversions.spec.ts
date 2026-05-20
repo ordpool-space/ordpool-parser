@@ -7,6 +7,7 @@ import {
   concatUint8Arrays,
   hexToBytes,
   isStringInArrayOfStrings,
+  littleEndianBytesToBigInt,
   littleEndianBytesToNumber,
   unicodeStringToBytes,
 } from './conversions';
@@ -156,6 +157,35 @@ describe('littleEndianBytesToNumber', () => {
   it('should handle an empty array', () => {
     const dataSizeArray = new Uint8Array([]);
     expect(littleEndianBytesToNumber(dataSizeArray)).toEqual(0);
+  });
+});
+
+describe('littleEndianBytesToBigInt', () => {
+
+  it('decodes a single byte', () => {
+    expect(littleEndianBytesToBigInt(new Uint8Array([0x12]))).toEqual(0x12n);
+  });
+
+  it('decodes 8 bytes (u64-sized payload)', () => {
+    // 0x0100000000000000 LE = 1
+    expect(littleEndianBytesToBigInt(new Uint8Array([1, 0, 0, 0, 0, 0, 0, 0]))).toEqual(1n);
+    // 0xff00000000000000 LE = 255
+    expect(littleEndianBytesToBigInt(new Uint8Array([0xff, 0, 0, 0, 0, 0, 0, 0]))).toEqual(255n);
+    // 0x0001000000000000 LE = 256
+    expect(littleEndianBytesToBigInt(new Uint8Array([0, 1, 0, 0, 0, 0, 0, 0]))).toEqual(256n);
+  });
+
+  it('decodes 16 bytes (u128-sized payload, real on-chain alkane totalSupply shape)', () => {
+    // 0x01000000000000000000000000000000 LE = 1
+    expect(littleEndianBytesToBigInt(new Uint8Array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]))).toEqual(1n);
+    // 0x00000000000000000100000000000000 LE = 2^64
+    expect(littleEndianBytesToBigInt(new Uint8Array([0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]))).toEqual(1n << 64n);
+    // u128::MAX
+    expect(littleEndianBytesToBigInt(new Uint8Array(16).fill(0xff))).toEqual((1n << 128n) - 1n);
+  });
+
+  it('returns 0 for an empty array', () => {
+    expect(littleEndianBytesToBigInt(new Uint8Array([]))).toEqual(0n);
   });
 });
 

@@ -127,6 +127,22 @@ export function littleEndianBytesToNumber(byteArray: Uint8Array): number {
 }
 
 /**
+ * Converts a little-endian byte array to a bigint. Use this when the value
+ * may exceed 2^32 (sibling `littleEndianBytesToNumber` overflows above that
+ * because it uses JS-number bit ops). Designed for u64 / u128 wire formats.
+ *
+ * @param byteArray - Bytes in little-endian order.
+ * @returns The unsigned integer represented by the bytes.
+ */
+export function littleEndianBytesToBigInt(byteArray: Uint8Array): bigint {
+  let value = 0n;
+  for (let i = byteArray.length - 1; i >= 0; i--) {
+    value = (value << 8n) | BigInt(byteArray[i]);
+  }
+  return value;
+}
+
+/**
  * Converts a big-endian byte array to a number.
  *
  * In big-endian format, the most significant byte (MSB) comes first. This function

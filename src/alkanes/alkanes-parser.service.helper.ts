@@ -5,6 +5,28 @@ import { u128 } from '../rune/src/integer';
 // protocol_tag values are reserved.
 export const ALKANES_PROTOCOL_TAG = 1n;
 
+// Standard opcode conventions from alkanes-runtime (kungfuflex/alkanes-rs).
+// 99/100/101 are the Token trait getters that every fungible alkane exposes.
+// 0/1/77/78 are the genesis-alkane template (DIESEL and derivatives).
+// Real contracts may override these; treat as a default mapping, not a guarantee.
+export const ALKANE_SELECTOR_INITIALIZE    = 0;
+export const ALKANE_SELECTOR_UPGRADE       = 1;
+export const ALKANE_SELECTOR_MINT          = 77;
+export const ALKANE_SELECTOR_COLLECT_FEES  = 78;
+export const ALKANE_SELECTOR_NAME          = 99;
+export const ALKANE_SELECTOR_SYMBOL        = 100;
+export const ALKANE_SELECTOR_TOTAL_SUPPLY  = 101;
+
+export const ALKANE_SELECTOR_LABELS: Readonly<Record<string, string>> = Object.freeze({
+  [ALKANE_SELECTOR_INITIALIZE]:   'initialize',
+  [ALKANE_SELECTOR_UPGRADE]:      'upgrade',
+  [ALKANE_SELECTOR_MINT]:         'mint',
+  [ALKANE_SELECTOR_COLLECT_FEES]: 'collectFees',
+  [ALKANE_SELECTOR_NAME]:         'name',
+  [ALKANE_SELECTOR_SYMBOL]:       'symbol',
+  [ALKANE_SELECTOR_TOTAL_SUPPLY]: 'totalSupply',
+});
+
 /**
  * Reverse of split_bytes: 15 bytes per u128, low-byte first, 16th byte
  * dropped (reserved by the encoding).
