@@ -18,9 +18,9 @@ that holds up to inspection.
   cats. Categories are distinct collections; they don't compete.
 - **The Genesis Cat lives in its own collection — `sub1`.** Cat #0 is
   the first `nLockTime=21` transaction in Bitcoin history. There is
-  exactly one cat in `sub1`, so the rank is `1 of 1` by definition.
-  No algorithmic exception, no special-case override: just the
-  smallest-first category model applied honestly.
+  exactly one cat in `sub1`, so the rank is `1 of 1` by definition —
+  the smallest-first category model with a `< 1` row puts cat #0
+  alone in its own band.
 
 The community shorthand: **many genesis cats, only one Genesis Cat.**
 The trait is plural. The Cat is singular.
@@ -248,16 +248,15 @@ Cat #0 is the first `nLockTime=21` transaction in Bitcoin history,
 revealed at block 824 205, carrying sat `596964966600565` and the
 protocol's governance per the CAT-21 spec.
 
-No algorithmic exception, no special-case override: the smallest-first
-category model is just applied honestly. The `< 1` threshold matches
-cat #0 and only cat #0, so `sub1` is a one-cat closed drop. Inside a
-collection of size 1, the rank is trivially 1 of 1. No tiebreaker, no
-bonus, no "rarity boost". The Genesis Cat's specialness is baked into
-the category structure, not bolted on next to it.
+The `< 1` threshold matches cat #0 and only cat #0, so `sub1` is a
+one-cat closed drop. Inside a collection of size 1, the rank is
+trivially 1 of 1. The Genesis Cat's specialness is baked into the
+category structure itself: cat #0 is the only inhabitant of its
+collection, by the same smallest-first math that puts cat 500 in
+`sub1k` and cat 5000 in `sub10k`.
 
 The `rarityBits` field still reports cat #0's natural trait-math
-score (~29.6 bits) — bits never lie. It's just no longer compared
-against the other 999 sub1k cats; the comparison set has size 1.
+score (~29.6 bits) — bits never lie. The comparison set has size 1.
 
 ## Trust — the math is mathing
 
@@ -272,10 +271,10 @@ against the other 999 sub1k cats; the comparison set has size 1.
   exact-float behaviour against the upstream test vectors.
 - The category derivation is **a single CASE WHEN** — the eight
   thresholds listed in the "Categories" section above. The whole
-  function is ten lines, and the Genesis Cat's `1 of 1` rank is a
-  natural consequence of the `< 1` row, not a separate override.
-- **No hidden rarity boosts anywhere.** Bits and ranks are computed
-  the same way for every cat in every category, including cat #0.
+  function is ten lines, and the Genesis Cat's `1 of 1` rank falls
+  out of the `< 1` row directly.
+- Bits and ranks are computed the same way for every cat in every
+  category, including cat #0.
 
 Anyone can fork this repo, compute every cat's `rarityBits` from
 on-chain data alone, and verify the leaderboard. That's the point.
