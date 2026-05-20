@@ -109,14 +109,14 @@ Category derivation lives in the indexer at
 `cat21-indexer/backend/src/modules/sync/sync.service.ts` —
 `deriveCategory(catNumber)`. The community first encountered these
 band names on the Dune dashboard at `dune.com/ethspresso/cat21`,
-which counts cats cumulatively (a `sub10k` query returns every cat
-with `cat_number < 10000`, so cat #800 shows up there). That's a
-valid view of the same numbers; it just answers a different question
-than ordpool. **This doc is the authority for the partitioning
-model** ordpool uses: each cat is assigned to its smallest applicable
-band and only that band, so rarity is scored inside disjoint
-collections. A `dune.com/ethspresso/cat21-v2` dashboard mirroring
-the partitioning view is in progress.
+which counts cats cumulatively: a `sub10k` query returns every cat
+with `cat_number < 10000`, so cat #800 shows up there. That's the
+correct answer to "how many cats are under 10 000?" — a different
+question than ordpool answers. ordpool partitions the supply so
+rarity can be scored inside disjoint collections; each cat is
+assigned to its smallest applicable band and only that band. **This
+doc is the authority for the partitioning model.** Both views are
+correct for what they describe.
 
 The CASE WHEN falls through smallest-first, so cat #0 is `sub1` (and
 only `sub1`), cat #500 is `sub1k` (and only `sub1k`), never also
