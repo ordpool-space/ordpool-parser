@@ -11,14 +11,16 @@ that holds up to inspection.
 - We score rarity using **OpenRarity** (ProjectOpenSea's 2022 standard;
   reference port lives in `src/rarity/open-rarity.ts` in this repo).
   Formula: `Σ -log₂(p_i)` over every trait — higher = rarer.
-- Every cat belongs to **exactly one category** (`sub1k`, `sub10k`,
-  `sub50k`, `sub100k`, `sub250k`, `sub500k`, `sub1M`). The rarity score
-  is **computed inside the category**. A `sub1k` cat is ranked against
-  the other 999 `sub1k` cats, never against `sub10k` cats. Categories
-  are distinct collections; they don't compete.
-- **The Genesis Cat is always rank 1 in `sub1k`.** Cat #0 is the first
-  `nLockTime=21` transaction in Bitcoin history. Protocol significance
-  overrides trait math.
+- Every cat belongs to **exactly one category** (`sub1`, `sub1k`,
+  `sub10k`, `sub50k`, `sub100k`, `sub250k`, `sub500k`, `sub1M`). The
+  rarity score is **computed inside the category**. A `sub1k` cat is
+  ranked against the other 998 `sub1k` cats, never against `sub10k`
+  cats. Categories are distinct collections; they don't compete.
+- **The Genesis Cat lives in its own collection — `sub1`.** Cat #0 is
+  the first `nLockTime=21` transaction in Bitcoin history. There is
+  exactly one cat in `sub1`, so the rank is `1 of 1` by definition.
+  No algorithmic exception, no special-case override: just the
+  smallest-first category model applied honestly.
 
 The community shorthand: **many genesis cats, only one Genesis Cat.**
 The trait is plural. The Cat is singular.
@@ -94,7 +96,8 @@ Each cat belongs to exactly one category, derived from its `catNumber`:
 
 | Threshold (cat_number) | Category | Drop size                  |
 |------------------------|----------|----------------------------|
-| `< 1 000`              | `sub1k`  | 1 000 cats                 |
+| `< 1`                  | `sub1`   | 1 cat (the Genesis Cat)    |
+| `< 1 000`              | `sub1k`  | 999 cats                   |
 | `< 10 000`             | `sub10k` | 9 000 cats                 |
 | `< 50 000`             | `sub50k` | 40 000 cats                |
 | `< 100 000`            | `sub100k`| 50 000 cats                |
@@ -110,21 +113,22 @@ category model**; the legacy Dune dashboard at
 `dune.com/ethspresso/cat21` introduced the names but is stale on
 several points (an updated v2 dashboard is in progress).
 
-The CASE WHEN falls through smallest-first, so a cat numbered 500 is
-`sub1k` and **only** `sub1k`, never also `sub10k`. The `sub10k` label
-reads cumulatively in English ("any cat under 10k") but the storage
-model is mutually exclusive. The Cat detail page on cat21.space spells
-out the ranges on hover.
+The CASE WHEN falls through smallest-first, so cat #0 is `sub1` (and
+only `sub1`), cat #500 is `sub1k` (and only `sub1k`), never also
+`sub10k`. The `sub10k` label reads cumulatively in English ("any cat
+under 10k") but the storage model is mutually exclusive. The Cat
+detail page on cat21.space spells out the ranges on hover.
 
-**Categories don't nest. Each is a distinct collection.** Holding a
-`sub1k` cat is membership in a 1 000-cat closed drop. Holding a
-`sub10k` cat is membership in a 9 000-cat closed drop. They're not
-overlapping shelves; they're different shelves.
+**Categories don't nest. Each is a distinct collection.** Holding the
+Genesis Cat is membership in a 1-cat closed drop (`sub1`). Holding a
+`sub1k` cat is membership in a 999-cat closed drop. Holding a `sub10k`
+cat is membership in a 9 000-cat closed drop. They're not overlapping
+shelves; they're different shelves.
 
 That's why rarity is **scored per category**. A sub1k cat is ranked
-against the other 999 sub1k cats; a sub10k cat against the other 8 999
+against the other 998 sub1k cats; a sub10k cat against the other 8 999
 sub10k cats. Cross-category comparisons are meaningless by design —
-the price discovery for sub1k and sub10k are different markets.
+the price discovery for sub1, sub1k and sub10k are different markets.
 
 ## The math — OpenRarity, per category
 
@@ -232,32 +236,28 @@ OpenRarity wins for CAT-21 because:
   information content doesn't care how many values a trait has.
 - **Bands are stable as more cats mint.** Adding a cat to a 9 000-cat
   `sub10k` shifts each `log₂(p)` by ~0.0001 bits per trait — ranks
-  barely move. Closed bands (`sub1k` will freeze the instant cat #999
-  is minted) never change again.
+  barely move. Closed bands (`sub1` is already frozen; `sub1k` freezes
+  the instant cat #999 mints) never change again.
 
-## The Genesis Cat Bonus
+## The Genesis Cat — sub1, the one-cat collection
 
-**Cat #0 is rank 1 in sub1k. Always.**
+**Cat #0 lives alone in `sub1`.** Rank 1 of 1, by definition.
 
 There are many `genesis: true` cats. There is only one Genesis Cat.
 Cat #0 is the first `nLockTime=21` transaction in Bitcoin history,
 revealed at block 824 205, carrying sat `596964966600565` and the
-protocol's governance per the CAT-21 spec. The genesis cat holder
-has spoken: rank 1 is decreed.
+protocol's governance per the CAT-21 spec.
 
-This is law, not math. We don't argue with it.
+No algorithmic exception, no special-case override: the smallest-first
+category model is just applied honestly. The `< 1` threshold matches
+cat #0 and only cat #0, so `sub1` is a one-cat closed drop. Inside a
+collection of size 1, the rank is trivially 1 of 1. No tiebreaker, no
+bonus, no "rarity boost". The Genesis Cat's specialness is baked into
+the category structure, not bolted on next to it.
 
 The `rarityBits` field still reports cat #0's natural trait-math
-score (~29.6 bits) — bits never lie. The rank label is the only
-thing pinned. Both numbers ship in the API, side by side; they're
-not the same thing and they don't pretend to be.
-
-Limited strictly to sub1k. No other category contains the Genesis
-Cat.
-
-Implementation: in `recomputeRarityForCategory`, after `scoreAndRank`
-returns the natural order, when `category === 'sub1k'` cat #0 moves
-to position 0 and ranks renumber sequentially.
+score (~29.6 bits) — bits never lie. It's just no longer compared
+against the other 999 sub1k cats; the comparison set has size 1.
 
 ## Trust — the math is mathing
 
@@ -270,12 +270,12 @@ to position 0 and ranks renumber sequentially.
 - The rarity algorithm is **open source** (`src/rarity/open-rarity.ts`)
   and a faithful port of OpenRarity's Python reference. Tests pin the
   exact-float behaviour against the upstream test vectors.
-- The category derivation is **a single CASE WHEN** — the seven
+- The category derivation is **a single CASE WHEN** — the eight
   thresholds listed in the "Categories" section above. The whole
-  function is ten lines.
-- The Genesis Cat Bonus is **explicitly documented** (this section).
-  No hidden "rarity boosts" anywhere else; the only override exists
-  for cat #0 in sub1k, and it touches the rank label only.
+  function is ten lines, and the Genesis Cat's `1 of 1` rank is a
+  natural consequence of the `< 1` row, not a separate override.
+- **No hidden rarity boosts anywhere.** Bits and ranks are computed
+  the same way for every cat in every category, including cat #0.
 
 Anyone can fork this repo, compute every cat's `rarityBits` from
 on-chain data alone, and verify the leaderboard. That's the point.
