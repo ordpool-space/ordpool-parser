@@ -107,10 +107,16 @@ Each cat belongs to exactly one category, derived from its `catNumber`:
 
 Category derivation lives in the indexer at
 `cat21-indexer/backend/src/modules/sync/sync.service.ts` —
-`deriveCategory(catNumber)`. **This doc is the authority for the
-category model**; the legacy Dune dashboard at
-`dune.com/ethspresso/cat21` introduced the names but is stale on
-several points (an updated v2 dashboard is in progress).
+`deriveCategory(catNumber)`. The community first encountered these
+band names on the Dune dashboard at `dune.com/ethspresso/cat21`,
+which counts cats cumulatively (a `sub10k` query returns every cat
+with `cat_number < 10000`, so cat #800 shows up there). That's a
+valid view of the same numbers; it just answers a different question
+than ordpool. **This doc is the authority for the partitioning
+model** ordpool uses: each cat is assigned to its smallest applicable
+band and only that band, so rarity is scored inside disjoint
+collections. A `dune.com/ethspresso/cat21-v2` dashboard mirroring
+the partitioning view is in progress.
 
 The CASE WHEN falls through smallest-first, so cat #0 is `sub1` (and
 only `sub1`), cat #500 is `sub1k` (and only `sub1k`), never also
