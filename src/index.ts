@@ -3,6 +3,8 @@ export * from './alkanes/alkanes-parser.service';
 export * from './alkanes/protostone';
 export * from './atomical/atomical-parser.service.helper';
 export * from './atomical/atomical-parser.service';
+export * from './bitmap/bitmap-renderer';
+export * from './bitmap/mondrian-layout';
 export * from './cat21/cat-color-category';
 export * from './rarity/open-rarity';
 export * from './cat21/cat21-parser.service.helper';
