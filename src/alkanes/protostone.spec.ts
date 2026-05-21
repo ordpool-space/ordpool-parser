@@ -19,7 +19,7 @@ const RUNE_NO_PROTOCOL_TX = 'bc668122adc872c81c91a1ddb3e2dee64372d6e4d749b3a6555
 
 describe('decodeProtostones', () => {
 
-  it('decodes a real DIESEL mint protostone end-to-end', () => {
+  it('decodes a DIESEL mint protostone', () => {
     const tx = readTransaction(DIESEL_MINT_TX_A);
     const protocol = RuneParserService.parse(tx)!.runestone!.protocol!;
     const protostones = decodeProtostones(protocol);
