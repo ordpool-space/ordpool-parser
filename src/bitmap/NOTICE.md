@@ -8,9 +8,9 @@
 
 bitlodo's file in turn credits:
 
-- [`bitfeed-project/bitfeed`](https://github.com/bitfeed-project/bitfeed) — MIT.
+- [Bitfeed](https://github.com/bitfeed-project/bitfeed) by mononaut — MIT.
   Source: [`client/src/models/TxMondrianPoolScene.js`](https://github.com/bitfeed-project/bitfeed/blob/master/client/src/models/TxMondrianPoolScene.js).
-  bitfeed's own block explorer is at [bitfeed.live](https://bitfeed.live) (e.g. `https://bitfeed.live/block/height/210000`) — the canonical reference for the packing geometry every downstream renderer descends from.
+  Bitfeed's own block explorer is at [bitfeed.live](https://bitfeed.live) (e.g. `https://bitfeed.live/block/height/210000`) — the canonical reference for the packing geometry every downstream renderer descends from.
 
 The SVG rendering rules in `bitmap-renderer.ts` (`padd = 0.5`, single `<path>`
 with chained `M`/`H`/`V`/`Z` commands, `viewBox` = bounding box) mirror
