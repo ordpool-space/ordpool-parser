@@ -198,6 +198,19 @@ export async function getDecodedContent(contentEncoding: string | undefined, com
  * Never throws -- malformed inscriptions exist on chain and must be tolerated.
  * Callers can use isDecodeFailureSentinel() to detect either sentinel.
  *
+ * Why a sentinel instead of throwing: we must call this on every
+ * inscription's body, including malformed ones. ord itself sidesteps this
+ * by never decompressing -- it always ships raw bytes with the declared
+ * Content-Encoding header. We actually read the content (BRC-20 / SRC-20
+ * / JSON detection, /preview rendering), so we need an explicit "this
+ * didn't decode" return value rather than crashing the caller.
+ *
+ * Real example: block 869,599 tx 5125c1...4634 declares Content-Encoding:
+ * br on a body that is actually gzip (magic 1f 8b 08 00 ..., decodes via
+ * gunzip to "Hello World!"). Without this guard, a thrown "Corrupted
+ * Huffman code histogram" from analyseTransaction would lose all
+ * classification for the tx.
+ *
  * The Int8Array view is required by the inline brotli decoder; it shares the
  * underlying buffer with the input Uint8Array, no copy.
  */
@@ -288,21 +301,32 @@ export async function gzipDecode(bytes: Uint8Array): Promise<Uint8Array> {
 
 
 /**
- * Extracts an inscription ID (txid + index) from a parent / delegate /
- * gallery field. Mirrors ord's `InscriptionId::from_value`: 32 bytes is the
- * txid alone, 33-36 bytes adds a little-endian index, and variable-length
- * indices must not end in a zero byte (otherwise the encoding wouldn't be
- * canonical).
+ * Extracts an inscription ID from a field in an inscription. Used for parent
+ * inscriptions, delegate inscriptions, and gallery items.
+ *
+ * Mirrors ord's `InscriptionId::from_value` (`src/inscriptions/inscription_id.rs:21`):
+ *   - 32 bytes is the txid alone (index defaults to 0)
+ *   - 33-36 bytes is txid + variable-length little-endian index
+ *   - 36 bytes is the fixed-length form (last byte may be 0)
+ *   - Variable-length forms (33-35 bytes) MUST NOT end with a 0 byte --
+ *     ord rejects, otherwise the encoding wouldn't be canonical
+ *
+ * Returns null when the input doesn't match these rules. Callers should
+ * filter nulls the same way ord uses `filter_map` over the parents list.
  */
 export function extractInscriptionId(value: Uint8Array): string | null {
   if (value.length < 32 || value.length > 36) {
     return null;
   }
+
+  // Variable-length form: index < 4 bytes. Last byte must not be zero,
+  // otherwise the canonical encoding would have dropped that trailing zero.
   if (value.length > 32 && value.length < 36 && value[value.length - 1] === 0) {
     return null;
   }
 
-  // Witness bytes are stored reversed relative to txid display order.
+  // Reverse the txid bytes for hex display (witness encoding is little-endian
+  // / "reversed" relative to the display format).
   const txIdHex = bytesToHex(value.slice(0, 32).reverse());
 
   // Pad the variable-length index up to 4 bytes for u32 LE decode.

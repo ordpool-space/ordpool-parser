@@ -1,25 +1,22 @@
 /**
  * @jest-environment node
  *
- * Node-only by design. We need real `fetch`, which jsdom still doesn't
- * implement in 2026 (issue jsdom/jsdom#1724 -- open since 2017, latest
- * comment 2026-04-06 still recommending the JSDOMEnvironment-subclass
- * workaround). Node has fetch natively, so this spec just runs there.
+ * Node-only by design. We need real `fetch`, which jsdom doesn't
+ * implement (issue jsdom/jsdom#1724). Node has fetch natively, so this
+ * spec just runs there.
  *
  * The parser-logic part of "does this work in a browser?" is verified by
- * the other 800+ specs that exercise pure parsing against on-disk
- * fixtures in the jsdom config -- those don't need fetch. This single
- * spec is a real-world HTTP integration test, by definition a node-side
- * concern.
+ * the other specs that exercise pure parsing against on-disk fixtures
+ * in the jsdom config -- those don't need fetch. This spec is a
+ * real-world HTTP integration test, by definition a node-side concern.
  */
 import { InscriptionParserService } from './inscription/inscription-parser.service';
 
 /**
- * Mirrors the README's "Quick start" snippet. Hits api.ordpool.space (our
- * own Esplora-compatible backend, no third-party piracy) and parses a
- * real inscription that's been on chain since well before this test was
- * written. If the README example ever drifts from working code, this
- * test fires.
+ * Mirrors the README's "Quick start" snippet. Hits api.ordpool.space
+ * (our own Esplora-compatible backend) and parses a real inscription
+ * that's been on chain since well before this test was written. If the
+ * README example ever drifts from working code, this test fires.
  */
 describe('Real data usage example (see README)', () => {
 

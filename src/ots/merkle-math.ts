@@ -54,7 +54,9 @@ export interface MerkleMath {
    * "where in the calendar's batch was my submission?". One level per
    * `[append|prepend 32B sibling, sha256]` pair on the path, scanned
    * from the boundary with the Bitcoin tree backwards toward the file
-   * hash. Null when no such pattern is detectable.
+   * hash. Null when no such pattern is detectable (e.g. pending-only
+   * receipts, or chains using a non-SHA-256 family that don't fit the
+   * single-sha-per-level shape).
    */
   calendar: TreeMath | null;
 
@@ -231,12 +233,14 @@ function peelTreeLevels(pathOps: ReadonlyArray<PathOp>, end: number, sha256Round
   let leafIndex = 0n;
 
   while (i >= levelSize) {
+    // Last `sha256RoundsPerLevel` ops must all be sha256.
     let allSha = true;
     for (let k = 0; k < sha256RoundsPerLevel; k++) {
       if (pathOps[i - 1 - k].kind !== 'sha256') { allSha = false; break; }
     }
     if (!allSha) break;
 
+    // Op at position `i - levelSize` must be a 32-byte sibling.
     const sib = pathOps[i - levelSize];
     if (sib.kind !== 'append' && sib.kind !== 'prepend') break;
     if (sib.payloadBytes !== 32) break;
