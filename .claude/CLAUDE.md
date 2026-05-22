@@ -8,6 +8,17 @@
 - **Dual output**: ESM (`dist/`) and CommonJS (`dist-commonjs/`)
 - **Version 2.x** is the v2 ecosystem rewrite. There are no external consumers — the only users are ordpool.space (frontend) and cat21.space (frontend + backend). No CHANGELOG needed.
 
+## HARD RULE: Keep useful comments
+
+**Don't strip JSDoc or "why" inline comments under the banner of
+"simplification".** The text inside a comment can be trimmed (no
+bombast, no LLM-speak, no before-after history); the block itself
+stays. Wire-format notes, source citations to alkanes-rs / ord, and
+encoding details on parser entry points are exactly the kind of
+comment a future reader cannot reconstruct from code alone. Full
+decision tree in the workspace `CLAUDE.md` HARD RULE "Keep useful
+comments (JSDoc AND inline 'why')".
+
 ## Commands
 
 ```bash
