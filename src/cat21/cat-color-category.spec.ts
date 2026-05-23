@@ -38,6 +38,17 @@ describe('hueToColorCategory', () => {
     expect(hueToColorCategory(720)).toBe('red');
     expect(hueToColorCategory(-10)).toBe('red');
   });
+
+  // Regression: pins the green↔yellow boundary at 62° so cats whose body
+  // pixel is chartreuse (G > R, hue >~ 62°) bucket as green, not yellow.
+  // 60° is the cat palette's pure-yellow point (rgb 215,215,14 — R = G).
+  it('green↔yellow boundary is at hue 62° (R ≥ G half of the wheel)', () => {
+    expect(hueToColorCategory(45)).toBe('yellow');   // amber/dark gold
+    expect(hueToColorCategory(60)).toBe('yellow');   // pure yellow, R=G
+    expect(hueToColorCategory(61.99)).toBe('yellow');// still yellow
+    expect(hueToColorCategory(62)).toBe('green');    // chartreuse starts here
+    expect(hueToColorCategory(69)).toBe('green');    // clearly lime
+  });
 });
 
 describe('getCatColorCategory', () => {

@@ -62,6 +62,13 @@ export type CatColorCategory =
  *  No `cyan` bucket: `feeRateToColor` sweeps green → yellow → orange →
  *  red → blue and never produces a hue in the teal range, so the bucket
  *  would always be empty. The [165°, 195°) range is folded into blue.
+ *
+ *  The green↔yellow cut sits at hue 62°. The cat palette's pure-yellow
+ *  point is hue 60° (rgb 215,215,14 — R = G), so [45°, 62°) keeps yellow
+ *  pinned to the "R ≥ G" half of the wheel. Hues 62°–69° render as
+ *  chartreuse/lime (G > R) and read green to a human even though the
+ *  color-wheel midpoint between green-120° and orange-30° would be 75°.
+ *  Visual perception, not geometric midpoint.
  */
 export function hueToColorCategory(
   hue: number,
@@ -71,7 +78,7 @@ export function hueToColorCategory(
   // Red wraps the 0/360 seam.
   if (h >= 345 || h < 15) return 'red';
   if (h < 45) return 'orange';
-  if (h < 70) return 'yellow';
+  if (h < 62) return 'yellow';
   if (h < 165) return 'green';
   if (h < 255) return 'blue';
   if (h < 285) return 'purple';
