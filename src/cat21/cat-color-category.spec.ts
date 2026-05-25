@@ -14,7 +14,7 @@ describe('hueToColorCategory', () => {
   it('buckets unambiguous primaries by hue', () => {
     expect(hueToColorCategory(0)).toBe('red');
     expect(hueToColorCategory(30)).toBe('orange');
-    expect(hueToColorCategory(60)).toBe('yellow');
+    expect(hueToColorCategory(55)).toBe('yellow');
     expect(hueToColorCategory(120)).toBe('green');
     expect(hueToColorCategory(210)).toBe('blue');
     expect(hueToColorCategory(270)).toBe('purple');
@@ -39,15 +39,18 @@ describe('hueToColorCategory', () => {
     expect(hueToColorCategory(-10)).toBe('red');
   });
 
-  // Regression: pins the green↔yellow boundary at 62° so cats whose body
-  // pixel is chartreuse (G > R, hue >~ 62°) bucket as green, not yellow.
-  // 60° is the cat palette's pure-yellow point (rgb 215,215,14 — R = G).
-  it('green↔yellow boundary is at hue 62° (R ≥ G half of the wheel)', () => {
-    expect(hueToColorCategory(45)).toBe('yellow');   // amber/dark gold
-    expect(hueToColorCategory(60)).toBe('yellow');   // pure yellow, R=G
-    expect(hueToColorCategory(61.99)).toBe('yellow');// still yellow
-    expect(hueToColorCategory(62)).toBe('green');    // chartreuse starts here
-    expect(hueToColorCategory(69)).toBe('green');    // clearly lime
+  // Regression: pins yellow to [51°, 61°). Maps to fee rates 63-70
+  // (fire excepted at 69) on the live cat collection. Outside this
+  // window the body pixel reads chartreuse (G > R, hue ≥ 61°) or
+  // gold/amber (R >> G, hue < 51°), not yellow.
+  it('yellow is hue [51°, 61°)', () => {
+    expect(hueToColorCategory(50.99)).toBe('orange'); // gold/amber territory
+    expect(hueToColorCategory(51)).toBe('yellow');    // lower edge
+    expect(hueToColorCategory(55)).toBe('yellow');    // warm yellow
+    expect(hueToColorCategory(60)).toBe('yellow');    // pure yellow, R=G
+    expect(hueToColorCategory(60.99)).toBe('yellow'); // upper edge
+    expect(hueToColorCategory(61)).toBe('green');     // chartreuse starts here
+    expect(hueToColorCategory(69)).toBe('green');     // clearly lime
   });
 });
 
