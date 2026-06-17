@@ -245,11 +245,16 @@ function readAttestation(r: OtsReader): OtsAttestation {
 async function applyOp(op: OtsOp, msg: Uint8Array): Promise<Uint8Array> {
   switch (op.kind) {
     case 'sha256': {
-      const buf = await crypto.subtle.digest('SHA-256', msg);
+      // `as BufferSource` is the TS 5.7+ workaround: `Uint8Array`
+      // became generic over its backing buffer (`ArrayBufferLike`,
+      // which includes `SharedArrayBuffer`), and `crypto.subtle.digest`
+      // narrows to `ArrayBufferView<ArrayBuffer>`. The runtime accepts
+      // a Uint8Array fine; only the compile-time check trips.
+      const buf = await crypto.subtle.digest('SHA-256', msg as BufferSource);
       return new Uint8Array(buf);
     }
     case 'sha1': {
-      const buf = await crypto.subtle.digest('SHA-1', msg);
+      const buf = await crypto.subtle.digest('SHA-1', msg as BufferSource);
       return new Uint8Array(buf);
     }
     case 'ripemd160':
