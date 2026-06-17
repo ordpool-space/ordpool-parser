@@ -257,7 +257,8 @@ export async function gzipDecode(bytes: Uint8Array): Promise<Uint8Array> {
     // so that cancelling the reader on a bomb doesn't surface as an
     // unhandled "ABORT_ERR" from the still-in-flight writer.
     const writer = ds.writable.getWriter();
-    writer.write(bytes).catch(() => { /* aborted on bomb cancel */ });
+    // `as BufferSource` is the TS 5.7+ workaround — see ots-parser.service.ts:248.
+    writer.write(bytes as BufferSource).catch(() => { /* aborted on bomb cancel */ });
     writer.close().catch(() => { /* aborted on bomb cancel */ });
 
     // Read and concatenate the output bytes, aborting if the running total

@@ -32,8 +32,8 @@ export function readInscriptionAsBase64(inscriptionId: string, fileEnding: strin
  */
 export function readBinaryInscriptionAsBase64(inscriptionId: string, fileEnding: string): string {
   const filePath = `testdata/inscription_${inscriptionId}.${fileEnding}`;
-  const fileContent = fs.readFileSync(filePath);
-  return Buffer.from(fileContent).toString('base64');
+  const fileContent: Buffer = fs.readFileSync(filePath);
+  return Buffer.from(fileContent as unknown as Uint8Array).toString('base64');
 }
 
 /**
@@ -60,7 +60,7 @@ export function loadCompressedJsonData(fileName: string): any {
 
   const filePath = `testdata/${fileName}`;
   const compressedData = fs.readFileSync(filePath);
-  const decompressedData = zlib.brotliDecompressSync(compressedData);
+  const decompressedData = zlib.brotliDecompressSync(compressedData as unknown as Uint8Array);
 
   // Parse the decompressed data as JSON
   return JSON.parse(decompressedData.toString());

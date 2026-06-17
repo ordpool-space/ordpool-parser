@@ -55,7 +55,7 @@
     "mime-types": "^2.1.35",
     "rimraf": "^5.0.7",
     "ts-jest": "^29.1.5",
-    "typescript": "^5.5.2"
+    "typescript": "^5.9.2"
   },
   "files": [
     "dist",

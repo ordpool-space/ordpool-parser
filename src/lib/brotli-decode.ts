@@ -1563,21 +1563,26 @@ function unpackLookupTable(lookup: Int32Array, map: string, rle: string): void {
 }
 
 class State {
-  ringBuffer = new Int8Array(0);
-  contextModes = new Int8Array(0);
-  contextMap = new Int8Array(0);
-  distContextMap = new Int8Array(0);
-  distExtraBits = new Int8Array(0);
-  output = new Int8Array(0);
-  byteBuffer = new Int8Array(0);
-  shortBuffer = new Int16Array(0);
-  intBuffer = new Int32Array(0);
-  rings = new Int32Array(0);
-  blockTrees = new Int32Array(0);
-  literalTreeGroup = new Int32Array(0);
-  commandTreeGroup = new Int32Array(0);
-  distanceTreeGroup = new Int32Array(0);
-  distOffset = new Int32Array(0);
+  // TS 5.7+ made `Int8Array` etc. generic over `ArrayBufferLike`. The
+  // default narrowed to `Int8Array<ArrayBuffer>`; assigning the wider
+  // result of `decodeHuffmanTreeGroup` / `unpackDictionaryData` (which
+  // produce `<ArrayBufferLike>`) then fails. Widening these fields keeps
+  // the original behaviour and unblocks fresh installs on TS 5.7+.
+  ringBuffer: Int8Array<ArrayBufferLike> = new Int8Array(0);
+  contextModes: Int8Array<ArrayBufferLike> = new Int8Array(0);
+  contextMap: Int8Array<ArrayBufferLike> = new Int8Array(0);
+  distContextMap: Int8Array<ArrayBufferLike> = new Int8Array(0);
+  distExtraBits: Int8Array<ArrayBufferLike> = new Int8Array(0);
+  output: Int8Array<ArrayBufferLike> = new Int8Array(0);
+  byteBuffer: Int8Array<ArrayBufferLike> = new Int8Array(0);
+  shortBuffer: Int16Array<ArrayBufferLike> = new Int16Array(0);
+  intBuffer: Int32Array<ArrayBufferLike> = new Int32Array(0);
+  rings: Int32Array<ArrayBufferLike> = new Int32Array(0);
+  blockTrees: Int32Array<ArrayBufferLike> = new Int32Array(0);
+  literalTreeGroup: Int32Array<ArrayBufferLike> = new Int32Array(0);
+  commandTreeGroup: Int32Array<ArrayBufferLike> = new Int32Array(0);
+  distanceTreeGroup: Int32Array<ArrayBufferLike> = new Int32Array(0);
+  distOffset: Int32Array<ArrayBufferLike> = new Int32Array(0);
   accumulator64 = 0;
   runningState = 0;
   nextRunningState = 0;
@@ -1645,7 +1650,7 @@ class State {
   }
 }
 
-let data = new Int8Array(0);
+let data: Int8Array<ArrayBufferLike> = new Int8Array(0);
 const offsets = new Int32Array(32);
 const sizeBits = new Int32Array(32);
 function setData(newData: ByteBuffer, newSizeBits: Int32Array): void {
@@ -1716,9 +1721,9 @@ function unpackDictionaryData(dictionary: ByteBuffer, data0: string, data1: stri
 }
 
 class InputStream {
-  data = new Int8Array(0);
+  data: Int8Array<ArrayBufferLike> = new Int8Array(0);
   offset = 0;
-  constructor (data: Int8Array) {
+  constructor (data: Int8Array<ArrayBufferLike>) {
     this.data = data;
   }
 }
@@ -1749,7 +1754,7 @@ function toUsAsciiBytes(src: string): Int8Array {
 
 /* GENERATED CODE END */
 
-type ByteBuffer = Int8Array;
+type ByteBuffer = Int8Array<ArrayBufferLike>;
 
 // hacked by Johannes
 export const MAX_DECOMPRESSED_SIZE = 1 * 1024 * 1024 // 1 MB in bytes
