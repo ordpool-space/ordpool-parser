@@ -128,8 +128,6 @@ describe('Inscription parser', () => {
     expect(txWitness).toEqual('0000000000000000000000000000000000000000000000000000000000000000');
 
     const raw = hexToBytes(txWitness);
-    const position = getNextInscriptionMark(raw, 0);
-
-    expect(position).toEqual(-1);
+    expect(getNextInscriptionMark(raw, 0)).toBeNull();
   });
 });

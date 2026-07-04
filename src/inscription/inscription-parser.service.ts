@@ -7,13 +7,14 @@ import {
   hexToBytes,
   littleEndianBytesToNumber,
 } from '../lib/conversions';
-import { OP_0, OP_ENDIF } from '../lib/op-codes';
+import { OP_0, OP_2DROP, OP_DROP, OP_ENDIF } from '../lib/op-codes';
 import { readPushdata } from '../lib/reader';
 import { assertEsploraShape } from '../lib/transaction-shape';
 import { DigitalArtifactType } from '../types/digital-artifact';
 import { ParsedInscription } from '../types/parsed-inscription';
 import { OnParseError } from '../types/parser-options';
 import {
+  BIP110_INSCRIPTION_MARK_HEX,
   extractInscriptionId,
   extractPointer,
   getDecodedContent,
@@ -21,6 +22,7 @@ import {
   getKnownFieldValues,
   getNextInscriptionMark,
   hasInscription,
+  INSCRIPTION_MARK_HEX,
   knownFields,
 } from './inscription-parser.service.helper';
 import { parseProperties } from './inscription-parser.service.properties.helper';
@@ -113,32 +115,28 @@ export class InscriptionParserService {
   private static parseInscriptionsWithinWitness(witness: string[]): ParsedInscription[] | null {
 
     const inscriptions: ParsedInscription[] = [];
-    // OP_FALSE (0x00), OP_IF (0x63), OP_PUSHBYTES_3 (0x03), 'o', 'r', 'd' (0x6f, 0x72, 0x64)
-    const inscriptionMarkHex = '0063036f7264';
 
-    // Only convert witness elements that contain the inscription mark.
-    // This avoids hexToBytes on the signature and control block elements,
-    // which is significant for large inscriptions (up to 4MB).
+    // Only convert witness elements that contain one of the two
+    // inscription marker patterns. This avoids hexToBytes on the
+    // signature and control block elements, which is significant for
+    // large inscriptions (up to 4MB).
     for (const element of witness) {
-      if (!element.includes(inscriptionMarkHex)) {
+      if (!element.includes(INSCRIPTION_MARK_HEX) && !element.includes(BIP110_INSCRIPTION_MARK_HEX)) {
         continue;
       }
 
       const raw = hexToBytes(element);
       let startPosition = 0;
-
       while (true) {
-        const pointer = getNextInscriptionMark(raw, startPosition);
-        if (pointer === -1) break; // No more inscriptions found
+        const mark = getNextInscriptionMark(raw, startPosition);
+        if (!mark) break;
 
-        // Parse the inscription at the current position
-        const inscription = InscriptionParserService.extractInscriptionData(raw, pointer);
+        const inscription = InscriptionParserService.extractInscriptionData(raw, mark.pointer, mark.isClassic);
         if (inscription) {
           inscriptions.push(inscription);
         }
 
-        // Update startPosition for the next iteration
-        startPosition = pointer;
+        startPosition = mark.pointer;
       }
     }
 
@@ -146,87 +144,98 @@ export class InscriptionParserService {
   }
 
   /**
-   * Extracts fields from the raw data until OP_0 is encountered.
+   * Extract an inscription starting one past the four-byte "ord" push.
+   * Both envelope shapes (classic + BIP-110 per ordinals/ord#4545)
+   * carry identical payloads -- tag/value fields, optional OP_0 body
+   * separator, body chunks -- and differ only in the terminator:
    *
-   * @param raw - The raw data to read.
-   * @param pointer - The current pointer where the reading starts.
-   * @returns An array of fields and the updated pointer position.
+   *   classic:  OP_FALSE OP_IF <"ord"> ... OP_ENDIF
+   *   BIP-110:  <"ord"> ... {OP_DROP | OP_2DROP}+  (balances every push)
    */
-  private static extractFields(raw: Uint8Array, pointer: number): [{ tag: number; value: Uint8Array }[], number] {
+  private static extractInscriptionData(raw: Uint8Array, pointer: number, isClassic: boolean): ParsedInscription | null {
 
-    const fields: { tag: number; value: Uint8Array }[] = [];
-    let newPointer = pointer;
-    let slice: Uint8Array;
+    try {
+      const fields: { tag: number; value: Uint8Array }[] = [];
+      const body: Uint8Array[] = [];
+      let p = pointer;
+      let pushes = 0;  // total pushes in the payload, BIP-110 uses it to size the drop walk
 
-    while (newPointer < raw.length &&
-      // normal inscription - content follows now
-      (raw[newPointer] !== OP_0) &&
-      // delegate - inscription has no further content and ends directly here
-      (raw[newPointer] !== OP_ENDIF)
-    ) {
+      const isTerminator = isClassic
+        ? (op: number) => op === OP_ENDIF
+        : (op: number) => op === OP_DROP || op === OP_2DROP;
 
-      // tags are encoded by ord as single-byte data pushes, but are accepted by ord as either single-byte pushes, or as OP_NUM data pushes.
-      // tags greater than or equal to 256 should be encoded as little endian integers with trailing zeros omitted.
-      // see: https://github.com/ordinals/ord/issues/2505
-      [slice, newPointer] = readPushdata(raw, newPointer);
-      const tag = slice.length === 1 ? slice[0] : littleEndianBytesToNumber(slice);
+      // Fields until OP_0 body separator or terminator.
+      let slice: Uint8Array;
+      while (p < raw.length && raw[p] !== OP_0 && !isTerminator(raw[p])) {
+        // tags are encoded by ord as single-byte data pushes, but are accepted by ord as either single-byte pushes, or as OP_NUM data pushes.
+        // tags greater than or equal to 256 should be encoded as little endian integers with trailing zeros omitted.
+        // see: https://github.com/ordinals/ord/issues/2505
+        [slice, p] = readPushdata(raw, p);
+        const tag = slice.length === 1 ? slice[0] : littleEndianBytesToNumber(slice);
+        [slice, p] = readPushdata(raw, p);
+        fields.push({ tag, value: slice });
+        pushes += 2;
+      }
 
-      [slice, newPointer] = readPushdata(raw, newPointer);
-      const value = slice;
+      // Optional OP_0 body separator (also a push).
+      if (p < raw.length && raw[p] === OP_0) {
+        p++;
+        pushes++;
+      }
 
-      fields.push({ tag, value });
+      // Body chunks until terminator.
+      while (p < raw.length && !isTerminator(raw[p])) {
+        [slice, p] = readPushdata(raw, p);
+        body.push(slice);
+        pushes++;
+      }
+
+      // Terminator: single OP_ENDIF (classic) or drop sequence balancing
+      // every push including the "ord" push (BIP-110).
+      let envelopeEnd: number;
+      if (isClassic) {
+        envelopeEnd = p + 1; // past OP_ENDIF
+      } else {
+        let depth = pushes + 1; // +1 for the "ord" push itself
+        while (p < raw.length && depth > 0) {
+          if (raw[p] === OP_DROP) depth -= 1;
+          else if (raw[p] === OP_2DROP) depth -= 2;
+          else return null;
+          if (depth < 0) return null;
+          p++;
+        }
+        if (depth !== 0) return null;
+        envelopeEnd = p;
+      }
+
+      // Envelope covers the marker plus the classic wrapper's OP_FALSE OP_IF.
+      const envelopeStart = pointer - 4 - (isClassic ? 2 : 0);
+      return InscriptionParserService.buildParsedInscription(fields, body, envelopeEnd - envelopeStart);
+    } catch {
+      return null;
     }
-
-    return [fields, newPointer];
   }
 
   /**
-   * Extracts inscription data (starting from the current pointer) and calculates the envelope size.
-   *
-   * @param raw - The raw data to read.
-   * @param pointer - The current pointer where the reading starts.
-   * @returns The parsed inscription or nullx
+   * Build the ParsedInscription with its lazy accessors from parsed
+   * fields, body chunks, and envelope size.
    */
-  private static extractInscriptionData(raw: Uint8Array, pointer: number): ParsedInscription | null {
+  private static buildParsedInscription(
+    fields: { tag: number; value: Uint8Array }[],
+    data: Uint8Array[],
+    envelopeSize: number,
+  ): ParsedInscription {
 
-    try {
+    let combinedData = concatUint8Arrays(data);
 
-      let fields: { tag: number; value: Uint8Array }[];
-      let newPointer: number;
-      let slice: Uint8Array;
+    const contentTypeRaw = getKnownFieldValue(fields, knownFields.content_type);
+    let contentType: string | undefined = undefined;
 
-      // Store the starting pointer (this is where the envelope starts)
-      const initialPointer = pointer;
-
-      [fields, newPointer] = InscriptionParserService.extractFields(raw, pointer);
-
-      // Now we are at the beginning of the body
-      // (or at the end of the raw data if there's no body)
-      if (newPointer < raw.length && raw[newPointer] === OP_0) {
-        newPointer++; // Skip OP_0
-      }
-
-      // Collect body data until OP_ENDIF
-      const data: Uint8Array[] = [];
-      while (newPointer < raw.length && raw[newPointer] !== OP_ENDIF) {
-        [slice, newPointer] = readPushdata(raw, newPointer);
-        data.push(slice);
-      }
-
-      // +6 for OP_FALSE (1 byte) + OP_IF (1 byte) + OP_PUSH (1 byte) + "ord" (3 bytes)
-      // +1 for the OP_ENDIF
-      const envelopeSize = newPointer - initialPointer + 7;
-
-      let combinedData = concatUint8Arrays(data);
-
-      const contentTypeRaw = getKnownFieldValue(fields, knownFields.content_type);
-      let contentType: string | undefined = undefined;
-
-      // an inscriptions with no contentType is most probably a delegate
-      if (contentTypeRaw) {
-        // strings are (always) UTF-8, according to https://github.com/ordinals/ord/issues/2505
-        contentType = bytesToUnicodeString(contentTypeRaw);
-      }
+    // an inscriptions with no contentType is most probably a delegate
+    if (contentTypeRaw) {
+      // strings are (always) UTF-8, according to https://github.com/ordinals/ord/issues/2505
+      contentType = bytesToUnicodeString(contentTypeRaw);
+    }
 
       // figure out if the body is encoded via brotli or gzip
       const contentEncodingRaw = getKnownFieldValue(fields, knownFields.content_encoding);
@@ -356,9 +365,5 @@ export class InscriptionParserService {
         envelopeSize, // The size of the envelope including the entire script
         contentSize: combinedData.length // The size of the content (the body of the inscription)
       };
-
-    } catch {
-      return null;
-    }
   }
 }

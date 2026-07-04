@@ -105,54 +105,47 @@ export function getKnownFieldValues(fields: { tag: number; value: Uint8Array }[]
 }
 
 /**
- * Searches for the next position of the ordinal inscription mark (0063036f7264)
- * within the raw transaction data, starting from a given position.
- *
- * This function looks for a specific sequence of 6 bytes that represents the start of an ordinal inscription.
- * If the sequence is found, the function returns the index immediately following the inscription mark.
- * If the sequence is not found, the function returns -1, indicating no inscription mark was found.
- *
- * Note: This function uses a simple hardcoded approach based on the fixed length of the inscription mark.
- *
- * @returns The position immediately after the inscription mark, or -1 if not found.
+ * Envelope marker hex patterns emitted by ord.
+ *   INSCRIPTION_MARK_HEX        = OP_FALSE OP_IF OP_PUSHBYTES_3 'ord'
+ *   BIP110_INSCRIPTION_MARK_HEX = OP_PUSHBYTES_3 'ord'  (ord#4545)
  */
-export function getNextInscriptionMark(raw: Uint8Array, startPosition: number): number {
+export const INSCRIPTION_MARK_HEX = '0063036f7264';
+export const BIP110_INSCRIPTION_MARK_HEX = '036f7264';
 
-  // OP_FALSE
-  // OP_IF
-  // OP_PUSHBYTES_3: This pushes the next 3 bytes onto the stack.
-  // 0x6f, 0x72, 0x64: These bytes translate to the ASCII string "ord"
-  const inscriptionMark = new Uint8Array([OP_FALSE, OP_IF, OP_PUSHBYTES_3, 0x6f, 0x72, 0x64]);
+/**
+ * Find the next "ord" push in the raw witness. Returns the position
+ * immediately after the marker plus which envelope shape carries it
+ * (classic if the marker is preceded by OP_FALSE OP_IF, BIP-110
+ * otherwise).
+ *
+ * @returns { pointer, isClassic } or null when no more markers.
+ */
+export function getNextInscriptionMark(raw: Uint8Array, startPosition: number): { pointer: number; isClassic: boolean } | null {
 
-  for (let index = startPosition; index <= raw.length - 6; index++) {
-    if (raw[index]     === inscriptionMark[0] &&
-        raw[index + 1] === inscriptionMark[1] &&
-        raw[index + 2] === inscriptionMark[2] &&
-        raw[index + 3] === inscriptionMark[3] &&
-        raw[index + 4] === inscriptionMark[4] &&
-        raw[index + 5] === inscriptionMark[5]) {
-        return index + 6;
+  for (let i = startPosition; i <= raw.length - 4; i++) {
+    if (raw[i]     === OP_PUSHBYTES_3 &&
+        raw[i + 1] === 0x6f &&
+        raw[i + 2] === 0x72 &&
+        raw[i + 3] === 0x64) {
+      const isClassic = i >= 2 && raw[i - 2] === OP_FALSE && raw[i - 1] === OP_IF;
+      return { pointer: i + 4, isClassic };
     }
   }
 
-  return -1;
+  return null;
 }
 
 /**
  * Checks if an inscription mark is found within a witness array.
- * The Inscription mark hex corresponds to OP_FALSE, OP_IF, OP_PUSHBYTES_3, 'o', 'r', 'd'.
-
- * This code can potentially return false positive matches!
+ * Matches EITHER envelope shape via its exact hex pattern:
+ *   - classic  (OP_FALSE OP_IF OP_PUSHBYTES_3 'ord')
+ *   - BIP-110  (OP_PUSHBYTES_3 'ord', ord#4545)
  *
- * @param witness - Array of strings, each representing a hexadecimal encoded witness element.
- * @returns True if an inscription mark is found, false otherwise.
+ * This code can potentially return false positive matches!
  */
 export function hasInscription(witness: string[]): boolean {
-
-  // OP_FALSE (0x00), OP_IF (0x63), OP_PUSHBYTES_3 (0x03), 'o', 'r', 'd' (0x6f, 0x72, 0x64)
-  const inscriptionMarkHex = '0063036f7264';
-
-  return isStringInArrayOfStrings(inscriptionMarkHex, witness);
+  return isStringInArrayOfStrings(INSCRIPTION_MARK_HEX, witness)
+      || isStringInArrayOfStrings(BIP110_INSCRIPTION_MARK_HEX, witness);
 }
 
 /**
@@ -354,21 +347,17 @@ export function measureInscriptionSize(witness: string[]): number | null {
     return null;
   }
 
-  // Find the witness element that contains the inscription (the tapscript)
-  // OP_FALSE (0x00), OP_IF (0x63), OP_PUSHBYTES_3 (0x03), 'o', 'r', 'd' (0x6f, 0x72, 0x64)
-  const inscriptionMarkHex = '0063036f7264';
-  const element = witness.find(e => e.includes(inscriptionMarkHex));
+  // Find the classic-envelope witness element (the tapscript).
+  const element = witness.find(e => e.includes(INSCRIPTION_MARK_HEX));
   if (!element) {
     return null;
   }
 
   const raw = hexToBytes(element);
 
-  // Find the start of the inscription using the inscription mark
-  const startPosition = getNextInscriptionMark(raw, 0);
-
-  if (startPosition === -1) {
-    return null; // Inscription mark not found
+  const mark = getNextInscriptionMark(raw, 0);
+  if (!mark || !mark.isClassic) {
+    return null;
   }
 
   // Find the position of last OP_ENDIF (0x68)
@@ -378,11 +367,10 @@ export function measureInscriptionSize(witness: string[]): number | null {
     return null; // OP_ENDIF not found
   }
 
-  // The size of the inscription is from the start position to the last OP_ENDIF
-  const inscriptionSize = opEndIfIndex - startPosition;
-
-  // Add the size of the inscription mark (6 bytes) + OP_ENDIF (1 byte)
-  return inscriptionSize + 7;
+  // From the start of the classic wrapper (OP_FALSE OP_IF = 2 bytes
+  // before the 4-byte "ord" push, so mark.pointer - 6) to one past
+  // OP_ENDIF.
+  return opEndIfIndex + 1 - (mark.pointer - 6);
 }
 
 /**

@@ -13,6 +13,9 @@ export const OP_PUSHDATA2 = 0x4d;   // 77 -- The next two bytes contain the numb
 export const OP_PUSHDATA4 = 0x4e;   // 78 -- The next four bytes contain the number of bytes to be pushed onto the stack in little endian order.
 export const OP_ENDIF = 0x68;       // 104 -- Ends an if/else block.
 
+export const OP_2DROP = 0x6d;       // 109 -- Removes the top two stack items.
+export const OP_DROP  = 0x75;       // 117 -- Removes the top stack item.
+
 export const OP_1NEGATE = 0x4f;            // 79 -- The number -1 is pushed onto the stack.
 export const OP_RESERVED = 0x50;           // 80 -- Transaction is invalid unless occuring in an unexecuted OP_IF branch
 export const OP_PUSHNUM_1 = 0x51;          // 81 -- also known as OP_1
