@@ -1,5 +1,5 @@
 import { INVALID_COMPRESSED_DATA_MESSAGE, MAX_DECOMPRESSED_SIZE, MAX_DECOMPRESSED_SIZE_MESSAGE, brotliDecode } from "../lib/brotli-decode";
-import { hexToBytes, isStringInArrayOfStrings, littleEndianBytesToNumber } from "../lib/conversions";
+import { hexToBytes, isStringInArrayOfStrings, littleEndianBytesToBigInt, littleEndianBytesToNumber } from "../lib/conversions";
 import { bytesToHex } from "../lib/conversions";
 import { OP_ENDIF, OP_FALSE, OP_IF, OP_PUSHBYTES_3 } from "../lib/op-codes";
 
@@ -168,8 +168,11 @@ export function extractPointer(value: Uint8Array | undefined): number | undefine
     return undefined;
   }
 
-  // Interpret the pointerField value as a little-endian integer
-  return littleEndianBytesToNumber(value);
+  // Pointer is a little-endian u64 (tag 2). Decode via bigint: the 32-bit
+  // littleEndianBytesToNumber folds bytes past the 4th onto the low bytes and
+  // flips sign once bit 31 is set (offset >= ~21.47 BTC of outputs). Real sat
+  // offsets stay below 2^53, so Number() is exact here.
+  return Number(littleEndianBytesToBigInt(value));
 }
 
 export async function getDecodedContent(contentEncoding: string | undefined, combinedData: Uint8Array): Promise<Uint8Array> {
@@ -330,10 +333,12 @@ export function extractInscriptionId(value: Uint8Array): string | null {
   // / "reversed" relative to the display format).
   const txIdHex = bytesToHex(value.slice(0, 32).reverse());
 
-  // Pad the variable-length index up to 4 bytes for u32 LE decode.
+  // Pad the variable-length index up to 4 bytes for u32 LE decode. Decode via
+  // bigint so an index with bit 31 set doesn't come back negative (littleEndian-
+  // BytesToNumber uses signed 32-bit ops); u32 max is well within Number range.
   const indexBytes = new Uint8Array(4);
   indexBytes.set(value.subarray(32));
-  const index = littleEndianBytesToNumber(indexBytes);
+  const index = Number(littleEndianBytesToBigInt(indexBytes));
 
   return txIdHex + 'i' + index;
 }

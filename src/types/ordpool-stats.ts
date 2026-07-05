@@ -154,8 +154,9 @@ export interface MinimalCat21Mint {
  * Inscription size aggregates over a set of inscriptions (whole block, or one
  * content-type bucket). The same shape is used for the global block aggregate
  * (`OrdpoolStats.inscriptions`) and per-bucket aggregates (`.image`, `.text`,
- * `.json`). Buckets are mutually exclusive, so the per-bucket totals sum to
- * the global totals.
+ * `.json`). Buckets are mutually exclusive; their totals sum to the global
+ * total minus inscriptions whose content type matches no bucket (e.g. video,
+ * pdf, model, or a delegate with no content type).
  */
 export interface InscriptionSizeAggregate {
   totalEnvelopeSize: number;

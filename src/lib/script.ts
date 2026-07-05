@@ -106,13 +106,13 @@ export function extractPubkeys(hex: string): string[] {
  *   - `OP_PUSHNUM_<N>` for N in 1..16 -- aliases for OP_1..OP_16,
  *     bytes 0x51..0x60.
  *   - Any other named opcode -- looked up in `OPS_BY_NAME`.
- *   - A bare hex literal -- emitted as raw bytes. Used as the operand
- *     immediately after an OP_PUSHBYTES_<N> / OP_PUSHDATA* token.
  *
- * Negative integer literals (`-1`) and decimal literals get a TODO
- * marker -- ord's ASM render never emits those for script_pubkey shapes
- * we care about; if we ever encounter them we'll fail loudly rather
- * than silently produce garbage.
+ * Hex data only ever appears as a push operand and is consumed inside the
+ * push branch that precedes it, so there is no standalone-hex token shape.
+ * Any token that isn't a recognized opcode or push throws `unknown ASM
+ * token` -- including a bare decimal ("2024") or bare hex ("deadbeef"),
+ * which ord's ASM render never emits. Fail loud rather than emit bytes we
+ * can't attribute to a real opcode.
  *
  * Use case: HTML-scraped `script_pubkey` ASM tokens must be re-encoded
  * back to hex to match what `ord server --enable-json-api` emits for
@@ -193,14 +193,6 @@ export function asmToHex(asm: string): string {
     // Named opcode in the full table.
     if (Object.prototype.hasOwnProperty.call(OPS_BY_NAME, t)) {
       out += OPS_BY_NAME[t].toString(16).padStart(2, '0');
-      continue;
-    }
-
-    // Bare hex literal (rare standalone -- usually consumed as an
-    // operand above). ord doesn't emit these without a preceding
-    // OP_PUSHBYTES_*, but accept them defensively.
-    if (/^[0-9a-fA-F]+$/.test(t) && t.length % 2 === 0) {
-      out += t.toLowerCase();
       continue;
     }
 

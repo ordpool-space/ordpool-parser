@@ -132,8 +132,8 @@ export const ATOMICAL_OPERATION_LABELS: Record<AtomicalOperation, string> = {
  * Finds the atomical mark in raw witness bytes and extracts the operation type.
  *
  * After the 6-byte mark, the next pushdata contains the operation identifier.
- * Common operations use single-byte ASCII: 'm' (0x6d), 'u' (0x75), 'x' (0x78), etc.
- * Some use multi-byte strings like 'nft', 'ft', 'dft', 'mod', 'evt', 'dat', 'sl'.
+ * Single-byte ASCII ops: 'x' (0x78), 'y' (0x79), 'z' (0x7a).
+ * Multi-byte ops: 'nft', 'ft', 'dft', 'mod', 'evt', 'dat', 'sl'.
  *
  * @param raw - The raw witness bytes.
  * @returns The operation string, or null if no atomical mark found.

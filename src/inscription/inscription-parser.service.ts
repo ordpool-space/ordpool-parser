@@ -307,11 +307,18 @@ export class InscriptionParserService {
             return undefined;
           }
 
-          if (metadataChunks.length === 1) {
-            return CBOR.decode(metadataChunks[0]);
+          // CBOR.decode throws on malformed input and on trailing bytes.
+          // Malformed metadata exists on chain, so degrade to undefined like
+          // the sibling CBOR-from-witness paths (parseProperties, atomical
+          // decodePayload) instead of throwing into the consumer.
+          try {
+            const raw = metadataChunks.length === 1
+              ? metadataChunks[0]
+              : concatUint8Arrays(metadataChunks);
+            return CBOR.decode(raw);
+          } catch {
+            return undefined;
           }
-
-          return CBOR.decode(concatUint8Arrays(metadataChunks));
         },
 
         getMetaprotocol: (): string | undefined => {

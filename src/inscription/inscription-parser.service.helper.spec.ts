@@ -191,6 +191,14 @@ describe('extractInscriptionId', () => {
     expect(extractInscriptionId(value)).toEqual('000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fi255');
   });
 
+  // Regression: the 4-byte index was decoded with signed 32-bit ops, so an
+  // index with bit 31 set came back negative (yielding IDs like `...i-1`).
+  it('should decode a 36-byte index with the high bit set as a positive u32', () => {
+    // index LE 00 00 00 80 = 0x80000000 = 2_147_483_648
+    const value = hexToBytes('1f1e1d1c1b1a191817161514131211100f0e0d0c0b0a09080706050403020100' + '00000080');
+    expect(extractInscriptionId(value)).toEqual('000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fi2147483648');
+  });
+
   it('should return null for values shorter than 32 bytes', () => {
     expect(extractInscriptionId(hexToBytes(''))).toBeNull();
     expect(extractInscriptionId(hexToBytes('1f1e1d1c1b1a191817161514131211100f0e0d0c0b0a0908070605040302'))).toBeNull();
@@ -303,6 +311,20 @@ describe('extractPointer', () => {
 
   it('should return undefined for undefined pointer value', () => {
     expect(extractPointer(undefined)).toBe(undefined);
+  });
+
+  // Regression: littleEndianBytesToNumber uses signed 32-bit ops, so a 4-byte
+  // pointer with bit 31 set folded to a negative offset. Decoded via bigint now.
+  it('should extract a 4-byte pointer with the high bit set as positive', () => {
+    // 0x80000000 LE = 2_147_483_648 (~21.47 BTC of outputs, past int32 max)
+    expect(extractPointer(new Uint8Array([0x00, 0x00, 0x00, 0x80]))).toEqual(2147483648);
+  });
+
+  // Regression: a pointer needing more than 4 bytes previously folded its high
+  // bytes back onto the low bytes (JS shift count is mod 32).
+  it('should extract a 6-byte pointer without folding high bytes', () => {
+    // 0x0000_0001_0000_0000 LE = 4_294_967_296 (2^32)
+    expect(extractPointer(new Uint8Array([0x00, 0x00, 0x00, 0x00, 0x01, 0x00]))).toEqual(4294967296);
   });
 });
 

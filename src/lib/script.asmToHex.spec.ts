@@ -43,4 +43,15 @@ describe('asmToHex (script ASM -> hex)', () => {
   it('rejects OP_PUSHBYTES_N when operand length mismatches', () => {
     expect(() => asmToHex('OP_PUSHBYTES_4 deadbeef00')).toThrow(/length mismatch/);
   });
+
+  // A bare even-length decimal is lexically indistinguishable from hex data,
+  // so it must not be silently emitted as bytes -- ord never renders a bare
+  // literal (data always follows a push opcode). Fail loud instead.
+  it('rejects a bare decimal literal not preceded by a push opcode', () => {
+    expect(() => asmToHex('2024')).toThrow(/unknown ASM token/);
+  });
+
+  it('rejects a bare hex literal not preceded by a push opcode', () => {
+    expect(() => asmToHex('deadbeef')).toThrow(/unknown ASM token/);
+  });
 });

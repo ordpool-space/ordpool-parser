@@ -7,7 +7,6 @@ import { InscriptionParserService } from './inscription/inscription-parser.servi
 import { LabitbuParserService } from './labitbu/labitbu-parser.service';
 import { RuneParserService } from './rune/rune-parser.service';
 import { isUncommonGoodsMint } from './rune/rune-parser.service.helper';
-import { Src20ParserService } from './src20/src20-parser.service';
 import { DigitalArtifact, DigitalArtifactType } from './types/digital-artifact';
 import { ParsedAtomical } from './types/parsed-atomical';
 import { ParsedCounterparty } from './types/parsed-counterparty';
