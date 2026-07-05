@@ -96,15 +96,23 @@ function isData(el: number | Uint8Array): el is Uint8Array {
 }
 
 /**
- * Parses message type ID and payload from a Counterparty data buffer.
+ * Parses the message type ID and payload from a Counterparty data buffer
+ * (the bytes after the CNTRPRTY prefix).
  *
- * Message type ID: 1 byte if 0 < ID < 256, otherwise 4 bytes big-endian.
- * Special case: ID 0 (classic send) uses 4-byte big-endian encoding.
+ * Parity with counterpartycore/lib/parser/messagetype.py `unpack`:
+ *   - buffer must be longer than 1 byte (`len > 1`); a lone type byte with
+ *     no payload is not a message and is rejected;
+ *   - first byte 1..255 -> 1-byte type ID, remainder is the rest;
+ *   - first byte 0 -> 4-byte big-endian type ID (needs `len > 4`), remainder
+ *     from byte 4.
  *
- * Source: counterpartycore/lib/parser/messagetype.py (unpack)
+ * Note: the reference also gates the 1-byte read on the `short_tx_type_id`
+ * protocol upgrade (by block_index); we don't thread block_index into type
+ * parsing, so that gate isn't applied here.
  */
 function parseMessageTypeId(data: Uint8Array): { messageTypeId: number, messageData: Uint8Array } | null {
-  if (data.length < 1) {
+  // Reference requires len > 1 before reading a type ID.
+  if (data.length < 2) {
     return null;
   }
 
@@ -112,7 +120,7 @@ function parseMessageTypeId(data: Uint8Array): { messageTypeId: number, messageD
   // All other IDs (1-255) use 1-byte encoding.
   if (data[0] === 0) {
     if (data.length < 5) {
-      return null; // truncated -- Counterparty rejects this too
+      return null; // reference needs len > 4 for the 4-byte ID
     }
     return {
       messageTypeId: bigEndianBytesToNumber(data.subarray(0, 4)),

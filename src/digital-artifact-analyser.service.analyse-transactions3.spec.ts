@@ -261,6 +261,40 @@ describe('DigitalArtifactAnalyserService.analyseTransactions - Advanced Test Cas
     expect(result.amounts.brc20Mint).toBe(3);
   });
 
+  // Regression: mint activity used to sit inside the once-per-tx fee guard, so
+  // a single tx batching mints of different ticks recorded only the first tick.
+  // Activity now counts every mint artifact; the fee is still added once.
+  it('counts every ticker when one tx batches BRC-20 mints of different ticks', async () => {
+
+    const makeMint = (tick: string): ParsedInscription => ({
+      type: DigitalArtifactType.Inscription,
+      inscriptionId: `mint-${tick}`,
+      contentType: 'application/json',
+      contentSize: 100,
+      envelopeSize: 150,
+      getContent: () => Promise.resolve(JSON.stringify({ p: 'brc-20', op: 'mint', tick, amt: '100' })),
+    } as ParsedInscription);
+
+    // ONE tx, three mint artifacts: AAA once, BBB twice.
+    (DigitalArtifactsParserService.parse as jest.Mock)
+      .mockReturnValueOnce([makeMint('AAA'), makeMint('BBB'), makeMint('BBB')]);
+
+    // Local array on purpose: other tests read the shared `transactions`
+    // variable positionally, so don't reassign it here.
+    const batchTx = [
+      {
+        txid: 'tx1',
+        fee: 1000,
+      } as TransactionSimplePlus,
+    ];
+
+    const result = await DigitalArtifactAnalyserService.analyseTransactions(batchTx);
+    expect(result.amounts.brc20Mint).toBe(3);                          // every mint artifact counted
+    expect(result.brc20.mostActiveMint).toBe('BBB');                   // BBB (2) beats AAA (1) within the tx
+    expect(result.brc20.brc20MintActivity).toEqual([['BBB', 2], ['AAA', 1]]);
+    expect(result.fees.brc20Mints).toBe(1000);                         // fee counted once per tx
+  });
+
   it('should correctly track most active SRC-20 mint', async () => {
     const src20Mint: ParsedSrc20 = {
       type: DigitalArtifactType.Src20,

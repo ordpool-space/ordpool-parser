@@ -345,32 +345,38 @@ export class DigitalArtifactAnalyserService {
         }
 
         // ** BRC-20 Mints and Fees — uses brc20 from analyse() (no re-parse!)
-        if ((flags & OrdpoolTransactionFlags.ordpool_brc20_mint) === OrdpoolTransactionFlags.ordpool_brc20_mint) {
-          if (!brc20MintFeeAdded && brc20) {
-            const mintKey = brc20.tick ?? 'unknown';
+        if ((flags & OrdpoolTransactionFlags.ordpool_brc20_mint) === OrdpoolTransactionFlags.ordpool_brc20_mint && brc20) {
+          const mintKey = brc20.tick ?? 'unknown';
 
-            brc20MintActivity[mintKey] = (brc20MintActivity[mintKey] ?? 0) + 1;
-            if (brc20MintActivity[mintKey] > mostActiveBrc20MintCount) {
-              mostActiveBrc20Mint = mintKey;
-              mostActiveBrc20MintCount = brc20MintActivity[mintKey];
-            }
+          // Activity counts every mint artifact, so a tx batching mints of
+          // different ticks records each one (matches stats.amounts.brc20Mint).
+          brc20MintActivity[mintKey] = (brc20MintActivity[mintKey] ?? 0) + 1;
+          if (brc20MintActivity[mintKey] > mostActiveBrc20MintCount) {
+            mostActiveBrc20Mint = mintKey;
+            mostActiveBrc20MintCount = brc20MintActivity[mintKey];
+          }
 
+          // Fees accumulate once per transaction.
+          if (!brc20MintFeeAdded) {
             totalBrc20MintFees += txFee;
             brc20MintFeeAdded = true;
           }
         }
 
         // ** SRC-20 Mints and Fees — uses src20Content from analyse() (no re-parse!)
-        if ((flags & OrdpoolTransactionFlags.ordpool_src20_mint) === OrdpoolTransactionFlags.ordpool_src20_mint) {
-          if (!src20MintFeeAdded && src20Content) {
-            const mintKey = src20Content.tick ?? 'unknown';
+        if ((flags & OrdpoolTransactionFlags.ordpool_src20_mint) === OrdpoolTransactionFlags.ordpool_src20_mint && src20Content) {
+          const mintKey = src20Content.tick ?? 'unknown';
 
-            src20MintActivity[mintKey] = (src20MintActivity[mintKey] ?? 0) + 1;
-            if (src20MintActivity[mintKey] > mostActiveSrc20MintCount) {
-              mostActiveSrc20Mint = mintKey;
-              mostActiveSrc20MintCount = src20MintActivity[mintKey];
-            }
+          // Activity counts every mint artifact, so a tx batching mints of
+          // different ticks records each one (matches stats.amounts.src20Mint).
+          src20MintActivity[mintKey] = (src20MintActivity[mintKey] ?? 0) + 1;
+          if (src20MintActivity[mintKey] > mostActiveSrc20MintCount) {
+            mostActiveSrc20Mint = mintKey;
+            mostActiveSrc20MintCount = src20MintActivity[mintKey];
+          }
 
+          // Fees accumulate once per transaction.
+          if (!src20MintFeeAdded) {
             totalSrc20MintFees += txFee;
             src20MintFeeAdded = true;
           }
