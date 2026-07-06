@@ -69,15 +69,20 @@ export class CounterpartyParserService {
         }
       }
 
+      // block_height gates the short_tx_type_id message encoding (see
+      // parseMessageTypeId); undefined for mempool txs, which the reference
+      // treats as the current tip.
+      const blockHeight = transaction.status?.block_height;
+
       // 1. P2TR (cheapest -- no decryption, just check literal marker + witness envelope)
       let result = hasLiteralCntrprty
-        ? tryExtractP2tr(transaction.vin, transaction.vout)
+        ? tryExtractP2tr(transaction.vin, transaction.vout, blockHeight)
         : null;
 
       // 2. OP_RETURN with ARC4 decryption (fast, <=80 bytes)
       if (!result && hasOpReturn && !hasLiteralCntrprty) {
         const arc4Key = hexToBytes(transaction.vin[0].txid);
-        result = tryDecryptOpReturn(transaction.vout, arc4Key);
+        result = tryDecryptOpReturn(transaction.vout, arc4Key, blockHeight);
       }
 
       // 3. Multisig (expensive -- decrypt each output independently)
@@ -85,7 +90,7 @@ export class CounterpartyParserService {
       // with key burn addresses. We must NOT skip based on burn keys.
       if (!result && hasMultisig) {
         const arc4Key = hexToBytes(transaction.vin[0].txid);
-        result = tryDecryptMultisig(transaction.vout, arc4Key);
+        result = tryDecryptMultisig(transaction.vout, arc4Key, blockHeight);
       }
 
       // 4. Burn detection -- last, since it's a fallback that doesn't carry

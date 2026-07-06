@@ -95,40 +95,55 @@ function isData(el: number | Uint8Array): el is Uint8Array {
   return typeof el !== 'number';
 }
 
+// Mainnet activation of the short (1-byte) message-type-id encoding. Before
+// this block every type id is 4-byte big-endian.
+// Source: counterpartycore/protocol_changes.json -> short_tx_type_id.block_index
+const SHORT_TX_TYPE_ID_BLOCK = 489956;
+
 /**
  * Parses the message type ID and payload from a Counterparty data buffer
  * (the bytes after the CNTRPRTY prefix).
  *
- * Parity with counterpartycore/lib/parser/messagetype.py `unpack`:
- *   - buffer must be longer than 1 byte (`len > 1`); a lone type byte with
- *     no payload is not a message and is rejected;
- *   - first byte 1..255 -> 1-byte type ID, remainder is the rest;
- *   - first byte 0 -> 4-byte big-endian type ID (needs `len > 4`), remainder
- *     from byte 4.
+ * Exact port of counterpartycore/lib/parser/messagetype.py `unpack`
+ * (github.com/CounterpartyXCP/counterparty-core):
  *
- * Note: the reference also gates the 1-byte read on the `short_tx_type_id`
- * protocol upgrade (by block_index); we don't thread block_index into type
- * parsing, so that gate isn't applied here.
+ *   if len(packed_data) > 1:
+ *       if protocol.enabled("short_tx_type_id", block_index):
+ *           message_type_id = packed_data[0]           # 1-byte id
+ *           if message_type_id > 0:
+ *               return (message_type_id, packed_data[1:])
+ *   if len(packed_data) > 4:                            # first byte 0, or
+ *       message_type_id = uint32_be(packed_data[:4])   # short ids not yet enabled
+ *       return (message_type_id, packed_data[4:])
+ *   return (None, None)
+ *
+ * short_tx_type_id activates at mainnet block SHORT_TX_TYPE_ID_BLOCK; before it,
+ * type ids are always 4-byte big-endian. protocol.enabled() treats a missing
+ * block_index (mempool) as the current tip, i.e. enabled -- so an undefined
+ * blockHeight here means "short ids enabled". A (None, None) return maps to null.
  */
-function parseMessageTypeId(data: Uint8Array): { messageTypeId: number, messageData: Uint8Array } | null {
-  // Reference requires len > 1 before reading a type ID.
-  if (data.length < 2) {
-    return null;
-  }
+function parseMessageTypeId(
+  data: Uint8Array,
+  blockHeight: number | undefined,
+): { messageTypeId: number, messageData: Uint8Array } | null {
 
-  // ID 0 (classic send) uses 4-byte big-endian encoding.
-  // All other IDs (1-255) use 1-byte encoding.
-  if (data[0] === 0) {
-    if (data.length < 5) {
-      return null; // reference needs len > 4 for the 4-byte ID
+  const shortTypeEnabled = blockHeight === undefined || blockHeight >= SHORT_TX_TYPE_ID_BLOCK;
+
+  if (data.length > 1 && shortTypeEnabled) {
+    const id = data[0];
+    if (id > 0) {
+      return { messageTypeId: id, messageData: data.subarray(1) };
     }
-    return {
-      messageTypeId: bigEndianBytesToNumber(data.subarray(0, 4)),
-      messageData: data.subarray(4),
-    };
+    // id 0 falls through to the 4-byte read
   }
 
-  return { messageTypeId: data[0], messageData: data.subarray(1) };
+  if (data.length > 4) {
+    // uint32 big-endian; >>> 0 keeps it unsigned to match struct.unpack(">I")
+    const messageTypeId = bigEndianBytesToNumber(data.subarray(0, 4)) >>> 0;
+    return { messageTypeId, messageData: data.subarray(4) };
+  }
+
+  return null;
 }
 
 /**
@@ -242,7 +257,8 @@ export function tryDetectBurn(
 
 export function tryDecryptOpReturn(
   vout: { scriptpubkey: string, scriptpubkey_type: string }[],
-  arc4Key: Uint8Array
+  arc4Key: Uint8Array,
+  blockHeight: number | undefined
 ): CounterpartyPayload | null {
 
   for (const output of vout) {
@@ -265,7 +281,7 @@ export function tryDecryptOpReturn(
     }
 
     // Strip the 8-byte CNTRPRTY prefix, then parse message type ID
-    const parsed = parseMessageTypeId(decrypted.subarray(CNTRPRTY_PREFIX.length));
+    const parsed = parseMessageTypeId(decrypted.subarray(CNTRPRTY_PREFIX.length), blockHeight);
     if (!parsed) {
       continue;
     }
@@ -296,7 +312,8 @@ export function tryDecryptOpReturn(
  */
 export function tryDecryptMultisig(
   vout: { scriptpubkey: string, scriptpubkey_type: string }[],
-  arc4Key: Uint8Array
+  arc4Key: Uint8Array,
+  blockHeight: number | undefined
 ): CounterpartyPayload | null {
 
   const messageChunks: Uint8Array[] = [];
@@ -360,7 +377,7 @@ export function tryDecryptMultisig(
   }
 
   const allData = concatUint8Arrays(messageChunks);
-  const parsed = parseMessageTypeId(allData);
+  const parsed = parseMessageTypeId(allData, blockHeight);
   if (!parsed) {
     return null;
   }
@@ -418,7 +435,8 @@ function isSingleBytePush(el: number | Uint8Array, value: number): boolean {
  */
 export function tryExtractP2tr(
   vin: { txid: string, witness?: string[] }[],
-  vout: { scriptpubkey: string, scriptpubkey_type: string }[]
+  vout: { scriptpubkey: string, scriptpubkey_type: string }[],
+  blockHeight: number | undefined
 ): CounterpartyPayload | null {
 
   // Step 1: Check for literal "CNTRPRTY" OP_RETURN output
@@ -459,7 +477,7 @@ export function tryExtractP2tr(
   if (isOrd) {
     return extractOrdEnvelopeData(elements);
   } else {
-    return extractGenericEnvelopeData(elements);
+    return extractGenericEnvelopeData(elements, blockHeight);
   }
 }
 
@@ -469,7 +487,7 @@ export function tryExtractP2tr(
  *
  * Source: extract_data_from_witness() generic branch in bitcoin_client.rs
  */
-function extractGenericEnvelopeData(elements: Array<number | Uint8Array>): CounterpartyPayload | null {
+function extractGenericEnvelopeData(elements: Array<number | Uint8Array>, blockHeight: number | undefined): CounterpartyPayload | null {
   // Collect all pushdata between elements[2] and the OP_ENDIF
   // (skip first 2: OP_FALSE + OP_IF, skip last 3: OP_ENDIF + pubkey + OP_CHECKSIG)
   const dataChunks: Uint8Array[] = [];
@@ -485,7 +503,7 @@ function extractGenericEnvelopeData(elements: Array<number | Uint8Array>): Count
   }
 
   const data = concatUint8Arrays(dataChunks);
-  const parsed = parseMessageTypeId(data);
+  const parsed = parseMessageTypeId(data, blockHeight);
   if (!parsed) {
     return null;
   }
