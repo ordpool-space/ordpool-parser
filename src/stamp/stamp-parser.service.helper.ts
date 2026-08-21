@@ -126,6 +126,11 @@ export function detectMimeType(data: Uint8Array): string | null {
     return 'application/gzip';
   }
 
+  // PDF: 25 50 44 46 (%PDF)
+  if (data[0] === 0x25 && data[1] === 0x50 && data[2] === 0x44 && data[3] === 0x46) {
+    return 'application/pdf';
+  }
+
   // Text-based formats: check as UTF-8
   try {
     const head = new TextDecoder().decode(data.subarray(0, Math.min(data.length, 256)));
