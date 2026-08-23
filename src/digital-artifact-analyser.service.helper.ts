@@ -11,7 +11,9 @@ import { TransactionSimplePlus } from "./types/transaction-simple";
  * @param flag - The specific flag to check for.
  * @returns True if the flag is set, false otherwise.
  */
-export function isFlagSet(flags: number, flag: OrdpoolTransactionFlag): boolean {
+export function isFlagSet(flags: string | number, flag: OrdpoolTransactionFlag): boolean {
+  // `flags` is BigInt()-parsed, so a decimal-string bigint (the wire format for
+  // ordpool's bit-82 flags) or a legacy number both work.
   return (BigInt(flags) & flag) === flag;
 }
 

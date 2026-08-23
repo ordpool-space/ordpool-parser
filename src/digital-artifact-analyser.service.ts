@@ -879,7 +879,7 @@ export class DigitalArtifactAnalyserService {
    * @param tx - The transaction to check.
    * @returns True if one or more of our ordpool flags are set, false otherwise.
    */
-  static hasAnyOrdpoolFlag(tx: { flags?: number | null }): boolean {
+  static hasAnyOrdpoolFlag(tx: { flags?: string | number | null }): boolean {
 
     if (!tx.flags) {
       return false;
