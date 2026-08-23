@@ -22,8 +22,11 @@ export function isFlagSet(flags: number, flag: OrdpoolTransactionFlag): boolean 
  * @param flag - The flag to check for.
  * @returns True if the flag is set, false otherwise.
  */
-export function isFlagSetOnTransaction(tx: { flags?: number | null }, flag: OrdpoolTransactionFlag): boolean {
+export function isFlagSetOnTransaction(tx: { flags?: string | number | null }, flag: OrdpoolTransactionFlag): boolean {
 
+  // `flags` is the OR-combined TransactionFlags value. ordpool's own flags reach
+  // bit 82, past a JS number's 53-bit mantissa, so the wire carries it as a
+  // decimal-string bigint; BigInt() parses either a string or a legacy number.
   if (!tx.flags) {
     return false;
   }
