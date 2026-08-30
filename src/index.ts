@@ -6,6 +6,7 @@ export * from './atomical/atomical-parser.service';
 export * from './bitmap/bitmap-renderer';
 export * from './bitmap/mondrian-layout';
 export * from './cat21/cat-color-category';
+export * from './cat21/cat21-category';
 export * from './rarity/open-rarity';
 export * from './cat21/cat21-parser.service.helper';
 export * from './cat21/cat21-parser.service';
