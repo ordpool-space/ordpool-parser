@@ -451,4 +451,39 @@ describe('open-rarity / scoreAndRank', () => {
       expect(by(3).rank).toBe(3);
     });
   });
+
+  describe('prototype pollution hardening', () => {
+    // Attribute names/values are UNTRUSTED: a token's `attrs` can be decoded
+    // from attacker-authored on-chain JSON metadata, which (unlike an object
+    // literal) can carry an OWN enumerable "__proto__" key. Scoring must never
+    // let such input pollute Object.prototype.
+    afterEach(() => {
+      const proto = Object.prototype as Record<string, unknown>;
+      for (const k of ['pollutedMarker', 'x', 'y', 'z']) delete proto[k];
+    });
+
+    it('an attribute NAME of "__proto__" does not pollute Object.prototype', () => {
+      // JSON.parse gives an OWN enumerable "__proto__" property — the real
+      // vector. With a plain-`{}` frequency map this write would land the value
+      // as a global Object.prototype property.
+      const evil = JSON.parse('{"__proto__":"pollutedMarker","color":"red"}') as Record<string, string>;
+      scoreAndRank<string>([
+        { id: 'a', attrs: evil },
+        { id: 'b', attrs: { color: 'blue' } },
+      ]);
+      expect((Object.prototype as Record<string, unknown>)['pollutedMarker']).toBeUndefined();
+      expect(({} as Record<string, unknown>)['pollutedMarker']).toBeUndefined();
+    });
+
+    it('scores a collection whose trait names ARE reserved keys, without pollution or crash', () => {
+      const a = JSON.parse('{"__proto__":"x","constructor":"y"}') as Record<string, string>;
+      const b = JSON.parse('{"__proto__":"x","constructor":"z"}') as Record<string, string>;
+      const ranked = scoreAndRank<string>([{ id: 'a', attrs: a }, { id: 'b', attrs: b }]);
+      expect(ranked.length).toBe(2);
+      const proto = Object.prototype as Record<string, unknown>;
+      expect(proto['x']).toBeUndefined();
+      expect(proto['y']).toBeUndefined();
+      expect(proto['z']).toBeUndefined();
+    });
+  });
 });

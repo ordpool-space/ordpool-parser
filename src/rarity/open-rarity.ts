@@ -204,10 +204,17 @@ function isEmptyForTraitCount(value: string): boolean {
 function buildFreqCounts<TId>(
   tokens: readonly RarityToken<TId>[],
 ): Record<string, Record<string, number>> {
-  const freq: Record<string, Record<string, number>> = {};
+  // Null-prototype maps: attribute names/values are UNTRUSTED (a token's
+  // `attrs` can come from attacker-authored on-chain metadata, e.g. JSON with
+  // an own `__proto__` key). With a plain `{}`, `freq["__proto__"]` resolves to
+  // `Object.prototype` (truthy, so `??=` skips), and the nested write lands on
+  // `Object.prototype` — global prototype pollution. `Object.create(null)` has
+  // no prototype chain, so `__proto__`/`constructor`/etc. are ordinary keys.
+  // Behaviour is identical for every real trait name (none is a reserved key).
+  const freq: Record<string, Record<string, number>> = Object.create(null);
   for (const t of tokens) {
     for (const [name, value] of Object.entries(t.attrs)) {
-      (freq[name] ??= {})[value] = ((freq[name][value]) ?? 0) + 1;
+      (freq[name] ??= Object.create(null))[value] = ((freq[name][value]) ?? 0) + 1;
     }
   }
   return freq;
@@ -222,7 +229,8 @@ function extractNullAttributes(
   freq: Record<string, Record<string, number>>,
   totalSupply: number,
 ): Record<string, number> {
-  const result: Record<string, number> = {};
+  // Null-prototype: `name` is an untrusted attribute name (see buildFreqCounts).
+  const result: Record<string, number> = Object.create(null);
   for (const [name, values] of Object.entries(freq)) {
     const sum = Object.values(values).reduce((a, b) => a + b, 0);
     const without = totalSupply - sum;
