@@ -46,37 +46,33 @@ describe('getKnownFieldValues', () => {
 
 describe('getNextInscriptionMark', () => {
 
-  it('should find the inscription mark (00 63 03 6f 72 64) and return the position after it', () => {
+  it('finds the classic inscription mark and returns the position after it', () => {
     const raw = new Uint8Array([0, 1, 2, 0x00, 0x63, 0x03, 0x6f, 0x72, 0x64, 10, 20]);
-    const startPosition = 0;
-    const expectedPosition = 9;
-    expect(getNextInscriptionMark(raw, startPosition)).toEqual(expectedPosition);
+    expect(getNextInscriptionMark(raw, 0)).toEqual({ pointer: 9, isClassic: true });
   });
 
-  it('should return -1 if the inscription mark is not found', () => {
+  it('returns null when the mark is not found', () => {
     const raw = new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
-    const startPosition = 0;
-    expect(getNextInscriptionMark(raw, startPosition)).toEqual(-1);
+    expect(getNextInscriptionMark(raw, 0)).toBeNull();
   });
 
-  it('should correctly handle an empty array', () => {
-    const raw = new Uint8Array([]);
-    const startPosition = 0;
-    expect(getNextInscriptionMark(raw, startPosition)).toEqual(-1);
+  it('handles an empty array', () => {
+    expect(getNextInscriptionMark(new Uint8Array([]), 0)).toBeNull();
   });
 
-  it('should find the inscription mark even if it starts next to the end of the array', () => {
+  it('finds the mark near the end of the array', () => {
     const raw = new Uint8Array([0, 1, 2, 0x00, 0x63, 0x03, 0x6f, 0x72, 0x64]);
-    const startPosition = 3;
-    const expectedPosition = 9;
-    expect(getNextInscriptionMark(raw, startPosition)).toEqual(expectedPosition);
+    expect(getNextInscriptionMark(raw, 3)).toEqual({ pointer: 9, isClassic: true });
   });
 
-  it('should find the inscription mark starting exactly at the startPosition', () => {
+  it('finds the mark at startPosition', () => {
     const raw = new Uint8Array([0x00, 0x63, 0x03, 0x6f, 0x72, 0x64, 10, 20, 30]);
-    const startPosition = 0;
-    const expectedPosition = 6;
-    expect(getNextInscriptionMark(raw, startPosition)).toEqual(expectedPosition);
+    expect(getNextInscriptionMark(raw, 0)).toEqual({ pointer: 6, isClassic: true });
+  });
+
+  it('classifies a bare "ord" push (no OP_FALSE OP_IF prefix) as BIP-110', () => {
+    const raw = new Uint8Array([0x03, 0x6f, 0x72, 0x64, 10, 20]);
+    expect(getNextInscriptionMark(raw, 0)).toEqual({ pointer: 4, isClassic: false });
   });
 });
 

@@ -1,0 +1,13 @@
+{
+  "_comment": "SYNTHETIC / NOT ON CHAIN. Hand-crafted transaction for the BIP-110 envelope test (ordinals/ord#4545). Txid is 'deadbeef' repeated 8 times. Witness[1] is the envelope: OP_PUSHBYTES_3 'ord', then tag 1 (content_type) = 'text/plain', OP_0 body separator, 'Hello, world!' body, balanced by OP_2DROP OP_2DROP OP_DROP (5 pushes = 5 drops).",
+  "txid": "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+  "vin": [
+    {
+      "witness": [
+        "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "036f726401010a746578742f706c61696e000d48656c6c6f2c20776f726c64216d6d75",
+        "c00000000000000000000000000000000000000000000000000000000000000000"
+      ]
+    }
+  ]
+}
