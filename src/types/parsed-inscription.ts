@@ -7,7 +7,12 @@ import { DigitalArtifact } from "./digital-artifact";
 export interface GalleryItem {
   inscriptionId: string;
   title?: string;
-  traits?: Record<string, boolean | number | string | null>;
+  /**
+   * Ordered [name, value] pairs, in the creator's byte order (as ord renders
+   * them). NOT a keyed object -- a plain object would reorder integer-like
+   * names ("10" ahead of "zeta") and lose that order.
+   */
+  traits?: Array<[string, boolean | number | string | null]>;
 }
 
 /**
@@ -23,7 +28,8 @@ export interface GalleryItem {
 export interface InscriptionProperties {
   gallery: GalleryItem[];
   title?: string;
-  traits?: Record<string, boolean | number | string | null>;
+  /** Ordered [name, value] pairs, in the creator's byte order (see GalleryItem). */
+  traits?: Array<[string, boolean | number | string | null]>;
 }
 
 export interface ParsedInscription extends DigitalArtifact {

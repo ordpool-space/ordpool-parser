@@ -158,6 +158,15 @@ function encode(value: unknown): Uint8Array {
           const bytes = new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
           writeTypeAndLength(2, bytes.length);
           writeUint8Array(bytes);
+        } else if (value instanceof Map) {
+          // Encode a Map as a CBOR map in its entry order (unlike a plain
+          // object, whose integer-like keys would be reordered). Symmetric with
+          // the mapsAsMaps decode option, so an ordered structure round-trips.
+          writeTypeAndLength(5, value.size);
+          for (const [k, v] of value) {
+            encodeItem(k);
+            encodeItem(v);
+          }
         } else if (value && typeof value === 'object') {
           const obj = value as Record<string, unknown>;
           const keys = Object.keys(obj);
@@ -192,7 +201,13 @@ function decode(
   // the original library's call site at major-type 6 below.
   tagger?: (value: unknown, tag: number) => unknown,
   simpleValue?: ((value: number) => unknown),
-  decodeFirstFlag: boolean = false
+  decodeFirstFlag: boolean = false,
+  // When true, CBOR maps (major type 5) decode to a `Map` instead of a plain
+  // object, preserving the byte order of the entries. A plain object reorders
+  // integer-like string keys ("10" before "zeta") regardless of insertion
+  // order, which loses the creator's trait order; a Map keeps it. Off by
+  // default so existing callers are unchanged.
+  mapsAsMaps: boolean = false
 ): unknown {
   const dataByteLength = data.length;
   const dataView = new DataView(data.buffer, data.byteOffset, data.byteLength);
@@ -365,6 +380,14 @@ function decode(
         }
         return retArray;
       case 5:
+        if (mapsAsMaps) {
+          const retMap = new Map<unknown, unknown>();
+          for (let i = 0; i < length || length < 0 && !readBreak(); ++i) {
+            const key = decodeItem();
+            retMap.set(key, decodeItem());
+          }
+          return retMap;
+        }
         const retObject: Record<string | number, unknown> = {};
         for (let i = 0; i < length || length < 0 && !readBreak(); ++i) {
           const key = decodeItem() as string | number;

@@ -15,10 +15,10 @@ import {
  * either primitives, arrays, Uint8Array, or objects with integer-or-string keys.
  */
 type CborValue = unknown;
-type CborMap = Record<number | string, CborValue>;
+type CborMap = Map<unknown, CborValue>;
 
 function isCborMap(value: CborValue): value is CborMap {
-  return !!value && typeof value === 'object' && !ArrayBuffer.isView(value) && !Array.isArray(value);
+  return value instanceof Map;
 }
 
 /**
@@ -51,10 +51,13 @@ export async function parseProperties(fields: { tag: number; value: Uint8Array }
     return undefined;
   }
 
-  // CBOR decode — properties use integer keys
+  // CBOR decode with mapsAsMaps so maps keep their entry order. ord renders
+  // traits (an ordered Vec<(String, Trait)>) in the creator's order; a plain
+  // object would reorder integer-like trait names ("10" before "zeta") and lose
+  // that order, so we decode into Maps and read them in order.
   let decoded: CborValue;
   try {
-    decoded = CBOR.decode(propertiesBytes);
+    decoded = CBOR.decode(propertiesBytes, undefined, undefined, false, true);
   } catch {
     return undefined;
   }
@@ -64,9 +67,9 @@ export async function parseProperties(fields: { tag: number; value: Uint8Array }
   }
 
   // Parse gallery items (key 0)
-  const rawGalleryUnknown = decoded[0];
+  const rawGalleryUnknown = decoded.get(0);
   const rawGallery: CborValue[] = Array.isArray(rawGalleryUnknown) ? rawGalleryUnknown : [];
-  const packedTxidsUnknown = decoded[2]; // key 2: concatenated 32-byte txids
+  const packedTxidsUnknown = decoded.get(2); // key 2: concatenated 32-byte txids
   const packedTxids: Uint8Array | undefined = ArrayBuffer.isView(packedTxidsUnknown)
     ? new Uint8Array(packedTxidsUnknown.buffer, packedTxidsUnknown.byteOffset, packedTxidsUnknown.byteLength)
     : undefined;
@@ -82,7 +85,7 @@ export async function parseProperties(fields: { tag: number; value: Uint8Array }
 
     // Try inline ID first (key 0). extractInscriptionId does the full
     // canonical validation and returns null on failure.
-    const inlineId = rawItem[0];
+    const inlineId = rawItem.get(0);
     if (ArrayBuffer.isView(inlineId)) {
       const id = extractInscriptionId(new Uint8Array(inlineId.buffer, inlineId.byteOffset, inlineId.byteLength));
       if (id !== null) {
@@ -96,7 +99,7 @@ export async function parseProperties(fields: { tag: number; value: Uint8Array }
       if (txidOffset + 32 <= packedTxids.byteLength) {
         const txidBytes = new Uint8Array(packedTxids.buffer, packedTxids.byteOffset + txidOffset, 32);
         const txidHex = bytesToHex(new Uint8Array(txidBytes).reverse());
-        const indexRaw = rawItem[2];
+        const indexRaw = rawItem.get(2);
         const index = typeof indexRaw === 'number' ? indexRaw : 0;
         inscriptionId = txidHex + 'i' + index;
       }
@@ -104,10 +107,10 @@ export async function parseProperties(fields: { tag: number; value: Uint8Array }
 
     if (!inscriptionId) {
       // Invalid item — ord clears the entire gallery if any item has no ID
-      return { gallery: [], ...parseAttributes(decoded[1]) };
+      return { gallery: [], ...parseAttributes(decoded.get(1)) };
     }
 
-    const itemAttrs = parseAttributes(rawItem[1]);
+    const itemAttrs = parseAttributes(rawItem.get(1));
     gallery.push({
       inscriptionId,
       ...(itemAttrs.title !== undefined && { title: itemAttrs.title }),
@@ -115,7 +118,7 @@ export async function parseProperties(fields: { tag: number; value: Uint8Array }
     });
   }
 
-  const attrs = parseAttributes(decoded[1]);
+  const attrs = parseAttributes(decoded.get(1));
   return {
     gallery,
     ...(attrs.title !== undefined && { title: attrs.title }),
@@ -128,24 +131,28 @@ export async function parseProperties(fields: { tag: number; value: Uint8Array }
  * Accepts unknown to force the caller to pass arbitrary CBOR-decoded data,
  * narrowing happens inside.
  */
-export function parseAttributes(raw: unknown): { title?: string; traits?: Record<string, boolean | number | string | null> } {
+export function parseAttributes(raw: unknown): { title?: string; traits?: Array<[string, boolean | number | string | null]> } {
   if (!isCborMap(raw)) {
     return {};
   }
 
-  const result: { title?: string; traits?: Record<string, boolean | number | string | null> } = {};
+  const result: { title?: string; traits?: Array<[string, boolean | number | string | null]> } = {};
 
-  if (typeof raw[0] === 'string') {
-    result.title = raw[0];
+  const title = raw.get(0);
+  if (typeof title === 'string') {
+    result.title = title;
   }
 
-  const traitsRaw = raw[1];
+  const traitsRaw = raw.get(1);
   if (isCborMap(traitsRaw)) {
-    const traits: Record<string, boolean | number | string | null> = {};
-    for (const key of Object.keys(traitsRaw)) {
-      const val = traitsRaw[key];
-      if (val === null || typeof val === 'boolean' || typeof val === 'number' || typeof val === 'string') {
-        traits[key] = val;
+    // Ordered pairs, in the creator's byte order, mirroring ord's
+    // Traits { items: Vec<(String, Trait)> }. A plain object would reorder
+    // integer-like names; the Map (from mapsAsMaps) preserves the order.
+    const traits: Array<[string, boolean | number | string | null]> = [];
+    for (const [key, val] of traitsRaw) {
+      if (typeof key === 'string' &&
+          (val === null || typeof val === 'boolean' || typeof val === 'number' || typeof val === 'string')) {
+        traits.push([key, val]);
       }
     }
     result.traits = traits;

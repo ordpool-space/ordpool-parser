@@ -1,5 +1,7 @@
 import { readTransaction } from '../../testdata/test.helper';
+import { CBOR } from '../lib/cbor';
 import { InscriptionParserService } from './inscription-parser.service';
+import { parseProperties } from './inscription-parser.service.properties.helper';
 
 // Real mainnet gallery inscription: OrdRain collection (111 generative art pieces)
 // Inscription ID: f6d848b3dc15955a82eb738f2de38e56a0346303444600f0e0726c678632c055i0
@@ -63,9 +65,9 @@ describe('InscriptionParserService — Properties / Galleries', () => {
 
       // Gallery-level attributes
       expect(properties.title).toBe('The Ring');
-      expect(properties.traits).toEqual({
-        description: 'The Ring — 333 items preserved on-chain via Save Ordinals',
-      });
+      expect(properties.traits).toEqual([
+        ['description', 'The Ring — 333 items preserved on-chain via Save Ordinals'],
+      ]);
 
       // All 333 items share the same txid (batch inscription) with indices 0-332
       // First item
@@ -73,7 +75,7 @@ describe('InscriptionParserService — Properties / Galleries', () => {
         'c280f43d4a088665b226b06ec15d893cb1a2802ac87f7a4242141cb3c1d7d163i0'
       );
       expect((properties.gallery[0] as any).title).toBe(undefined);
-      expect(properties.gallery[0].traits).toEqual({ rune: '\u16C3' }); // ᛃ (Jera rune)
+      expect(properties.gallery[0].traits).toEqual([['rune', '\u16C3']]); // ᛃ (Jera rune)
 
       // Last item (index 332, but inscription uses i99 for the last batch item)
       expect(properties.gallery[332].inscriptionId).toBe(
@@ -95,43 +97,85 @@ describe('InscriptionParserService — Properties / Galleries', () => {
 
       // Gallery-level attributes
       expect(properties.title).toBe('Ordillas');
-      expect(properties.traits).toEqual({
-        description: 'Official on-chain gallery for the Ordillas collection.',
-      });
+      expect(properties.traits).toEqual([
+        ['description', 'Official on-chain gallery for the Ordillas collection.'],
+      ]);
 
       // First item — exact inscription ID and all traits
       expect(properties.gallery[0].inscriptionId).toBe(
         '001fa882ee933414cd79450db22d684a89ef50a23124e982d95aac0e78199645i0'
       );
-      expect(properties.gallery[0].traits).toEqual({
-        body: 'normal body',
-        eyes: 'normal idle eyes',
-        mouth: 'slightly opened mouth',
-        clothing: 'hood blue',
-        background: 'lost island',
-        'special back': 'none',
-        'special front': 'none',
-        'face accessory': 'none',
-        'hand accessory': 'normal dumbell',
-        'head accessory': 'none',
-      });
+      expect(properties.gallery[0].traits).toEqual([
+        ['body', 'normal body'],
+        ['eyes', 'normal idle eyes'],
+        ['mouth', 'slightly opened mouth'],
+        ['clothing', 'hood blue'],
+        ['background', 'lost island'],
+        ['special back', 'none'],
+        ['special front', 'none'],
+        ['face accessory', 'none'],
+        ['hand accessory', 'normal dumbell'],
+        ['head accessory', 'none'],
+      ]);
 
       // Last item
       expect(properties.gallery[2229].inscriptionId).toBe(
         'ffedf084efd1e3c76efb517ed69f8d8ade822ce7670c9e23c46b094fdf27d327i0'
       );
-      expect(properties.gallery[2229].traits).toEqual({
-        body: 'normal body',
-        eyes: 'normal outer crossed eyes',
-        mouth: 'confused new',
-        clothing: 'squid game suit 212',
-        background: 'baby pink',
-        'special back': 'none',
-        'special front': 'cat',
-        'face accessory': 'scar',
-        'hand accessory': 'none',
-        'head accessory': 'skater hair',
-      });
+      expect(properties.gallery[2229].traits).toEqual([
+        ['body', 'normal body'],
+        ['eyes', 'normal outer crossed eyes'],
+        ['mouth', 'confused new'],
+        ['clothing', 'squid game suit 212'],
+        ['background', 'baby pink'],
+        ['special back', 'none'],
+        ['special front', 'cat'],
+        ['face accessory', 'scar'],
+        ['hand accessory', 'none'],
+        ['head accessory', 'skater hair'],
+      ]);
+    });
+  });
+
+  describe('trait order (regression)', () => {
+    // ord renders traits in the creator's byte order (Traits { items: Vec<(String, Trait)> }),
+    // never sorted. Two things used to lose that order: the CBOR decoder built a
+    // plain object (JS hoists integer-like keys like "10" to the front) and the
+    // parser copied traits into another object. The parser now keeps the order.
+    //
+    // Fixture: traits written in the order zeta, alpha, "10", big, none, name --
+    // the "10" sits third, exactly where a plain object would wrongly hoist it to
+    // the front. The bytes are built the same way ord/the SDK write them: a CBOR
+    // map with the entries in that order.
+    it('preserves the creator byte order, including an integer-like name that a plain object would hoist', async () => {
+      const traits = new Map<string, unknown>([
+        ['zeta', 1],
+        ['alpha', -42],
+        ['10', true],
+        // 2^53 is the largest integer a JS number holds exactly. ord/creators can
+        // write a larger u64 (e.g. 2^53 + 1); a JS number can't represent that
+        // exactly, a known limitation of number-typed CBOR values here.
+        ['big', 9007199254740992],
+        ['none', null],
+        ['name', 'cube'],
+      ]);
+      const attributes = new Map<number, unknown>([[0, 'with traits'], [1, traits]]);
+      const properties = new Map<number, unknown>([[1, attributes]]);
+      const bytes = CBOR.encode(properties);
+
+      const result = await parseProperties([{ tag: 17, value: bytes }]);
+
+      expect(result?.title).toBe('with traits');
+      expect(result?.traits).toEqual([
+        ['zeta', 1],
+        ['alpha', -42],
+        ['10', true],
+        ['big', 9007199254740992],
+        ['none', null],
+        ['name', 'cube'],
+      ]);
+      // the regression specifically: "10" stays third, not hoisted to the front
+      expect(result?.traits?.map(([name]) => name)).toEqual(['zeta', 'alpha', '10', 'big', 'none', 'name']);
     });
   });
 
