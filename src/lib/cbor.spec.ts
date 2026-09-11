@@ -49,12 +49,11 @@ const testcases = function(undefined) {
     ], [
       "PositiveInteger64 9007199254740992",
       "1b0020000000000000",
-      9007199254740992
+      9007199254740992n
     ], [
       "PositiveInteger64 18446744073709551615",
       "1bffffffffffffffff",
-      18446744073709551615,
-      true
+      18446744073709551615n
     ], [
       "NegativeIntegerFix -1",
       "20",
@@ -94,12 +93,11 @@ const testcases = function(undefined) {
     ], [
       "NegativeInteger64 -9007199254740992",
       "3b001fffffffffffff",
-      -9007199254740992
+      -9007199254740992n
     ], [
       "NegativeInteger64 -18446744073709551616",
       "3bffffffffffffffff",
-      -18446744073709551616,
-      true
+      -18446744073709551616n
     ], [
       "ByteString []",
       "40",

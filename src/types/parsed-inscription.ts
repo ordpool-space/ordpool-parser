@@ -12,7 +12,7 @@ export interface GalleryItem {
    * them). NOT a keyed object -- a plain object would reorder integer-like
    * names ("10" ahead of "zeta") and lose that order.
    */
-  traits?: Array<[string, boolean | number | string | null]>;
+  traits?: Array<[string, boolean | number | bigint | string | null]>;
 }
 
 /**
@@ -29,7 +29,7 @@ export interface InscriptionProperties {
   gallery: GalleryItem[];
   title?: string;
   /** Ordered [name, value] pairs, in the creator's byte order (see GalleryItem). */
-  traits?: Array<[string, boolean | number | string | null]>;
+  traits?: Array<[string, boolean | number | bigint | string | null]>;
 }
 
 export interface ParsedInscription extends DigitalArtifact {

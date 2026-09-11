@@ -131,6 +131,19 @@ function encode(value: unknown): Uint8Array {
     if (value === undefined)
       return writeUint8(0xf7);
 
+    if (typeof value === "bigint") {
+      // Encode a BigInt as an 8-byte CBOR integer (major type 0 for >= 0, 1 for
+      // negative), so a value that exceeds 2^53 round-trips exactly. Symmetric
+      // with the BigInt decode of 8-byte integers.
+      const negative = value < 0n;
+      const magnitude = negative ? (-1n - value) : value;
+      writeUint8((negative ? 1 : 0) << 5 | 27);
+      const dataView = prepareWrite(8);
+      dataView.setUint32(offset, Number(magnitude >> 32n));
+      dataView.setUint32(offset + 4, Number(magnitude & 0xffffffffn));
+      return commitWrite();
+    }
+
     switch (typeof value) {
       case "number":
         if (Math.floor(value) === value) {
@@ -321,6 +334,18 @@ function decode(
       }
     }
 
+    // 8-byte integers (major type 0/1, additional info 27) can exceed 2^53, so
+    // read them as BigInt to stay exact -- trait values are i64, and a Number
+    // would silently round anything above Number.MAX_SAFE_INTEGER. Return a
+    // Number when the value fits one exactly; otherwise a BigInt.
+    if ((majorType === 0 || majorType === 1) && additionalInformation === 27) {
+      const magnitude = (BigInt(readUint32()) << 32n) + BigInt(readUint32());
+      const intValue = majorType === 0 ? magnitude : (-1n - magnitude);
+      return (intValue >= BigInt(Number.MIN_SAFE_INTEGER) && intValue <= BigInt(Number.MAX_SAFE_INTEGER))
+        ? Number(intValue)
+        : intValue;
+    }
+
     length = readLength(additionalInformation);
     if (length < 0 && (majorType < 2 || 6 < majorType))
       throw "Invalid length";
@@ -384,6 +409,13 @@ function decode(
           const retMap = new Map<unknown, unknown>();
           for (let i = 0; i < length || length < 0 && !readBreak(); ++i) {
             const key = decodeItem();
+            // A duplicate map key (e.g. a repeated trait name) is a decode error
+            // in ord (minicbor), and ord's `unwrap_or_default()` then empties the
+            // whole properties field. Throw so the caller returns undefined,
+            // matching ord, instead of silently collapsing to the last value.
+            if (retMap.has(key)) {
+              throw new Error('Duplicate CBOR map key');
+            }
             retMap.set(key, decodeItem());
           }
           return retMap;

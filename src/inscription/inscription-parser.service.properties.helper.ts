@@ -131,12 +131,12 @@ export async function parseProperties(fields: { tag: number; value: Uint8Array }
  * Accepts unknown to force the caller to pass arbitrary CBOR-decoded data,
  * narrowing happens inside.
  */
-export function parseAttributes(raw: unknown): { title?: string; traits?: Array<[string, boolean | number | string | null]> } {
+export function parseAttributes(raw: unknown): { title?: string; traits?: Array<[string, boolean | number | bigint | string | null]> } {
   if (!isCborMap(raw)) {
     return {};
   }
 
-  const result: { title?: string; traits?: Array<[string, boolean | number | string | null]> } = {};
+  const result: { title?: string; traits?: Array<[string, boolean | number | bigint | string | null]> } = {};
 
   const title = raw.get(0);
   if (typeof title === 'string') {
@@ -148,10 +148,10 @@ export function parseAttributes(raw: unknown): { title?: string; traits?: Array<
     // Ordered pairs, in the creator's byte order, mirroring ord's
     // Traits { items: Vec<(String, Trait)> }. A plain object would reorder
     // integer-like names; the Map (from mapsAsMaps) preserves the order.
-    const traits: Array<[string, boolean | number | string | null]> = [];
+    const traits: Array<[string, boolean | number | bigint | string | null]> = [];
     for (const [key, val] of traitsRaw) {
       if (typeof key === 'string' &&
-          (val === null || typeof val === 'boolean' || typeof val === 'number' || typeof val === 'string')) {
+          (val === null || typeof val === 'boolean' || typeof val === 'number' || typeof val === 'bigint' || typeof val === 'string')) {
         traits.push([key, val]);
       }
     }

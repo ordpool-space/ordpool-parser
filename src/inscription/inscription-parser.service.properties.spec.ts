@@ -152,10 +152,9 @@ describe('InscriptionParserService — Properties / Galleries', () => {
         ['zeta', 1],
         ['alpha', -42],
         ['10', true],
-        // 2^53 is the largest integer a JS number holds exactly. ord/creators can
-        // write a larger u64 (e.g. 2^53 + 1); a JS number can't represent that
-        // exactly, a known limitation of number-typed CBOR values here.
-        ['big', 9007199254740992],
+        // 2^53 + 1: a JS number can't hold this exactly, so a trait value this
+        // large is decoded as a BigInt to stay exact (trait integers are i64).
+        ['big', 9007199254740993n],
         ['none', null],
         ['name', 'cube'],
       ]);
@@ -170,12 +169,27 @@ describe('InscriptionParserService — Properties / Galleries', () => {
         ['zeta', 1],
         ['alpha', -42],
         ['10', true],
-        ['big', 9007199254740992],
+        ['big', 9007199254740993n],
         ['none', null],
         ['name', 'cube'],
       ]);
+      // exact: 2^53 + 1 survives as a BigInt, not rounded to 2^53
+      expect(result?.traits?.find(([name]) => name === 'big')?.[1]).toBe(9007199254740993n);
       // the regression specifically: "10" stays third, not hoisted to the front
       expect(result?.traits?.map(([name]) => name)).toEqual(['zeta', 'alpha', '10', 'big', 'none', 'name']);
+    });
+
+    it('treats a duplicate trait name as undecodable properties, like ord', async () => {
+      // ord's Traits decoder errors on a duplicate name, and Properties::from_cbor
+      // uses unwrap_or_default(), so the WHOLE properties field becomes empty.
+      // Hand-crafted CBOR (a Map can't hold a duplicate to encode):
+      //   { 1: { 1: { "x": 1, "x": 2 } } }  -- traits with a repeated name "x"
+      //   a1 01  a1 01  a2 61 78 01 61 78 02
+      const bytes = new Uint8Array([0xa1, 0x01, 0xa1, 0x01, 0xa2, 0x61, 0x78, 0x01, 0x61, 0x78, 0x02]);
+
+      const result = await parseProperties([{ tag: 17, value: bytes }]);
+
+      expect(result).toBeUndefined();
     });
   });
 
