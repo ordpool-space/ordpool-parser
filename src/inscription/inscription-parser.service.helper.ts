@@ -187,6 +187,40 @@ export function getNextInscriptionMark(raw: Uint8Array, startPosition: number): 
 }
 
 /**
+ * Returns the single witness element that ord reads for inscriptions: the leaf
+ * script of a script-path spend.
+ *
+ * BIP341: if there are at least two witness elements and the first byte of the
+ * last element is 0x50, that last element is the annex and is removed from the
+ * stack. What remains is the leaf script, then the control block. So the leaf
+ * script is the second-to-last element, or the third-to-last one when an annex
+ * is present. A key-path spend has no leaf script.
+ *
+ * ord does not check the leaf version, hence "unversioned"
+ * (`unversioned_leaf_script_from_witness` in cat21-ord/src/lib.rs, which calls
+ * rust-bitcoin's `Witness::tapscript()`). Envelope bytes in any other element,
+ * for example in a P2WSH witness script, are not an inscription for ord.
+ *
+ * @param witness - Array of strings, each representing a hexadecimal encoded witness element.
+ * @returns The hex encoded leaf script, or undefined for a key-path spend.
+ */
+export function getTapscriptElement(witness: string[]): string | undefined {
+
+  const length = witness.length;
+  if (length < 2) {
+    return undefined;
+  }
+
+  // annex prefix 0x50
+  const hasAnnex = /^50/i.test(witness[length - 1]);
+  if (hasAnnex) {
+    return length < 3 ? undefined : witness[length - 3];
+  }
+
+  return witness[length - 2];
+}
+
+/**
  * Checks if an inscription mark is found within a witness array.
  *
  * This code can potentially return false positive matches!

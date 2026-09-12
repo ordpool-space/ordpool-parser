@@ -22,6 +22,7 @@ import {
   getDecodedContent,
   getKnownFieldValue,
   getKnownFieldValues,
+  getTapscriptElement,
   hasInscription,
   knownFields,
 } from './inscription-parser.service.helper';
@@ -116,13 +117,13 @@ export class InscriptionParserService {
 
     const inscriptions: ParsedInscription[] = [];
 
-    // Only convert witness elements that contain an inscription mark.
-    // This avoids hexToBytes on the signature and control block elements,
-    // which is significant for large inscriptions (up to 4MB).
-    for (const element of witness) {
-      if (!INSCRIPTION_MARKS_HEX.some(markHex => element.includes(markHex))) {
-        continue;
-      }
+    // ord reads the leaf script and nothing else, so envelope bytes in a
+    // signature, a P2WSH witness script or the control block are not an
+    // inscription. This also keeps hexToBytes off those elements, which
+    // matters for large inscriptions (up to 4MB).
+    const element = getTapscriptElement(witness);
+
+    if (element && INSCRIPTION_MARKS_HEX.some(markHex => element.includes(markHex))) {
 
       const raw = hexToBytes(element);
       let startPosition = 0;
