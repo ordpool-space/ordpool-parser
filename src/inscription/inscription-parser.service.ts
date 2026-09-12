@@ -14,12 +14,14 @@ import { DigitalArtifactType } from '../types/digital-artifact';
 import { ParsedInscription } from '../types/parsed-inscription';
 import { OnParseError } from '../types/parser-options';
 import {
+  INSCRIPTION_MARKS_HEX,
+  InscriptionMark,
   extractInscriptionId,
   extractPointer,
+  findInscriptionMark,
   getDecodedContent,
   getKnownFieldValue,
   getKnownFieldValues,
-  getNextInscriptionMark,
   hasInscription,
   knownFields,
 } from './inscription-parser.service.helper';
@@ -113,14 +115,12 @@ export class InscriptionParserService {
   private static parseInscriptionsWithinWitness(witness: string[]): ParsedInscription[] | null {
 
     const inscriptions: ParsedInscription[] = [];
-    // OP_FALSE (0x00), OP_IF (0x63), OP_PUSHBYTES_3 (0x03), 'o', 'r', 'd' (0x6f, 0x72, 0x64)
-    const inscriptionMarkHex = '0063036f7264';
 
-    // Only convert witness elements that contain the inscription mark.
+    // Only convert witness elements that contain an inscription mark.
     // This avoids hexToBytes on the signature and control block elements,
     // which is significant for large inscriptions (up to 4MB).
     for (const element of witness) {
-      if (!element.includes(inscriptionMarkHex)) {
+      if (!INSCRIPTION_MARKS_HEX.some(markHex => element.includes(markHex))) {
         continue;
       }
 
@@ -128,17 +128,17 @@ export class InscriptionParserService {
       let startPosition = 0;
 
       while (true) {
-        const pointer = getNextInscriptionMark(raw, startPosition);
-        if (pointer === -1) break; // No more inscriptions found
+        const mark = findInscriptionMark(raw, startPosition);
+        if (!mark) break; // No more inscriptions found
 
         // Parse the inscription at the current position
-        const inscription = InscriptionParserService.extractInscriptionData(raw, pointer);
+        const inscription = InscriptionParserService.extractInscriptionData(raw, mark);
         if (inscription) {
           inscriptions.push(inscription);
         }
 
         // Update startPosition for the next iteration
-        startPosition = pointer;
+        startPosition = mark.contentStart;
       }
     }
 
@@ -181,13 +181,13 @@ export class InscriptionParserService {
   }
 
   /**
-   * Extracts inscription data (starting from the current pointer) and calculates the envelope size.
+   * Extracts inscription data (starting from the located mark) and calculates the envelope size.
    *
    * @param raw - The raw data to read.
-   * @param pointer - The current pointer where the reading starts.
+   * @param mark - The inscription mark where the envelope starts.
    * @returns The parsed inscription or nullx
    */
-  private static extractInscriptionData(raw: Uint8Array, pointer: number): ParsedInscription | null {
+  private static extractInscriptionData(raw: Uint8Array, mark: InscriptionMark): ParsedInscription | null {
 
     try {
 
@@ -195,10 +195,10 @@ export class InscriptionParserService {
       let newPointer: number;
       let slice: Uint8Array;
 
-      // Store the starting pointer (this is where the envelope starts)
-      const initialPointer = pointer;
+      // Store the starting pointer (this is where the fields start)
+      const initialPointer = mark.contentStart;
 
-      [fields, newPointer] = InscriptionParserService.extractFields(raw, pointer);
+      [fields, newPointer] = InscriptionParserService.extractFields(raw, initialPointer);
 
       // Now we are at the beginning of the body
       // (or at the end of the raw data if there's no body)
@@ -213,9 +213,10 @@ export class InscriptionParserService {
         data.push(slice);
       }
 
-      // +6 for OP_FALSE (1 byte) + OP_IF (1 byte) + OP_PUSH (1 byte) + "ord" (3 bytes)
+      // + the mark: OP_FALSE (1 byte) + OP_IF (1 byte) + the "ord" push (4, 5, 6 or 8 bytes,
+      //   depending on the push opcode)
       // +1 for the OP_ENDIF
-      const envelopeSize = newPointer - initialPointer + 7;
+      const envelopeSize = newPointer - initialPointer + mark.markSize + 1;
 
       let combinedData = concatUint8Arrays(data);
 

@@ -1,7 +1,7 @@
 import { INVALID_COMPRESSED_DATA_MESSAGE, MAX_DECOMPRESSED_SIZE, MAX_DECOMPRESSED_SIZE_MESSAGE, brotliDecode } from "../lib/brotli-decode";
 import { hexToBytes, isStringInArrayOfStrings, littleEndianBytesToBigInt, littleEndianBytesToNumber } from "../lib/conversions";
 import { bytesToHex } from "../lib/conversions";
-import { OP_ENDIF, OP_FALSE, OP_IF, OP_PUSHBYTES_3 } from "../lib/op-codes";
+import { OP_ENDIF, OP_FALSE, OP_IF, OP_PUSHBYTES_3, OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4 } from "../lib/op-codes";
 
 
 /**
@@ -105,54 +105,97 @@ export function getKnownFieldValues(fields: { tag: number; value: Uint8Array }[]
 }
 
 /**
- * Searches for the next position of the ordinal inscription mark (0063036f7264)
- * within the raw transaction data, starting from a given position.
+ * The inscription mark: OP_FALSE, OP_IF and a data push of the protocol
+ * identifier "ord" (0x6f, 0x72, 0x64).
  *
- * This function looks for a specific sequence of 6 bytes that represents the start of an ordinal inscription.
- * If the sequence is found, the function returns the index immediately following the inscription mark.
- * If the sequence is not found, the function returns -1, indicating no inscription mark was found.
+ * ord compares the pushed BYTES, not the opcode that pushed them
+ * (`RawEnvelope::from_instructions` in src/inscriptions/envelope.rs), and it
+ * reads scripts with rust-bitcoin's `Script::instructions()`, which does not
+ * enforce minimal pushes. So all four push encodings of "ord" start an
+ * envelope, and all four occur on mainnet.
+ */
+const INSCRIPTION_MARKS: Uint8Array[] = [
+  // OP_PUSHBYTES_3 'o', 'r', 'd'
+  new Uint8Array([OP_FALSE, OP_IF, OP_PUSHBYTES_3, 0x6f, 0x72, 0x64]),
+  // OP_PUSHDATA1, length 3, 'o', 'r', 'd'
+  new Uint8Array([OP_FALSE, OP_IF, OP_PUSHDATA1, 0x03, 0x6f, 0x72, 0x64]),
+  // OP_PUSHDATA2, length 3 (little endian), 'o', 'r', 'd'
+  new Uint8Array([OP_FALSE, OP_IF, OP_PUSHDATA2, 0x03, 0x00, 0x6f, 0x72, 0x64]),
+  // OP_PUSHDATA4, length 3 (little endian), 'o', 'r', 'd'
+  new Uint8Array([OP_FALSE, OP_IF, OP_PUSHDATA4, 0x03, 0x00, 0x00, 0x00, 0x6f, 0x72, 0x64]),
+];
+
+/**
+ * The same four inscription marks as lowercase hex, for the cheap string-level
+ * pre-checks on hex-encoded witness elements.
  *
- * Note: This function uses a simple hardcoded approach based on the fixed length of the inscription mark.
+ * '0063036f7264', '00634c036f7264', '00634d03006f7264', '00634e030000006f7264'
+ */
+export const INSCRIPTION_MARKS_HEX: string[] = INSCRIPTION_MARKS.map(bytesToHex);
+
+/**
+ * A located inscription mark.
+ */
+export interface InscriptionMark {
+  /** Index of the OP_FALSE that starts the envelope. */
+  envelopeStart: number;
+  /** Index of the first byte after the "ord" push, where the fields start. */
+  contentStart: number;
+  /** Size of the mark in bytes: 6, 7, 8 or 10, depending on the push opcode. */
+  markSize: number;
+}
+
+/**
+ * Searches for the next inscription mark within the raw transaction data,
+ * starting from a given position.
+ *
+ * @returns The located mark, or null if no mark was found.
+ */
+export function findInscriptionMark(raw: Uint8Array, startPosition: number): InscriptionMark | null {
+
+  for (let index = startPosition; index < raw.length; index++) {
+    for (const mark of INSCRIPTION_MARKS) {
+      if (index + mark.length > raw.length) {
+        continue;
+      }
+
+      let matches = true;
+      for (let offset = 0; offset < mark.length; offset++) {
+        if (raw[index + offset] !== mark[offset]) {
+          matches = false;
+          break;
+        }
+      }
+
+      if (matches) {
+        return { envelopeStart: index, contentStart: index + mark.length, markSize: mark.length };
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Searches for the next position of an inscription mark within the raw
+ * transaction data, starting from a given position.
  *
  * @returns The position immediately after the inscription mark, or -1 if not found.
  */
 export function getNextInscriptionMark(raw: Uint8Array, startPosition: number): number {
-
-  // OP_FALSE
-  // OP_IF
-  // OP_PUSHBYTES_3: This pushes the next 3 bytes onto the stack.
-  // 0x6f, 0x72, 0x64: These bytes translate to the ASCII string "ord"
-  const inscriptionMark = new Uint8Array([OP_FALSE, OP_IF, OP_PUSHBYTES_3, 0x6f, 0x72, 0x64]);
-
-  for (let index = startPosition; index <= raw.length - 6; index++) {
-    if (raw[index]     === inscriptionMark[0] &&
-        raw[index + 1] === inscriptionMark[1] &&
-        raw[index + 2] === inscriptionMark[2] &&
-        raw[index + 3] === inscriptionMark[3] &&
-        raw[index + 4] === inscriptionMark[4] &&
-        raw[index + 5] === inscriptionMark[5]) {
-        return index + 6;
-    }
-  }
-
-  return -1;
+  return findInscriptionMark(raw, startPosition)?.contentStart ?? -1;
 }
 
 /**
  * Checks if an inscription mark is found within a witness array.
- * The Inscription mark hex corresponds to OP_FALSE, OP_IF, OP_PUSHBYTES_3, 'o', 'r', 'd'.
-
+ *
  * This code can potentially return false positive matches!
  *
  * @param witness - Array of strings, each representing a hexadecimal encoded witness element.
  * @returns True if an inscription mark is found, false otherwise.
  */
 export function hasInscription(witness: string[]): boolean {
-
-  // OP_FALSE (0x00), OP_IF (0x63), OP_PUSHBYTES_3 (0x03), 'o', 'r', 'd' (0x6f, 0x72, 0x64)
-  const inscriptionMarkHex = '0063036f7264';
-
-  return isStringInArrayOfStrings(inscriptionMarkHex, witness);
+  return INSCRIPTION_MARKS_HEX.some(markHex => isStringInArrayOfStrings(markHex, witness));
 }
 
 /**
@@ -360,9 +403,7 @@ export function measureInscriptionSize(witness: string[]): number | null {
   }
 
   // Find the witness element that contains the inscription (the tapscript)
-  // OP_FALSE (0x00), OP_IF (0x63), OP_PUSHBYTES_3 (0x03), 'o', 'r', 'd' (0x6f, 0x72, 0x64)
-  const inscriptionMarkHex = '0063036f7264';
-  const element = witness.find(e => e.includes(inscriptionMarkHex));
+  const element = witness.find(e => INSCRIPTION_MARKS_HEX.some(markHex => e.includes(markHex)));
   if (!element) {
     return null;
   }
@@ -370,9 +411,9 @@ export function measureInscriptionSize(witness: string[]): number | null {
   const raw = hexToBytes(element);
 
   // Find the start of the inscription using the inscription mark
-  const startPosition = getNextInscriptionMark(raw, 0);
+  const mark = findInscriptionMark(raw, 0);
 
-  if (startPosition === -1) {
+  if (!mark) {
     return null; // Inscription mark not found
   }
 
@@ -384,10 +425,10 @@ export function measureInscriptionSize(witness: string[]): number | null {
   }
 
   // The size of the inscription is from the start position to the last OP_ENDIF
-  const inscriptionSize = opEndIfIndex - startPosition;
+  const inscriptionSize = opEndIfIndex - mark.contentStart;
 
-  // Add the size of the inscription mark (6 bytes) + OP_ENDIF (1 byte)
-  return inscriptionSize + 7;
+  // Add the size of the inscription mark (6, 7, 8 or 10 bytes) + OP_ENDIF (1 byte)
+  return inscriptionSize + mark.markSize + 1;
 }
 
 /**

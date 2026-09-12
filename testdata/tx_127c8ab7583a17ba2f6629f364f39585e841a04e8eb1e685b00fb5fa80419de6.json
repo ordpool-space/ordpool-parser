@@ -1,0 +1,47 @@
+{
+  "txid": "127c8ab7583a17ba2f6629f364f39585e841a04e8eb1e685b00fb5fa80419de6",
+  "version": 1,
+  "locktime": 0,
+  "vin": [
+    {
+      "txid": "1c0550c00774e8b8d2c9026f3167e201bd8d3782c8bc0369408f5f500b19d663",
+      "vout": 0,
+      "prevout": {
+        "scriptpubkey": "51208f9c375a0baf493bc2d0d97c183dfb6822cb7388224a41ce955a4497bec64b2c",
+        "scriptpubkey_asm": "OP_PUSHNUM_1 OP_PUSHBYTES_32 8f9c375a0baf493bc2d0d97c183dfb6822cb7388224a41ce955a4497bec64b2c",
+        "scriptpubkey_type": "v1_p2tr",
+        "scriptpubkey_address": "bc1p37wrwkst4aynhsksm97ps00mdq3vkuugyf9yrn54tfzf00kxfvkquxgw3n",
+        "value": 20715
+      },
+      "scriptsig": "",
+      "scriptsig_asm": "",
+      "witness": [
+        "4cc97873bd1cbe141d282b1607693f85304427b2bfaf3204b726cc530e9d22a9d1b0f6468d5139883b66f786e6e903819b7332ca17e63cec671cfbaf6df43e5f",
+        "2061f0f268e40d937e887be1f7a6ca537666b378f97d7ef58f2411f1128471add6ac00634d03006f7264010118746578742f706c61696e3b636861727365743d7574662d3801054d1400a26170686675636b626f747363626c6b6330303701074d0d003833303137342e6269746d6170004d0500746573740a68",
+        "c061f0f268e40d937e887be1f7a6ca537666b378f97d7ef58f2411f1128471add6"
+      ],
+      "is_coinbase": false,
+      "sequence": 4294967293,
+      "inner_witnessscript_asm": "OP_PUSHBYTES_32 61f0f268e40d937e887be1f7a6ca537666b378f97d7ef58f2411f1128471add6 OP_CHECKSIG OP_0 OP_IF OP_PUSHDATA2 6f7264 OP_PUSHBYTES_1 01 OP_PUSHBYTES_24 746578742f706c61696e3b636861727365743d7574662d38 OP_PUSHBYTES_1 05 OP_PUSHDATA2 a26170686675636b626f747363626c6b63303037 OP_PUSHBYTES_1 07 OP_PUSHDATA2 3833303137342e6269746d6170 OP_0 OP_PUSHDATA2 746573740a OP_ENDIF"
+    }
+  ],
+  "vout": [
+    {
+      "scriptpubkey": "5120181bcf1a2f9c597c8e1678af80542b3b8c26f592eec23bbca60fc3f929e0dce3",
+      "scriptpubkey_asm": "OP_PUSHNUM_1 OP_PUSHBYTES_32 181bcf1a2f9c597c8e1678af80542b3b8c26f592eec23bbca60fc3f929e0dce3",
+      "scriptpubkey_type": "v1_p2tr",
+      "scriptpubkey_address": "bc1prqdu7x30n3vhersk0zhcq4pt8wxzdavjamprh09xplplj20qmn3sd77s3m",
+      "value": 330
+    }
+  ],
+  "size": 319,
+  "weight": 601,
+  "sigops": 0,
+  "fee": 20385,
+  "status": {
+    "confirmed": true,
+    "block_height": 830174,
+    "block_hash": "00000000000000000000dc5d64f3bfc043e4c3623d29d28af2aa1eb0381b676c",
+    "block_time": 1707761400
+  }
+}
