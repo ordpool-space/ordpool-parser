@@ -160,8 +160,6 @@ export class InscriptionParserService {
     let slice: Uint8Array;
 
     while (newPointer < raw.length &&
-      // normal inscription - content follows now
-      (raw[newPointer] !== OP_0) &&
       // delegate - inscription has no further content and ends directly here
       (raw[newPointer] !== OP_ENDIF)
     ) {
@@ -170,6 +168,15 @@ export class InscriptionParserService {
       // tags greater than or equal to 256 should be encoded as little endian integers with trailing zeros omitted.
       // see: https://github.com/ordinals/ord/issues/2505
       [slice, newPointer] = readPushdata(raw, newPointer);
+
+      // An EMPTY push where a tag would be is the separator between the fields
+      // and the body (BODY_TAG in ord). ord compares the pushed bytes, not the
+      // opcode, so OP_0 and OP_PUSHDATA1/2/4 with length 0 all separate.
+      // The separator is consumed here, so the body starts at newPointer.
+      if (slice.length === 0) {
+        break;
+      }
+
       const tag = slice.length === 1 ? slice[0] : littleEndianBytesToNumber(slice);
 
       // A dangling tag: the envelope ends before the value push. ord keeps such
@@ -206,13 +213,9 @@ export class InscriptionParserService {
       // Store the starting pointer (this is where the fields start)
       const initialPointer = mark.contentStart;
 
+      // extractFields consumes the field/body separator, so we are now at the
+      // beginning of the body (or at the OP_ENDIF if there is no body)
       [fields, newPointer] = InscriptionParserService.extractFields(raw, initialPointer);
-
-      // Now we are at the beginning of the body
-      // (or at the end of the raw data if there's no body)
-      if (newPointer < raw.length && raw[newPointer] === OP_0) {
-        newPointer++; // Skip OP_0
-      }
 
       // Collect body data until OP_ENDIF
       const data: Uint8Array[] = [];
