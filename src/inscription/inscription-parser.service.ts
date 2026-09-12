@@ -324,7 +324,10 @@ export class InscriptionParserService {
             return undefined;
           }
 
-          // CBOR.decode throws on malformed input and on trailing bytes.
+          // ord decodes with ciborium::from_reader, which reads exactly ONE
+          // CBOR item and ignores whatever follows, so metadata with trailing
+          // bytes still has a value. decodeFirst does the same.
+          //
           // Malformed metadata exists on chain, so degrade to undefined like
           // the sibling CBOR-from-witness paths (parseProperties, atomical
           // decodePayload) instead of throwing into the consumer.
@@ -332,7 +335,7 @@ export class InscriptionParserService {
             const raw = metadataChunks.length === 1
               ? metadataChunks[0]
               : concatUint8Arrays(metadataChunks);
-            return CBOR.decode(raw);
+            return CBOR.decodeFirst(raw);
           } catch {
             return undefined;
           }

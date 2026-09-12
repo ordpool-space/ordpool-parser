@@ -1,0 +1,47 @@
+{
+  "txid": "e8483d847012057b2a8efcebbcb443bf99c9a06c7a2e123ef5909d90df5b0417",
+  "version": 2,
+  "locktime": 0,
+  "vin": [
+    {
+      "txid": "7e08be5774ecff58849316b0f323455313c5071879266b7eb6bef76c4972a727",
+      "vout": 0,
+      "prevout": {
+        "scriptpubkey": "51208694c338f6b5f2ed7347f5944176917aa6aa284e0e919e4cc714a8b67d0c0ede",
+        "scriptpubkey_asm": "OP_PUSHNUM_1 OP_PUSHBYTES_32 8694c338f6b5f2ed7347f5944176917aa6aa284e0e919e4cc714a8b67d0c0ede",
+        "scriptpubkey_type": "v1_p2tr",
+        "scriptpubkey_address": "bc1ps62vxw8kkhew6u687k2yza5302n252zwp6geunx8zj5tvlgvpm0qljcan7",
+        "value": 28750
+      },
+      "scriptsig": "",
+      "scriptsig_asm": "",
+      "witness": [
+        "81b0bdfc16c451eb0d8a28b7c2e18fb58cf64ee40969455be7d2acee327d4949e3fe0c9fa44e7e6ac1671f67e43ee6cb6fc73584931f8f4c30c9e69823e8629c",
+        "20eb8f2c40a8e9185320f8436da34b0037f0b717f2d29d86a8fee1f514fea9be3eac0063036f726401010a746578742f706c61696e01054c4ea4647469636b644d4f4e4b636d6178683231303030303030636c696d6431303030636465636138a4647469636b64424f4e44636d6178683231303030303030636c696d643130303063646563613801070e636272632d32303a6465706c6f79000568656c6c6f68",
+        "c1eb8f2c40a8e9185320f8436da34b0037f0b717f2d29d86a8fee1f514fea9be3e"
+      ],
+      "is_coinbase": false,
+      "sequence": 4294967293,
+      "inner_witnessscript_asm": "OP_PUSHBYTES_32 eb8f2c40a8e9185320f8436da34b0037f0b717f2d29d86a8fee1f514fea9be3e OP_CHECKSIG OP_0 OP_IF OP_PUSHBYTES_3 6f7264 OP_PUSHBYTES_1 01 OP_PUSHBYTES_10 746578742f706c61696e OP_PUSHBYTES_1 05 OP_PUSHDATA1 a4647469636b644d4f4e4b636d6178683231303030303030636c696d6431303030636465636138a4647469636b64424f4e44636d6178683231303030303030636c696d6431303030636465636138 OP_PUSHBYTES_1 07 OP_PUSHBYTES_14 636272632d32303a6465706c6f79 OP_0 OP_PUSHBYTES_5 68656c6c6f OP_ENDIF"
+    }
+  ],
+  "vout": [
+    {
+      "scriptpubkey": "5120233450a6769c4b3beb3aee19104721765abb9fb936681bcec07bc76ce31a38ce",
+      "scriptpubkey_asm": "OP_PUSHNUM_1 OP_PUSHBYTES_32 233450a6769c4b3beb3aee19104721765abb9fb936681bcec07bc76ce31a38ce",
+      "scriptpubkey_type": "v1_p2tr",
+      "scriptpubkey_address": "bc1pyv69pfnkn39nh6e6acv3q3epwedth8aexe5phnkq00rkecc68r8qmqr7e7",
+      "value": 10000
+    }
+  ],
+  "size": 357,
+  "weight": 639,
+  "sigops": 0,
+  "fee": 18750,
+  "status": {
+    "confirmed": true,
+    "block_height": 823118,
+    "block_hash": "000000000000000000002d6b2f8d9323d6a639b962c64b99d7a3a94a0273edc9",
+    "block_time": 1703656270
+  }
+}
