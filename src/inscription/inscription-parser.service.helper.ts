@@ -2,6 +2,7 @@ import { INVALID_COMPRESSED_DATA_MESSAGE, MAX_DECOMPRESSED_SIZE, MAX_DECOMPRESSE
 import { hexToBytes, isStringInArrayOfStrings, littleEndianBytesToBigInt, littleEndianBytesToNumber } from "../lib/conversions";
 import { bytesToHex } from "../lib/conversions";
 import { OP_ENDIF, OP_FALSE, OP_IF, OP_PUSHBYTES_3, OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4 } from "../lib/op-codes";
+import { readInstruction } from "../lib/reader";
 
 
 /**
@@ -134,6 +135,15 @@ const INSCRIPTION_MARKS: Uint8Array[] = [
 export const INSCRIPTION_MARKS_HEX: string[] = INSCRIPTION_MARKS.map(bytesToHex);
 
 /**
+ * The protocol identifier "ord" as lowercase hex, for the cheap pre-check on a
+ * hex encoded witness element. Every envelope contains it, while OP_FALSE and
+ * the "ord" push can each use any push encoding, so matching on whole marks
+ * would miss the mixed encodings. Matches on content bytes too, which only
+ * costs a decode that then finds nothing.
+ */
+export const PROTOCOL_ID_HEX = '6f7264';
+
+/**
  * A located inscription mark.
  */
 export interface InscriptionMark {
@@ -186,6 +196,101 @@ export function getNextInscriptionMark(raw: Uint8Array, startPosition: number): 
   return findInscriptionMark(raw, startPosition)?.contentStart ?? -1;
 }
 
+/** The protocol identifier "ord" (0x6f, 0x72, 0x64). */
+const PROTOCOL_ID = new Uint8Array([0x6f, 0x72, 0x64]);
+
+/**
+ * Finds every envelope in a script, exactly the way ord does
+ * (`RawEnvelope::from_tapscript` and `from_instructions` in
+ * src/inscriptions/envelope.rs).
+ *
+ * ord walks the script instruction by instruction rather than searching for
+ * marker bytes, which matters in two ways:
+ *
+ * - Marker bytes inside the DATA of a push are content, not an envelope.
+ * - A failed envelope CONSUMES what it already read. OP_IF and the "ord" push
+ *   are taken, then the payload is read until OP_ENDIF; any other opcode in
+ *   between aborts that envelope and the scan continues after the consumed
+ *   instructions, so a later marker inside the aborted region never starts an
+ *   envelope of its own.
+ *
+ * @throws When the script cannot be decoded. ord drops every envelope of that
+ *         input in this case, so callers must not keep partial results.
+ */
+export function findEnvelopeMarks(raw: Uint8Array): InscriptionMark[] {
+
+  const marks: InscriptionMark[] = [];
+  let pointer = 0;
+
+  while (pointer < raw.length) {
+
+    const envelopeStart = pointer;
+    const opFalse = readInstruction(raw, pointer);
+    pointer = opFalse.next;
+
+    // an envelope starts with an empty push (OP_FALSE), in any push encoding
+    if (!opFalse.data || opFalse.data.length !== 0) {
+      continue;
+    }
+
+    // OP_IF, only consumed when it matches
+    if (pointer >= raw.length) {
+      break;
+    }
+    const opIf = readInstruction(raw, pointer);
+    if (opIf.data || opIf.opcode !== OP_IF) {
+      continue;
+    }
+    pointer = opIf.next;
+
+    // the protocol identifier "ord", only consumed when it matches
+    if (pointer >= raw.length) {
+      break;
+    }
+    const protocolId = readInstruction(raw, pointer);
+    if (!protocolId.data || !bytesEqual(protocolId.data, PROTOCOL_ID)) {
+      continue;
+    }
+    pointer = protocolId.next;
+
+    const contentStart = pointer;
+
+    // the payload: data pushes until OP_ENDIF. Any other opcode, or the end of
+    // the script, aborts this envelope.
+    let complete = false;
+    while (pointer < raw.length) {
+      const instruction = readInstruction(raw, pointer);
+      pointer = instruction.next;
+
+      if (instruction.data) {
+        continue;
+      }
+      if (instruction.opcode === OP_ENDIF) {
+        complete = true;
+      }
+      break;
+    }
+
+    if (complete) {
+      marks.push({ envelopeStart, contentStart, markSize: contentStart - envelopeStart });
+    }
+  }
+
+  return marks;
+}
+
+function bytesEqual(a: Uint8Array, b: Uint8Array): boolean {
+  if (a.length !== b.length) {
+    return false;
+  }
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
 /**
  * Returns the single witness element that ord reads for inscriptions: the leaf
  * script of a script-path spend.
@@ -229,7 +334,7 @@ export function getTapscriptElement(witness: string[]): string | undefined {
  * @returns True if an inscription mark is found, false otherwise.
  */
 export function hasInscription(witness: string[]): boolean {
-  return INSCRIPTION_MARKS_HEX.some(markHex => isStringInArrayOfStrings(markHex, witness));
+  return isStringInArrayOfStrings(PROTOCOL_ID_HEX, witness);
 }
 
 /**

@@ -14,11 +14,11 @@ import { DigitalArtifactType } from '../types/digital-artifact';
 import { ParsedInscription } from '../types/parsed-inscription';
 import { OnParseError } from '../types/parser-options';
 import {
-  INSCRIPTION_MARKS_HEX,
   InscriptionMark,
+  PROTOCOL_ID_HEX,
   extractInscriptionId,
   extractPointer,
-  findInscriptionMark,
+  findEnvelopeMarks,
   getDecodedContent,
   getKnownFieldValue,
   getKnownFieldValues,
@@ -123,23 +123,24 @@ export class InscriptionParserService {
     // matters for large inscriptions (up to 4MB).
     const element = getTapscriptElement(witness);
 
-    if (element && INSCRIPTION_MARKS_HEX.some(markHex => element.includes(markHex))) {
+    if (element && element.includes(PROTOCOL_ID_HEX)) {
 
       const raw = hexToBytes(element);
-      let startPosition = 0;
 
-      while (true) {
-        const mark = findInscriptionMark(raw, startPosition);
-        if (!mark) break; // No more inscriptions found
+      // A script ord cannot decode has no envelopes at all for ord, not even
+      // the ones before the bad instruction, so we keep no partial results.
+      let marks: InscriptionMark[];
+      try {
+        marks = findEnvelopeMarks(raw);
+      } catch {
+        return null;
+      }
 
-        // Parse the inscription at the current position
+      for (const mark of marks) {
         const inscription = InscriptionParserService.extractInscriptionData(raw, mark);
         if (inscription) {
           inscriptions.push(inscription);
         }
-
-        // Update startPosition for the next iteration
-        startPosition = mark.contentStart;
       }
     }
 

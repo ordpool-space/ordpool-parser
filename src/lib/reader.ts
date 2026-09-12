@@ -15,6 +15,53 @@ export function readBytes(raw: Uint8Array, pointer: number, n: number): [Uint8Ar
 }
 
 /**
+ * One decoded script instruction.
+ */
+export interface ScriptInstruction {
+  /** The opcode byte. */
+  opcode: number;
+  /** The pushed bytes, or null for an opcode that pushes nothing (OP_IF, OP_ENDIF, ...). */
+  data: Uint8Array | null;
+  /** Position right after this instruction. */
+  next: number;
+}
+
+/**
+ * Reads the next script instruction, the way ord walks a script
+ * (`Script::instructions()` in rust-bitcoin, which does NOT enforce minimal
+ * pushes). Data pushes report their bytes, every other opcode reports none.
+ *
+ * OP_1NEGATE and OP_PUSHNUM_1 to OP_PUSHNUM_16 count as data pushes here,
+ * because ord puts their numeric value into the envelope payload.
+ *
+ * @throws When a push runs past the end of the script. ord treats such a
+ *         script as undecodable and then ignores every envelope of that input.
+ */
+export function readInstruction(raw: Uint8Array, pointer: number): ScriptInstruction {
+
+  const opcode = raw[pointer];
+
+  if (opcode === OP_0 ||
+    (1 <= opcode && opcode <= 75) ||
+    opcode === OP_PUSHDATA1 || opcode === OP_PUSHDATA2 || opcode === OP_PUSHDATA4 ||
+    opcode === OP_1NEGATE ||
+    (opcode >= OP_PUSHNUM_1 && opcode <= OP_PUSHNUM_16)) {
+
+    const [data, next] = readPushdata(raw, pointer);
+
+    // readPushdata reads via subarray, which silently shortens a push that runs
+    // past the end of the script. ord errors out on that, so we do too.
+    if (next > raw.length) {
+      throw new Error(`Push at position ${pointer} runs past the end of the script`);
+    }
+
+    return { opcode, data, next };
+  }
+
+  return { opcode, data: null, next: pointer + 1 };
+}
+
+/**
  * Reads data based on the Bitcoin script push opcode starting from a specified pointer in the raw data.
  * Handles different opcodes and direct push (where the opcode itself signifies the number of bytes to push).
  *
