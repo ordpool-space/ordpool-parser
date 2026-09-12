@@ -37,6 +37,26 @@ export function unicodeStringToBytes(str: string): Uint8Array {
 }
 
 /**
+ * Converts a Uint8Array containing UTF-8 encoded data to a string, but only if
+ * the bytes really are valid UTF-8. Invalid byte sequences yield undefined
+ * instead of replacement characters.
+ *
+ * This mirrors Rust's `str::from_utf8(...).ok()`, which ord uses for the three
+ * string-typed inscription fields (content type, content encoding,
+ * metaprotocol): bytes that are not valid UTF-8 mean the field does not exist.
+ *
+ * @param bytes - The Uint8Array containing UTF-8 encoded data.
+ * @returns The string, or undefined when the bytes are not valid UTF-8.
+ */
+export function bytesToStrictUnicodeString(bytes: Uint8Array): string | undefined {
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * Converts a Uint8Array containing UTF-8 encoded data to a normal a UTF-16 encoded string.
  *
  * @param bytes - The Uint8Array containing UTF-8 encoded data.

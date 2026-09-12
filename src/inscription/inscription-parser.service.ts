@@ -2,6 +2,7 @@ import { CBOR } from '../lib/cbor';
 import {
   binaryStringToBase64,
   bytesToBinaryString,
+  bytesToStrictUnicodeString,
   bytesToUnicodeString,
   concatUint8Arrays,
   hexToBytes,
@@ -237,8 +238,9 @@ export class InscriptionParserService {
 
       // an inscriptions with no contentType is most probably a delegate
       if (contentTypeRaw) {
-        // strings are (always) UTF-8, according to https://github.com/ordinals/ord/issues/2505
-        contentType = bytesToUnicodeString(contentTypeRaw);
+        // strings are (always) UTF-8, according to https://github.com/ordinals/ord/issues/2505,
+        // and ord has no content type at all when the bytes are not valid UTF-8
+        contentType = bytesToStrictUnicodeString(contentTypeRaw);
       }
 
       // figure out if the body is encoded via brotli or gzip
@@ -246,7 +248,9 @@ export class InscriptionParserService {
       let contentEncoding: string | undefined = undefined;
 
       if (contentEncodingRaw) {
-        contentEncoding = bytesToUnicodeString(contentEncodingRaw);
+        // invalid UTF-8 means no content encoding for ord, which then serves
+        // the body as is instead of trying to decompress it
+        contentEncoding = bytesToStrictUnicodeString(contentEncodingRaw);
       }
 
       let cachedProperties: ReturnType<typeof parseProperties> | undefined;
@@ -340,7 +344,7 @@ export class InscriptionParserService {
             return undefined;
           }
 
-          return bytesToUnicodeString(metaprotocolRaw);
+          return bytesToStrictUnicodeString(metaprotocolRaw);
         },
 
         getNote: (): string | undefined => {
