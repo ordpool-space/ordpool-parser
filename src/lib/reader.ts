@@ -1,6 +1,6 @@
 import { OP_0, OP_1NEGATE, OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4, OP_PUSHNUM_1, OP_PUSHNUM_16, OP_RESERVED } from '../lib/op-codes';
 
-import { littleEndianBytesToNumber } from './conversions';
+import { littleEndianBytesToBigInt, littleEndianBytesToNumber } from './conversions';
 
 /**
  * Reads a specified number of bytes from a Uint8Array starting from a given pointer.
@@ -51,7 +51,11 @@ export function readInstruction(raw: Uint8Array, pointer: number): ScriptInstruc
 
     // readPushdata reads via subarray, which silently shortens a push that runs
     // past the end of the script. ord errors out on that, so we do too.
-    if (next > raw.length) {
+    //
+    // A push always advances at least one byte, so a pointer that does not move
+    // forward means the length was not decodable as a real size. Callers walk
+    // scripts with this, and a non-advancing pointer would loop forever.
+    if (next > raw.length || next <= pointer) {
       throw new Error(`Push at position ${pointer} runs past the end of the script`);
     }
 
@@ -118,6 +122,11 @@ export function readPushdata(raw: Uint8Array, pointer: number): [Uint8Array, num
   }
 
   let [dataSizeArray, nextPointer] = readBytes(raw, newPointer, numBytes);
-  let dataSize = littleEndianBytesToNumber(dataSizeArray);
+
+  // Decode via bigint: OP_PUSHDATA4 carries a 4 byte length, and
+  // littleEndianBytesToNumber builds its value with 32-bit signed bit ops, so
+  // a length with the high bit set comes back NEGATIVE and yields a pointer
+  // that walks backwards through the script. u32 max is well within Number.
+  let dataSize = Number(littleEndianBytesToBigInt(dataSizeArray));
   return readBytes(raw, nextPointer, dataSize);
 }
