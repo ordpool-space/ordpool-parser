@@ -171,6 +171,13 @@ export class InscriptionParserService {
       [slice, newPointer] = readPushdata(raw, newPointer);
       const tag = slice.length === 1 ? slice[0] : littleEndianBytesToNumber(slice);
 
+      // A dangling tag: the envelope ends before the value push. ord keeps such
+      // an inscription and only flags it as `incomplete_field`, which makes it
+      // cursed, so the fields read so far stay and the tag itself is dropped.
+      if (newPointer >= raw.length || raw[newPointer] === OP_ENDIF) {
+        break;
+      }
+
       [slice, newPointer] = readPushdata(raw, newPointer);
       const value = slice;
 
