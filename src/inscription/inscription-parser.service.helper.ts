@@ -326,12 +326,17 @@ export function getTapscriptElement(witness: string[]): string | undefined {
 }
 
 /**
- * Checks if an inscription mark is found within a witness array.
+ * Cheap pre-check: does any witness element contain the protocol identifier
+ * "ord"? Used to skip the script decoding for the vast majority of inputs.
  *
- * This code can potentially return false positive matches!
+ * This matches liberally ON PURPOSE, and returns true for a witness that only
+ * happens to contain those three ASCII bytes. Whether an envelope really
+ * exists is decided by `findEnvelopeMarks`, which decodes the script; a false
+ * positive here only costs that decode. Matching whole marks instead would be
+ * WRONG, because OP_FALSE and the "ord" push can each use any push encoding.
  *
  * @param witness - Array of strings, each representing a hexadecimal encoded witness element.
- * @returns True if an inscription mark is found, false otherwise.
+ * @returns True if the protocol identifier is found, false otherwise.
  */
 export function hasInscription(witness: string[]): boolean {
   return isStringInArrayOfStrings(PROTOCOL_ID_HEX, witness);
@@ -541,9 +546,10 @@ export function measureInscriptionSize(witness: string[]): number | null {
     return null;
   }
 
-  // Find the witness element that contains the inscription (the tapscript)
-  const element = witness.find(e => INSCRIPTION_MARKS_HEX.some(markHex => e.includes(markHex)));
-  if (!element) {
+  // The same element the parser reads, so that a measured size always belongs
+  // to an inscription the parser actually reports
+  const element = getTapscriptElement(witness);
+  if (!element || !element.includes(PROTOCOL_ID_HEX)) {
     return null;
   }
 

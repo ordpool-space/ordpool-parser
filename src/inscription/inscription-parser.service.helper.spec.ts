@@ -369,8 +369,9 @@ describe('measureInscriptionSize', () => {
 
   it('should return the correct size with extra data before OP_ENDIF', () => {
     const witness = [
-      '00',
+      // the envelope must sit where ord reads it: second-to-last element
       '0063036f7264' + 'abcdef123456' + '68', // OP_FALSE, OP_IF, OP_PUSH "ord" (6) + additional push data (6) + OP_ENDIF (1)
+      '00',
     ];
 
     const expectedSize = 6 + 6 + 1; // mark + data + OP_ENDIF
@@ -380,8 +381,9 @@ describe('measureInscriptionSize', () => {
 
   it('should use last OP_ENDIF when multiple exist', () => {
     const witness = [
-      '00',
+      // the envelope must sit where ord reads it: second-to-last element
       '0063036f7264' + 'abcdef123456' + '68' + '68', // mark + data (6) + evil inner OP_ENDIF (1) + real OP_ENDIF (1)
+      '00',
     ];
 
     const expectedSize = 6 + 6 + 1 + 1; // mark + data + evil OP_ENDIF + real OP_ENDIF
