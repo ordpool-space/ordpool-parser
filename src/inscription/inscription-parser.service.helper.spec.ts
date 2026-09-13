@@ -337,7 +337,7 @@ describe('measureInscriptionSize', () => {
   it('should return the correct size for a simple envelope', () => {
     const witness = [
       '00', // Placeholder (signature)
-      '0063036f7264' + '1122' + '68', // OP_FALSE, OP_IF, OP_PUSH "ord" (6 bytes) + 2 extra bytes + OP_ENDIF
+      '0063036f7264' + '0122' + '68', // OP_FALSE, OP_IF, OP_PUSH "ord" (6 bytes) + OP_PUSHBYTES_1 0x22 (2 bytes) + OP_ENDIF
       '00' // Placeholder (control block)
     ];
 
@@ -370,7 +370,7 @@ describe('measureInscriptionSize', () => {
   it('should return the correct size with extra data before OP_ENDIF', () => {
     const witness = [
       // the envelope must sit where ord reads it: second-to-last element
-      '0063036f7264' + 'abcdef123456' + '68', // OP_FALSE, OP_IF, OP_PUSH "ord" (6) + additional push data (6) + OP_ENDIF (1)
+      '0063036f7264' + '05abcdef1234' + '68', // OP_FALSE, OP_IF, OP_PUSH "ord" (6) + OP_PUSHBYTES_5 + 5 bytes (6) + OP_ENDIF (1)
       '00',
     ];
 
@@ -379,14 +379,16 @@ describe('measureInscriptionSize', () => {
     expect(measureInscriptionSize(witness)).toBe(expectedSize);
   });
 
-  it('should use last OP_ENDIF when multiple exist', () => {
+  it('should end at the OP_ENDIF that closes the envelope, not at a later one', () => {
     const witness = [
       // the envelope must sit where ord reads it: second-to-last element
-      '0063036f7264' + 'abcdef123456' + '68' + '68', // mark + data (6) + evil inner OP_ENDIF (1) + real OP_ENDIF (1)
+      '0063036f7264' + '05abcdef1234' + '68' + '68', // mark + data (6) + closing OP_ENDIF (1) + a second OP_ENDIF outside the envelope
       '00',
     ];
 
-    const expectedSize = 6 + 6 + 1 + 1; // mark + data + evil OP_ENDIF + real OP_ENDIF
+    // The envelope ends at its OWN OP_ENDIF. ord stops there as well, so the
+    // trailing OP_ENDIF is script that merely follows the envelope.
+    const expectedSize = 6 + 6 + 1; // mark + data + closing OP_ENDIF
 
     expect(measureInscriptionSize(witness)).toBe(expectedSize);
   });

@@ -57,7 +57,10 @@ export async function parseProperties(fields: { tag: number; value: Uint8Array }
   // that order, so we decode into Maps and read them in order.
   let decoded: CborValue;
   try {
-    decoded = CBOR.decode(propertiesBytes, undefined, undefined, false, true);
+    // decodeFirstFlag: ord decodes properties with minicbor
+    // (`Properties::from_cbor`), which reads ONE item and does not object to
+    // trailing bytes, exactly like ciborium does for metadata.
+    decoded = CBOR.decode(propertiesBytes, undefined, undefined, true, true);
   } catch {
     return undefined;
   }

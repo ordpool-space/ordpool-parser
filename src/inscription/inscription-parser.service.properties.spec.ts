@@ -1,3 +1,4 @@
+import { hexToBytes } from '../lib/conversions';
 import { readTransaction } from '../../testdata/test.helper';
 import { CBOR } from '../lib/cbor';
 import { InscriptionParserService } from './inscription-parser.service';
@@ -206,5 +207,36 @@ describe('InscriptionParserService — Properties / Galleries', () => {
       expect(inscriptions.length).toBe(2000);
       expect(await inscriptions[0].getProperties()).toBe(undefined);
     });
+  });
+});
+
+/**
+ * ord decodes tag 17 with minicbor (`Properties::from_cbor` in
+ * cat21-ord/src/properties.rs), which reads ONE CBOR item and does not object
+ * to bytes after it, the same rule ciborium applies to metadata.
+ *
+ * No mainnet inscription carries this shape today: all 44 candidates the chain
+ * scan flagged end up with empty properties for ord as well. The bytes here are
+ * hand built for that reason, and the values they encode are the ones ord's
+ * struct reads (key 0 gallery, key 1 attributes, key 0 title).
+ */
+describe('parseProperties: trailing bytes after the CBOR item', () => {
+
+  it('should read the properties and ignore what follows them', async () => {
+
+    // a1 01 a1 00 65 68 65 6c 6c 6f = {1: {0: "hello"}}, attributes.title
+    const properties = hexToBytes('a101a1006568656c6c6f');
+    const withTrailingByte = hexToBytes('a101a1006568656c6c6f' + '00');
+
+    const fields = (value: Uint8Array) => [{ tag: 0x11, value }];
+
+    expect(await parseProperties(fields(properties))).toEqual({ gallery: [], title: 'hello' });
+    expect(await parseProperties(fields(withTrailingByte))).toEqual({ gallery: [], title: 'hello' });
+  });
+
+  it('should still refuse an item that claims more bytes than it has', async () => {
+
+    // 65 announces a 5 byte string but only 3 bytes follow
+    expect(await parseProperties([{ tag: 0x11, value: hexToBytes('a101a10065686568') }])).toBeUndefined();
   });
 });

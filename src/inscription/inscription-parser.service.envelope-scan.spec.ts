@@ -1,5 +1,7 @@
 import { readTransaction } from '../../testdata/test.helper';
+import { hexToBytes } from '../lib/conversions';
 import { InscriptionParserService } from './inscription-parser.service';
+import { findEnvelopeMarks, getTapscriptElement } from './inscription-parser.service.helper';
 
 /**
  * ord does not search the script for marker BYTES, it decodes the script
@@ -64,6 +66,12 @@ describe('Inscription parser: envelopes are found by decoding, not by scanning b
   it('should index nothing when a non-push opcode aborts the envelope', () => {
 
     const txn = readTransaction('2ac475f9d9aed038be2328f5b5717572f8fad83609a7896bfd811180667c18a4');
+
+    // Assert on the scan itself, not only on parse(). extractInscriptionData
+    // rejects this envelope for its own reasons, so a parse() that returns []
+    // does not prove that the scan refused to produce a mark.
+    const leafScript = getTapscriptElement(txn.vin[1].witness!);
+    expect(findEnvelopeMarks(hexToBytes(leafScript!))).toEqual([]);
 
     expect(InscriptionParserService.parse(txn)).toEqual([]);
   });

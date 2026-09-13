@@ -226,10 +226,9 @@ export class InscriptionParserService {
         data.push(slice);
       }
 
-      // + the mark: OP_FALSE (1 byte) + OP_IF (1 byte) + the "ord" push (4, 5, 6 or 8 bytes,
-      //   depending on the push opcode)
-      // +1 for the OP_ENDIF
-      const envelopeSize = newPointer - initialPointer + mark.markSize + 1;
+      // From the OP_FALSE that opens the envelope to the OP_ENDIF that closes
+      // it, both included
+      const envelopeSize = mark.envelopeEnd - mark.envelopeStart + 1;
 
       let combinedData = concatUint8Arrays(data);
 

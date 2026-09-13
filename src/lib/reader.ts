@@ -128,5 +128,16 @@ export function readPushdata(raw: Uint8Array, pointer: number): [Uint8Array, num
   // a length with the high bit set comes back NEGATIVE and yields a pointer
   // that walks backwards through the script. u32 max is well within Number.
   let dataSize = Number(littleEndianBytesToBigInt(dataSizeArray));
+
+  // A push that claims more bytes than the script holds is not a push. Without
+  // this, readBytes clamps via subarray and the caller receives the REST OF THE
+  // SCRIPT as one chunk while the pointer jumps past the end: an inscription
+  // body, an Atomicals CBOR payload or the pubkey list a Stamps / SRC-20 /
+  // Counterparty decode builds its RC4 key from would all silently take on
+  // attacker-chosen shape. Every caller treats a throw as "not parseable".
+  if (nextPointer + dataSize > raw.length) {
+    throw new Error(`Push at position ${pointer} runs past the end of the script`);
+  }
+
   return readBytes(raw, nextPointer, dataSize);
 }

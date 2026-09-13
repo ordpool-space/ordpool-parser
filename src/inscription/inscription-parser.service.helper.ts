@@ -151,17 +151,31 @@ export interface InscriptionMark {
   envelopeStart: number;
   /** Index of the first byte after the "ord" push, where the fields start. */
   contentStart: number;
-  /** Size of the mark in bytes: 6, 7, 8 or 10, depending on the push opcode. */
+  /** Size of the mark in bytes, which depends on the push encodings used. */
   markSize: number;
+  /** Index of the OP_ENDIF that closes the envelope. */
+  envelopeEnd: number;
 }
 
 /**
- * Searches for the next inscription mark within the raw transaction data,
- * starting from a given position.
+ * A mark located by the byte search below, which knows where an envelope
+ * starts but not where it ends.
+ */
+export type ScannedInscriptionMark = Omit<InscriptionMark, 'envelopeEnd'>;
+
+/**
+ * Searches for the next inscription mark within the raw transaction data by
+ * comparing BYTES, starting from a given position.
+ *
+ * The parser does not use this: it decodes the script with
+ * `findEnvelopeMarks`, which is what ord does and which a byte search cannot
+ * reproduce (marker bytes inside push data, non-minimal OP_FALSE, the
+ * abort-and-consume rule). This stays for callers that only need a quick
+ * positional answer.
  *
  * @returns The located mark, or null if no mark was found.
  */
-export function findInscriptionMark(raw: Uint8Array, startPosition: number): InscriptionMark | null {
+export function findInscriptionMark(raw: Uint8Array, startPosition: number): ScannedInscriptionMark | null {
 
   for (let index = startPosition; index < raw.length; index++) {
     for (const mark of INSCRIPTION_MARKS) {
@@ -257,22 +271,23 @@ export function findEnvelopeMarks(raw: Uint8Array): InscriptionMark[] {
 
     // the payload: data pushes until OP_ENDIF. Any other opcode, or the end of
     // the script, aborts this envelope.
-    let complete = false;
+    let envelopeEnd = -1;
     while (pointer < raw.length) {
       const instruction = readInstruction(raw, pointer);
+      const instructionStart = pointer;
       pointer = instruction.next;
 
       if (instruction.data) {
         continue;
       }
       if (instruction.opcode === OP_ENDIF) {
-        complete = true;
+        envelopeEnd = instructionStart;
       }
       break;
     }
 
-    if (complete) {
-      marks.push({ envelopeStart, contentStart, markSize: contentStart - envelopeStart });
+    if (envelopeEnd !== -1) {
+      marks.push({ envelopeStart, contentStart, markSize: contentStart - envelopeStart, envelopeEnd });
     }
   }
 
@@ -555,25 +570,23 @@ export function measureInscriptionSize(witness: string[]): number | null {
 
   const raw = hexToBytes(element);
 
-  // Find the start of the inscription using the inscription mark
-  const mark = findInscriptionMark(raw, 0);
+  // Locate the envelope with the SAME scan the parser uses. A byte search finds
+  // a different start for a non-minimal OP_FALSE (`4c 00` also contains the
+  // 0x00 the search looks for), which made this helper disagree with
+  // `envelopeSize` by a byte on real mainnet inscriptions.
+  let mark: InscriptionMark | undefined;
+  try {
+    mark = findEnvelopeMarks(raw)[0];
+  } catch {
+    return null; // the script does not decode, so it holds no envelope
+  }
 
   if (!mark) {
     return null; // Inscription mark not found
   }
 
-  // Find the position of last OP_ENDIF (0x68)
-  const opEndIfIndex = raw.lastIndexOf(OP_ENDIF, raw.length);
-
-  if (opEndIfIndex === -1) {
-    return null; // OP_ENDIF not found
-  }
-
-  // The size of the inscription is from the start position to the last OP_ENDIF
-  const inscriptionSize = opEndIfIndex - mark.contentStart;
-
-  // Add the size of the inscription mark (6, 7, 8 or 10 bytes) + OP_ENDIF (1 byte)
-  return inscriptionSize + mark.markSize + 1;
+  // From the OP_FALSE that opens the envelope to the OP_ENDIF that closes it
+  return mark.envelopeEnd - mark.envelopeStart + 1;
 }
 
 /**

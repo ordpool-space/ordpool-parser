@@ -237,6 +237,15 @@ function decode(
   }
 
   function readArrayBuffer(length: number): Uint8Array {
+    // Stay inside the VIEW we were handed, not the underlying buffer. The input
+    // is usually a subarray of a much larger script, so a length field that
+    // claims more bytes than the item holds would otherwise return unrelated
+    // bytes that follow it in that script. Rust decoders read a bounded slice
+    // and simply hit the end of input here.
+    if (offset + length > dataByteLength) {
+      throw new Error('Insufficient data: the CBOR item claims more bytes than are available');
+    }
+
     return commitRead(length, new Uint8Array(data.buffer, data.byteOffset + offset, length));
   }
 

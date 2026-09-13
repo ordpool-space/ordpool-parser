@@ -10,7 +10,7 @@ import {
   littleEndianBytesToBigInt,
   littleEndianBytesToNumber,
   unicodeStringToBytes,
-} from './conversions';
+  bytesToStrictUnicodeString } from './conversions';
 import { OP_FALSE, OP_IF, OP_PUSHBYTES_3 } from './op-codes';
 
 describe('Base64 encoding and decoding', () => {
@@ -259,5 +259,29 @@ describe('concatUint8Arrays', () => {
       const array3 = new Uint8Array([7, 8, 9]);
       const expectedResult = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9]);
       expect(concatUint8Arrays([array1, array2, array3])).toEqual(expectedResult);
+  });
+});
+
+describe('bytesToStrictUnicodeString', () => {
+
+  it('should decode valid UTF-8', () => {
+    // "ord" plus a multi-byte character
+    expect(bytesToStrictUnicodeString(new Uint8Array([0x6f, 0x72, 0x64, 0xf0, 0x9f, 0x90, 0xb1]))).toBe('ord🐱');
+  });
+
+  it('should return undefined for invalid UTF-8, like Rust str::from_utf8().ok()', () => {
+    // 0x80 is a continuation byte with nothing to continue
+    expect(bytesToStrictUnicodeString(new Uint8Array([0x80]))).toBeUndefined();
+    // content type bytes of mainnet inscription 4b42f881...e22e9
+    expect(bytesToStrictUnicodeString(new Uint8Array([0, 0, 0, 0, 0, 0, 0, 0, 0x0e, 0, 0, 0xf8]))).toBeUndefined();
+  });
+
+  it('should KEEP a leading byte order mark instead of swallowing it', () => {
+    // EF BB BF is U+FEFF. Rust's from_utf8 keeps it, so "BOM + br" is not the
+    // content encoding "br" and must not be treated as one.
+    const bomAndBr = new Uint8Array([0xef, 0xbb, 0xbf, 0x62, 0x72]);
+
+    expect(bytesToStrictUnicodeString(bomAndBr)).toBe('﻿br');
+    expect(bytesToStrictUnicodeString(bomAndBr)).not.toBe('br');
   });
 });

@@ -50,7 +50,11 @@ export function unicodeStringToBytes(str: string): Uint8Array {
  */
 export function bytesToStrictUnicodeString(bytes: Uint8Array): string | undefined {
   try {
-    return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+    // ignoreBOM keeps a leading EF BB BF as U+FEFF instead of dropping it.
+    // Without it a content encoding of BOM + "br" would compare equal to "br"
+    // and we would decompress a body that ord, whose from_utf8 keeps the BOM,
+    // serves untouched.
+    return new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes);
   } catch {
     return undefined;
   }
