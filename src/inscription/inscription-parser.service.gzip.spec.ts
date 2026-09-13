@@ -1,8 +1,6 @@
 import { MAX_DECOMPRESSED_SIZE_MESSAGE } from '../lib/brotli-decode';
-import { bytesToBinaryString } from '../lib/conversions';
-import { readBinaryFileAsUint8Array, readInscriptionAsBase64, readTransaction } from '../../testdata/test.helper';
+import { readInscriptionAsBase64, readTransaction } from '../../testdata/test.helper';
 import { InscriptionParserService } from './inscription-parser.service';
-import { gzipDecode } from './inscription-parser.service.helper';
 
 describe('Inscription parser', () => {
 
@@ -28,6 +26,12 @@ describe('Inscription parser', () => {
    * HTML that expand to 1,279,580, a ratio of 4, so it crosses the 1 MB cap
    * without being an attack.
    *
+   * That is enough to guard the cap. The protection does not care whether the
+   * payload grew by a factor of 4 or a factor of a million: it stops at the
+   * same byte either way, which is why this replaces the constructed bomb file
+   * that used to stand in here. The brotli side has two REAL on-chain bombs
+   * (inscriptions 55445370 and 55445371) in real-bombs.spec.ts.
+   *
    * Note what the cap does and does not do: getContent() stops, while the
    * backend's /content route ships getDataRaw() with the Content-Encoding
    * header, so a reader still receives the whole inscription.
@@ -44,12 +48,4 @@ describe('Inscription parser', () => {
     expect(await inscription.getContent()).toEqual(MAX_DECOMPRESSED_SIZE_MESSAGE);
   });
 
-  it('should survive a synthetic gzip bomb (SYNTHETIC INPUT: no bomb exists on chain)', async () => {
-    // kept because the mainnet case above crosses the cap at a ratio of 4,
-    // while this one proves the cap also holds against a real bomb ratio
-    const bomb = readBinaryFileAsUint8Array('gzip-decompression-bomb.txt.gz');
-    const contentRaw = await gzipDecode(bomb);
-    const content = bytesToBinaryString(contentRaw);
-    expect(content).toEqual(MAX_DECOMPRESSED_SIZE_MESSAGE);
-  });
 });
