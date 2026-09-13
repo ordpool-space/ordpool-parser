@@ -195,6 +195,23 @@ All `parse()` methods return `null` on error — silently. This is intentional:
 - **NEVER mock the parser input** — use the actual Esplora API format
 - If you need test data for a new feature, find a real mainnet transaction that exercises it
 
+#### What the rule covers, and the one carve-out
+
+The rule governs **transaction data and parser input**. A unit test of a pure helper that takes bytes rather than a transaction (`bytesToStrictUnicodeString`, `readInstruction`, the CBOR reader) is not an exception to it: there is no transaction to fake. Construct byte arrays there freely, and prefer bytes lifted from a real inscription when one exists.
+
+The actual carve-out is narrow. A constructed **envelope or script** is allowed only when **a chain scan proves no mainnet transaction has that shape**, and the shape is cheap enough that anyone could write it tomorrow. Such a test pins a crash or a hang, not a feature, so waiting for the first real occurrence means shipping the bug until an attacker supplies the fixture.
+
+The bar, all four:
+
+1. The shape is **absent from a scan you ran**, not merely one you could not find an example of. Name the block range in the file.
+2. It is **relayable and cheap**, so absence is an accident of history rather than a rule of Bitcoin.
+3. The failure it pins is **a hang, a crash, an unbounded read, or a field ord reads and we do not**. A disagreement with ord about what a real inscription *says* always needs a real transaction.
+4. It is **marked `SYNTHETIC INPUT` in the `describe()` title and in a file header** that states which scan found nothing and why the test stays anyway. The title matters: the marking has to survive into test output, not just sit in the source.
+
+Current carve-out files: `inscription-parser.service.oversized-push.spec.ts`, `inscription-parser.service.fuzz.spec.ts`, `inscription-parser.service.tag-bytes.spec.ts`. The first exists because an `OP_PUSHDATA4` length with the high bit set made `parse()` never return on an eight-byte witness element, which would have taken down every consumer parsing mempool transactions.
+
+**Replace a carve-out file with a mainnet fixture the day one appears.** And do not read this as permission to fabricate a transaction because finding the real one is tedious: that is the case the golden rule is about.
+
 ### Test Coverage Rule
 
 If the parser claims to detect a specific type or operation, there MUST be a real mainnet transaction in `testdata/` that exercises it. No exceptions. If you can't find a real transaction, don't claim support for that type.
