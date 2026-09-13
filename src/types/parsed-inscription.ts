@@ -41,7 +41,16 @@ export interface ParsedInscription extends DigitalArtifact {
    */
   contentType: string | undefined;
 
-  fields: { tag: number; value: Uint8Array }[];
+  /**
+   * The envelope's fields, in the order they appear.
+   *
+   * `tag` is the field key when the key is a SINGLE byte, which is how every
+   * tag the protocol defines is written, and -1 for any other key. ord stores
+   * fields under their raw key bytes (`BTreeMap<&[u8], ..>` in envelope.rs), so
+   * a key of `[1, 0]` is not the content type and a key of `[2, 0]` is not the
+   * pointer. `tagBytes` carries the key as it was pushed.
+   */
+  fields: { tag: number; tagBytes: Uint8Array; value: Uint8Array }[];
 
   /**
    * Data as UTF-8 encoded string (not intended for binary content like images or videos)

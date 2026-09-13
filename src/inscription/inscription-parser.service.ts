@@ -155,9 +155,9 @@ export class InscriptionParserService {
    * @param pointer - The current pointer where the reading starts.
    * @returns An array of fields and the updated pointer position.
    */
-  private static extractFields(raw: Uint8Array, pointer: number): [{ tag: number; value: Uint8Array }[], number] {
+  private static extractFields(raw: Uint8Array, pointer: number): [{ tag: number; tagBytes: Uint8Array; value: Uint8Array }[], number] {
 
-    const fields: { tag: number; value: Uint8Array }[] = [];
+    const fields: { tag: number; tagBytes: Uint8Array; value: Uint8Array }[] = [];
     let newPointer = pointer;
     let slice: Uint8Array;
 
@@ -170,6 +170,7 @@ export class InscriptionParserService {
       // tags greater than or equal to 256 should be encoded as little endian integers with trailing zeros omitted.
       // see: https://github.com/ordinals/ord/issues/2505
       [slice, newPointer] = readPushdata(raw, newPointer);
+      const tagBytes = slice;
 
       // An EMPTY push where a tag would be is the separator between the fields
       // and the body (BODY_TAG in ord). ord compares the pushed bytes, not the
@@ -179,7 +180,11 @@ export class InscriptionParserService {
         break;
       }
 
-      const tag = slice.length === 1 ? slice[0] : littleEndianBytesToNumber(slice);
+      // ord keys its field map by the raw tag BYTES, so only a single byte key
+      // can be one of the known tags. Folding a multi-byte key into a number
+      // would make `[1, 0]` a content type and `[2, 0]` a pointer, neither of
+      // which ord reads; it files them under unrecognized fields instead.
+      const tag = tagBytes.length === 1 ? tagBytes[0] : -1;
 
       // A dangling tag: the envelope ends before the value push. ord keeps such
       // an inscription and only flags it as `incomplete_field`, which makes it
@@ -191,7 +196,7 @@ export class InscriptionParserService {
       [slice, newPointer] = readPushdata(raw, newPointer);
       const value = slice;
 
-      fields.push({ tag, value });
+      fields.push({ tag, tagBytes, value });
     }
 
     return [fields, newPointer];
@@ -208,7 +213,7 @@ export class InscriptionParserService {
 
     try {
 
-      let fields: { tag: number; value: Uint8Array }[];
+      let fields: { tag: number; tagBytes: Uint8Array; value: Uint8Array }[];
       let newPointer: number;
       let slice: Uint8Array;
 
