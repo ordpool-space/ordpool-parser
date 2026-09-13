@@ -2,6 +2,16 @@ import { InscriptionParserService } from './inscription-parser.service';
 import { findEnvelopeMarks } from './inscription-parser.service.helper';
 
 /**
+ * SYNTHETIC INPUT, by design. These scripts are generated, not taken from
+ * mainnet, and that is the point: the shapes that break a script walker are
+ * the ones nobody had a reason to write. Blocks 767430 to 966778 contain none
+ * of them.
+ *
+ * Every generated script must terminate quickly and must either return valid
+ * marks or throw the decode error, nothing else.
+ */
+
+/**
  * The envelope scan walks a script instruction by instruction, so a length
  * field that decodes to a wrong number can move its pointer somewhere it
  * should never go. A push length with the high bit set once produced a
@@ -14,7 +24,7 @@ import { findEnvelopeMarks } from './inscription-parser.service.helper';
  * them: it terminates quickly, and it either returns marks or throws the
  * decode error, never anything else.
  */
-describe('Inscription parser: hostile and random scripts', () => {
+describe('Inscription parser: hostile and random scripts (SYNTHETIC INPUT)', () => {
 
   // deterministic generator, so a failure can be reproduced from the seed
   function makeRandom(seed: number): () => number {

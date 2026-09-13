@@ -262,7 +262,15 @@ describe('concatUint8Arrays', () => {
   });
 });
 
-describe('bytesToStrictUnicodeString', () => {
+/**
+ * The byte arrays here are constructed. This function takes bytes, not
+ * transactions, and the BOM case below has no mainnet example: blocks 767430
+ * to 966778 were scanned for an inscription whose content type, content
+ * encoding or metaprotocol starts with EF BB BF, and ZERO exist. The case
+ * still matters, because a swallowed BOM made "BOM + br" compare equal to the
+ * content encoding "br" and decompress a body ord serves untouched.
+ */
+describe('bytesToStrictUnicodeString (SYNTHETIC INPUT)', () => {
 
   it('should decode valid UTF-8', () => {
     // "ord" plus a multi-byte character
