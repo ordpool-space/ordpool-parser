@@ -54,6 +54,8 @@ jobs:
           #   Tests:       7 skipped, 870 passed, 877 total      <- browser
           #
           # Sum: 1740 passing.
+          SUMMARIES=$(grep -cE '^Tests:' jest-output.log || true)
+
           CURRENT=$(grep -E '^Tests:' jest-output.log \
             | sed -E 's/.*[, ]([0-9]+) passed.*/\1/' \
             | awk '{ s += $1 } END { print s }')
@@ -62,6 +64,17 @@ jobs:
             echo "::error::Could not extract a passing-tests count from jest output."
             echo "First 50 lines of captured log:"
             head -50 jest-output.log
+            exit 1
+          fi
+
+          # `npm test` is `test:node && test:browser`, so ONE failing test stops
+          # the browser config from running at all and leaves a single summary
+          # line. Summing that alone looks exactly like a mass deletion: on
+          # 2026-09-13 a flaky network test produced "632 tests missing" and
+          # sent two people hunting for deleted specs. Say what really happened.
+          if [ "$SUMMARIES" -lt 2 ]; then
+            echo "::error::Only $SUMMARIES jest summary line(s) found, expected 2 (node + browser). A test FAILED and npm test short-circuited, so this is a test failure, NOT a coverage drop. Fix the failing test; the count below is meaningless until both configs run."
+            grep -E '^(Tests:|Test Suites:|FAIL)' jest-output.log | head -20
             exit 1
           fi
 
