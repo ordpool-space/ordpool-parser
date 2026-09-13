@@ -212,31 +212,27 @@ describe('InscriptionParserService — Properties / Galleries', () => {
 
 /**
  * ord decodes tag 17 with minicbor (`Properties::from_cbor` in
- * cat21-ord/src/properties.rs), which reads ONE CBOR item and does not object
- * to bytes after it, the same rule ciborium applies to metadata.
+ * cat21-ord/src/properties.rs). Two rules follow from that: it reads ONE CBOR
+ * item and does not object to bytes after it, and anything that is not the
+ * struct's map leaves it with EMPTY properties.
  *
- * No mainnet inscription carries this shape today: all 44 candidates the chain
- * scan flagged end up with empty properties for ord as well. The bytes here are
- * hand built for that reason, and the values they encode are the ones ord's
- * struct reads (key 0 gallery, key 1 attributes, key 0 title).
+ * A chain scan over blocks 767430 to the tip found four mainnet inscriptions
+ * whose tag 17 carries trailing bytes. In every one the first item is a scalar
+ * (two integers, a byte string, a float), so ord ends up with nothing, exactly
+ * like us. NO mainnet inscription carries properties with trailing bytes that
+ * ord actually reads, so that half of the rule has no fixture to pin it.
  */
-describe('parseProperties: trailing bytes after the CBOR item', () => {
+describe('parseProperties: properties ord cannot use', () => {
 
-  it('should read the properties and ignore what follows them', async () => {
+  it('should report no properties where ord reports none either', async () => {
 
-    // a1 01 a1 00 65 68 65 6c 6c 6f = {1: {0: "hello"}}, attributes.title
-    const properties = hexToBytes('a101a1006568656c6c6f');
-    const withTrailingByte = hexToBytes('a101a1006568656c6c6f' + '00');
+    // mainnet inscription 60402876. Its tag 17 holds 33 bytes whose first CBOR
+    // item is the integer 0, followed by more bytes; ord's typed struct rejects
+    // a scalar and falls back to empty properties.
+    const txn = readTransaction('9566b89728d4573b49217c5f56fd3135232947c025f1cd422b934f8a76483705');
 
-    const fields = (value: Uint8Array) => [{ tag: 0x11, value }];
-
-    expect(await parseProperties(fields(properties))).toEqual({ gallery: [], title: 'hello' });
-    expect(await parseProperties(fields(withTrailingByte))).toEqual({ gallery: [], title: 'hello' });
-  });
-
-  it('should still refuse an item that claims more bytes than it has', async () => {
-
-    // 65 announces a 5 byte string but only 3 bytes follow
-    expect(await parseProperties([{ tag: 0x11, value: hexToBytes('a101a10065686568') }])).toBeUndefined();
+    const inscriptions = InscriptionParserService.parse(txn);
+    expect(inscriptions.length).toBe(1);
+    expect(await inscriptions[0].getProperties()).toBeUndefined();
   });
 });
