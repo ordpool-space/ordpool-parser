@@ -1,7 +1,7 @@
 import { readInscriptionAsBase64, readTransaction } from '../../testdata/test.helper';
 import { hexToBytes } from '../lib/conversions';
 import { InscriptionParserService } from './inscription-parser.service';
-import { getNextInscriptionMark, measureInscriptionSize } from './inscription-parser.service.helper';
+import { findEnvelopeMarks, measureInscriptionSize } from './inscription-parser.service.helper';
 
 describe('Inscription parser', () => {
 
@@ -119,7 +119,7 @@ describe('Inscription parser', () => {
    * A witness of 0000000000000000000000000000000000000000000000000000000000000000 was causing a match
    * The new getNextInscriptionMark uses a simple hardcoded approach based on the fixed length of the inscription mark.
    */
-  it('getNextInscriptionMark should ignore transactions with incompatible witness', () => {
+  it('should find no envelope in a witness of zero bytes', () => {
 
     const txn = readTransaction('afbac5a72d789123b003a0c5b14d1a37301932937d124bab5794201827daf057');
     const witness = txn.vin[0]?.witness || [];
@@ -127,9 +127,7 @@ describe('Inscription parser', () => {
 
     expect(txWitness).toEqual('0000000000000000000000000000000000000000000000000000000000000000');
 
-    const raw = hexToBytes(txWitness);
-    const position = getNextInscriptionMark(raw, 0);
-
-    expect(position).toEqual(-1);
+    expect(findEnvelopeMarks(hexToBytes(txWitness))).toEqual([]);
+    expect(InscriptionParserService.parse(txn)).toEqual([]);
   });
 });

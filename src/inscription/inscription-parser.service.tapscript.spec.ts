@@ -47,20 +47,32 @@ describe('Inscription parser: only the element ord reads', () => {
   describe('getTapscriptElement', () => {
 
     it('should read nothing from a key-path spend', () => {
+      // mainnet: input 1 of this transaction is a key-path spend, one signature
+      const keyPath = readTransaction('37b10b5186bb9349e6beb036d608d93bedd342b31dab97cea9fc49ca3f7e3363');
+      expect(keyPath.vin[1].witness!.length).toBe(1);
+      expect(getTapscriptElement(keyPath.vin[1].witness!)).toBeUndefined();
+
       expect(getTapscriptElement([])).toBeUndefined();
-      expect(getTapscriptElement(['aa'])).toBeUndefined();
-      // two elements where the last one is an annex (0x50) is a key-path spend too
-      expect(getTapscriptElement(['aa', '5001'])).toBeUndefined();
     });
 
     it('should read the second-to-last element of a script-path spend', () => {
-      expect(getTapscriptElement(['script', 'controlblock'])).toBe('script');
-      expect(getTapscriptElement(['signature', 'script', 'controlblock'])).toBe('script');
+      // mainnet: [signature, leaf script, control block]
+      const txn = readTransaction('37b10b5186bb9349e6beb036d608d93bedd342b31dab97cea9fc49ca3f7e3363');
+      const witness = txn.vin[0].witness!;
+
+      expect(witness.length).toBe(3);
+      expect(getTapscriptElement(witness)).toBe(witness[1]);
+      // the leaf script is the one that carries the envelope
+      expect(getTapscriptElement(witness)).toContain('6f7264');
     });
 
-    it('should skip the annex and read the third-to-last element', () => {
-      // the annex is the last element and starts with 0x50
-      expect(getTapscriptElement(['script', 'controlblock', '5001'])).toBe('script');
+    it('should read the second-to-last element of a two element witness', () => {
+      // mainnet: [leaf script, control block], the P2WSH-shaped case
+      const txn = readTransaction('082701bc48bef2a03b0bc36016bfb5765d2147b3e1d43455b245adf1c21bf372');
+      const witness = txn.vin[0].witness!;
+
+      expect(witness.length).toBe(2);
+      expect(getTapscriptElement(witness)).toBe(witness[0]);
     });
   });
 });

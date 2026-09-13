@@ -106,44 +106,6 @@ export function getKnownFieldValues(fields: { tag: number; value: Uint8Array }[]
 }
 
 /**
- * The inscription mark: OP_FALSE, OP_IF and a data push of the protocol
- * identifier "ord" (0x6f, 0x72, 0x64).
- *
- * ord compares the pushed BYTES, not the opcode that pushed them
- * (`RawEnvelope::from_instructions` in src/inscriptions/envelope.rs), and it
- * reads scripts with rust-bitcoin's `Script::instructions()`, which does not
- * enforce minimal pushes. So all four push encodings of "ord" start an
- * envelope, and all four occur on mainnet.
- */
-const INSCRIPTION_MARKS: Uint8Array[] = [
-  // OP_PUSHBYTES_3 'o', 'r', 'd'
-  new Uint8Array([OP_FALSE, OP_IF, OP_PUSHBYTES_3, 0x6f, 0x72, 0x64]),
-  // OP_PUSHDATA1, length 3, 'o', 'r', 'd'
-  new Uint8Array([OP_FALSE, OP_IF, OP_PUSHDATA1, 0x03, 0x6f, 0x72, 0x64]),
-  // OP_PUSHDATA2, length 3 (little endian), 'o', 'r', 'd'
-  new Uint8Array([OP_FALSE, OP_IF, OP_PUSHDATA2, 0x03, 0x00, 0x6f, 0x72, 0x64]),
-  // OP_PUSHDATA4, length 3 (little endian), 'o', 'r', 'd'
-  new Uint8Array([OP_FALSE, OP_IF, OP_PUSHDATA4, 0x03, 0x00, 0x00, 0x00, 0x6f, 0x72, 0x64]),
-];
-
-/**
- * The same four inscription marks as lowercase hex, for the cheap string-level
- * pre-checks on hex-encoded witness elements.
- *
- * '0063036f7264', '00634c036f7264', '00634d03006f7264', '00634e030000006f7264'
- */
-export const INSCRIPTION_MARKS_HEX: string[] = INSCRIPTION_MARKS.map(bytesToHex);
-
-/**
- * The protocol identifier "ord" as lowercase hex, for the cheap pre-check on a
- * hex encoded witness element. Every envelope contains it, while OP_FALSE and
- * the "ord" push can each use any push encoding, so matching on whole marks
- * would miss the mixed encodings. Matches on content bytes too, which only
- * costs a decode that then finds nothing.
- */
-export const PROTOCOL_ID_HEX = '6f7264';
-
-/**
  * A located inscription mark.
  */
 export interface InscriptionMark {
@@ -158,57 +120,13 @@ export interface InscriptionMark {
 }
 
 /**
- * A mark located by the byte search below, which knows where an envelope
- * starts but not where it ends.
+ * The protocol identifier "ord" as lowercase hex, for the cheap pre-check on a
+ * hex encoded witness element. Every envelope contains it, while OP_FALSE and
+ * the "ord" push can each use any push encoding, so matching whole marks would
+ * miss the mixed encodings. Matches on content bytes too, which only costs a
+ * decode that then finds nothing.
  */
-export type ScannedInscriptionMark = Omit<InscriptionMark, 'envelopeEnd'>;
-
-/**
- * Searches for the next inscription mark within the raw transaction data by
- * comparing BYTES, starting from a given position.
- *
- * The parser does not use this: it decodes the script with
- * `findEnvelopeMarks`, which is what ord does and which a byte search cannot
- * reproduce (marker bytes inside push data, non-minimal OP_FALSE, the
- * abort-and-consume rule). This stays for callers that only need a quick
- * positional answer.
- *
- * @returns The located mark, or null if no mark was found.
- */
-export function findInscriptionMark(raw: Uint8Array, startPosition: number): ScannedInscriptionMark | null {
-
-  for (let index = startPosition; index < raw.length; index++) {
-    for (const mark of INSCRIPTION_MARKS) {
-      if (index + mark.length > raw.length) {
-        continue;
-      }
-
-      let matches = true;
-      for (let offset = 0; offset < mark.length; offset++) {
-        if (raw[index + offset] !== mark[offset]) {
-          matches = false;
-          break;
-        }
-      }
-
-      if (matches) {
-        return { envelopeStart: index, contentStart: index + mark.length, markSize: mark.length };
-      }
-    }
-  }
-
-  return null;
-}
-
-/**
- * Searches for the next position of an inscription mark within the raw
- * transaction data, starting from a given position.
- *
- * @returns The position immediately after the inscription mark, or -1 if not found.
- */
-export function getNextInscriptionMark(raw: Uint8Array, startPosition: number): number {
-  return findInscriptionMark(raw, startPosition)?.contentStart ?? -1;
-}
+export const PROTOCOL_ID_HEX = '6f7264';
 
 /** The protocol identifier "ord" (0x6f, 0x72, 0x64). */
 const PROTOCOL_ID = new Uint8Array([0x6f, 0x72, 0x64]);

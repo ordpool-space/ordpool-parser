@@ -1,4 +1,6 @@
-import { extractInscriptionId, extractPointer, getKnownFieldValue, getKnownFieldValues, getNextInscriptionMark, isImageContentType, isValidInscriptionId, isValidTxid, measureInscriptionSize } from './inscription-parser.service.helper';
+import { readTransaction } from '../../testdata/test.helper';
+import { InscriptionParserService } from './inscription-parser.service';
+import { extractInscriptionId, extractPointer, getKnownFieldValue, getKnownFieldValues, isImageContentType, isValidInscriptionId, isValidTxid, measureInscriptionSize } from './inscription-parser.service.helper';
 import { hexToBytes } from '../lib/conversions';
 
 describe('getKnownFieldValue', () => {
@@ -44,127 +46,6 @@ describe('getKnownFieldValues', () => {
   });
 });
 
-describe('getNextInscriptionMark', () => {
-
-  it('should find the inscription mark (00 63 03 6f 72 64) and return the position after it', () => {
-    const raw = new Uint8Array([0, 1, 2, 0x00, 0x63, 0x03, 0x6f, 0x72, 0x64, 10, 20]);
-    const startPosition = 0;
-    const expectedPosition = 9;
-    expect(getNextInscriptionMark(raw, startPosition)).toEqual(expectedPosition);
-  });
-
-  it('should return -1 if the inscription mark is not found', () => {
-    const raw = new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
-    const startPosition = 0;
-    expect(getNextInscriptionMark(raw, startPosition)).toEqual(-1);
-  });
-
-  it('should correctly handle an empty array', () => {
-    const raw = new Uint8Array([]);
-    const startPosition = 0;
-    expect(getNextInscriptionMark(raw, startPosition)).toEqual(-1);
-  });
-
-  it('should find the inscription mark even if it starts next to the end of the array', () => {
-    const raw = new Uint8Array([0, 1, 2, 0x00, 0x63, 0x03, 0x6f, 0x72, 0x64]);
-    const startPosition = 3;
-    const expectedPosition = 9;
-    expect(getNextInscriptionMark(raw, startPosition)).toEqual(expectedPosition);
-  });
-
-  it('should find the inscription mark starting exactly at the startPosition', () => {
-    const raw = new Uint8Array([0x00, 0x63, 0x03, 0x6f, 0x72, 0x64, 10, 20, 30]);
-    const startPosition = 0;
-    const expectedPosition = 6;
-    expect(getNextInscriptionMark(raw, startPosition)).toEqual(expectedPosition);
-  });
-});
-
-
-/*
-Provenance
-==========
-
-The owner of an inscription can create child inscriptions, trustlessly
-establishing the provenance of those children on-chain as having been created
-by the owner of the parent inscription. This can be used for collections, with
-the children of a parent inscription being members of the same collection.
-
-Children can themselves have children, allowing for complex hierarchies. For
-example, an artist might create an inscription representing themselves, with
-sub inscriptions representing collections that they create, with the children
-of those sub inscriptions being items in those collections.
-
-### Specification
-
-To create a child inscription C with parent inscription P:
-
-- Create an inscribe transaction T as usual for C.
-- Spend the parent P in one of the inputs of T.
-- Include tag `3`, i.e. `OP_PUSH 3`, in C, with the value of the serialized
-  binary inscription ID of P, serialized as the 32-byte `TXID`, followed by the
-  four-byte little-endian `INDEX`, with trailing zeroes omitted.
-
-_NB_ The bytes of a bitcoin transaction ID are reversed in their text
-representation, so the serialized transaction ID will be in the opposite order.
-
-### Example
-
-An example of a child inscription of
-`000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fi0`:
-
-```
-OP_FALSE
-OP_IF
-  OP_PUSH "ord"
-  OP_PUSH 1
-  OP_PUSH "text/plain;charset=utf-8"
-  OP_PUSH 3
-  OP_PUSH 0x1f1e1d1c1b1a191817161514131211100f0e0d0c0b0a09080706050403020100
-  OP_PUSH 0
-  OP_PUSH "Hello, world!"
-OP_ENDIF
-```
-
-Note that the value of tag `3` is binary, not hex, and that for the child
-inscription to be recognized as a child,
-`000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fi0` must be
-spent as one of the inputs of the inscribe transaction.
-
-Example encoding of inscription ID
-`000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fi255`:
-
-```
-OP_FALSE
-OP_IF
-  …
-  OP_PUSH 3
-  OP_PUSH 0x1f1e1d1c1b1a191817161514131211100f0e0d0c0b0a09080706050403020100ff
-  …
-OP_ENDIF
-```
-
-And of inscription ID `000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fi256`:
-
-```
-OP_FALSE
-OP_IF
-  …
-  OP_PUSH 3
-  OP_PUSH 0x1f1e1d1c1b1a191817161514131211100f0e0d0c0b0a090807060504030201000001
-  …
-OP_ENDIF
-```
-
-### Notes
-
-The tag `3` is used because it is the first available odd tag. Unrecognized odd
-tags do not make an inscription unbound, so child inscriptions would be
-recognized and tracked by old versions of `ord`.
-
-A collection can be closed by burning the collection's parent inscription,
-which guarantees that no more items in the collection can be issued.
-*/
 describe('extractInscriptionId', () => {
 
   it('should correctly extract parent inscription ID (...i255, variable-length single index byte)', () => {
@@ -331,69 +212,39 @@ describe('extractPointer', () => {
 
 describe('measureInscriptionSize', () => {
 
-  // Each witness item is an atomic byte array. The inscription envelope
-  // (mark through OP_ENDIF) is always within a single element (the tapscript).
+  it('should measure a simple mainnet envelope', () => {
+    // the "Hello, world!" inscription, whose envelope is 49 bytes
+    const txn = readTransaction('c1e013bdd1434450c6e1155417c81eb888e20cbde2e0cde37ec238d91cf37045');
+    expect(measureInscriptionSize(txn.vin[0].witness!)).toBe(49);
+  });
 
-  it('should return the correct size for a simple envelope', () => {
-    const witness = [
-      '00', // Placeholder (signature)
-      '0063036f7264' + '0122' + '68', // OP_FALSE, OP_IF, OP_PUSH "ord" (6 bytes) + OP_PUSHBYTES_1 0x22 (2 bytes) + OP_ENDIF
-      '00' // Placeholder (control block)
-    ];
+  it('should agree with the envelopeSize the parser reports', () => {
+    // a non-minimal OP_FALSE plus an OP_PUSHDATA4 "ord": the two used to differ
+    // here by a byte, because one located the envelope by scanning for bytes
+    const txn = readTransaction('ca482fcbfc490f56c4010923512bd7a9baa22c671ec45f53248e76c31009535e');
 
-    const expectedSize = 6 + 2 + 1; // mark + data + OP_ENDIF
+    const inscription = InscriptionParserService.parse(txn)[0];
 
-    expect(measureInscriptionSize(witness)).toBe(expectedSize);
+    expect(measureInscriptionSize(txn.vin[0].witness!)).toBe(inscription.envelopeSize);
+    expect(inscription.envelopeSize).toBe(122);
   });
 
   it('should return null if the witness is empty', () => {
-    const witness: string[] = [];
-    expect(measureInscriptionSize(witness)).toBeNull();
+    expect(measureInscriptionSize([])).toBeNull();
   });
 
-  it('should return null if the witness does not contain an inscription mark', () => {
-    const witness = [
-      '00',
-      'abcd1234' // No inscription mark
-    ];
-    expect(measureInscriptionSize(witness)).toBeNull();
+  it('should return null for a mainnet transaction without an inscription', () => {
+    const txn = readTransaction('054cc18a8162887917a1e6e5c60389bb4b6647167e6936d231466d7b2710f413');
+    expect(measureInscriptionSize(txn.vin[0].witness!)).toBeNull();
   });
 
-  it('should return null if OP_ENDIF is missing', () => {
-    const witness = [
-      '00', // Placeholder
-      '0063036f7264' // OP_FALSE, OP_IF, OP_PUSH "ord", but no OP_ENDIF
-    ];
-    expect(measureInscriptionSize(witness)).toBeNull();
-  });
-
-  it('should return the correct size with extra data before OP_ENDIF', () => {
-    const witness = [
-      // the envelope must sit where ord reads it: second-to-last element
-      '0063036f7264' + '05abcdef1234' + '68', // OP_FALSE, OP_IF, OP_PUSH "ord" (6) + OP_PUSHBYTES_5 + 5 bytes (6) + OP_ENDIF (1)
-      '00',
-    ];
-
-    const expectedSize = 6 + 6 + 1; // mark + data + OP_ENDIF
-
-    expect(measureInscriptionSize(witness)).toBe(expectedSize);
-  });
-
-  it('should end at the OP_ENDIF that closes the envelope, not at a later one', () => {
-    const witness = [
-      // the envelope must sit where ord reads it: second-to-last element
-      '0063036f7264' + '05abcdef1234' + '68' + '68', // mark + data (6) + closing OP_ENDIF (1) + a second OP_ENDIF outside the envelope
-      '00',
-    ];
-
-    // The envelope ends at its OWN OP_ENDIF. ord stops there as well, so the
-    // trailing OP_ENDIF is script that merely follows the envelope.
-    const expectedSize = 6 + 6 + 1; // mark + data + closing OP_ENDIF
-
-    expect(measureInscriptionSize(witness)).toBe(expectedSize);
+  it('should return null when the script starts envelopes but completes none', () => {
+    // mainnet: eight "OP_FALSE OP_IF ord" starts in a row, each aborted by the
+    // OP_IF that follows, so no envelope is ever closed
+    const txn = readTransaction('2ac475f9d9aed038be2328f5b5717572f8fad83609a7896bfd811180667c18a4');
+    expect(measureInscriptionSize(txn.vin[1].witness!)).toBeNull();
   });
 });
-
 describe('isValidInscriptionId', () => {
   it('should return true for a valid inscription ID', () => {
     const validId = "521f8eccffa4c41a3a7728dd012ea5a4a02feed81f41159231251ecf1e5c79dai0";
