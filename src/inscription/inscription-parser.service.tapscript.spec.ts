@@ -66,6 +66,24 @@ describe('Inscription parser: only the element ord reads', () => {
       expect(getTapscriptElement(witness)).toContain('6f7264');
     });
 
+    it('should skip the annex and read the third-to-last element', () => {
+      // mainnet: [signature, leaf script, control block, annex]. The annex is
+      // the single byte 0x50, so ord drops it and reads the leaf script before
+      // the control block.
+      const txn = readTransaction('1b400b080e8d492db80e49c5bcf5f965ef27c32e44bbfc29375878e037e0b5b2');
+      const witness = txn.vin[0].witness!;
+
+      expect(witness.length).toBe(4);
+      expect(witness[3]).toBe('50');
+      expect(getTapscriptElement(witness)).toBe(witness[1]);
+
+      // and the envelopes in it are read: ord has 113019853 and 113019854 here
+      const inscriptions = InscriptionParserService.parse(txn);
+      expect(inscriptions.length).toBe(2);
+      expect(inscriptions[0].contentSize).toBe(13);
+      expect(inscriptions[1].contentSize).toBe(13);
+    });
+
     it('should read the second-to-last element of a two element witness', () => {
       // mainnet: [leaf script, control block], the P2WSH-shaped case
       const txn = readTransaction('082701bc48bef2a03b0bc36016bfb5765d2147b3e1d43455b245adf1c21bf372');
