@@ -77,6 +77,34 @@ describe('Inscription parser: properties decode all-or-nothing, like ord', () =>
   });
 
   /**
+   * CBOR text strings are decoded as Rust `String`s on ord's side, which keeps
+   * a leading U+FEFF. `new TextDecoder()` strips one by default, so a title
+   * that begins with a byte order mark used to render as if the mark were not
+   * there, and compared equal to the unmarked text.
+   *
+   * Gallery item 129 of this inscription is titled "﻿t Shroom".
+   */
+  describe('a byte order mark inside a properties string', () => {
+
+    it('should keep the leading U+FEFF of a gallery title in 2e22a58a..d23a', async () => {
+      const txn = readTransaction('2e22a58a9accec6fae4925f35bad5bb84d005343a0aff1d3350dc923281fd23a');
+      const properties = (await InscriptionParserService.parse(txn)[0].getProperties())!;
+
+      expect(properties.gallery.length).toBe(224);
+
+      const item = properties.gallery[129];
+      expect(item.inscriptionId).toBe('9163af650dcdeeeb9a7e1f47f693b51921dce3bdf2475e69360ec83d9956f5d7i0');
+      expect(item.title).toBe('﻿t Shroom');
+      // the distinction the stripped decode destroyed
+      expect(item.title).not.toBe('t Shroom');
+      expect(item.title!.charCodeAt(0)).toBe(0xFEFF);
+
+      // strings without a mark are untouched
+      expect(properties.title).toBe('Bitcoin Shrooms');
+    });
+  });
+
+  /**
    * The strictness must not swallow a gallery that is actually well formed,
    * which is what makes the two cases above evidence rather than a blanket
    * refusal to parse properties.

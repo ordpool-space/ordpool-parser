@@ -400,7 +400,11 @@ function decode(
           }
           return readArrayBuffer(length);
         })();
-        return new TextDecoder().decode(data);
+        // ignoreBOM keeps a leading U+FEFF instead of swallowing it, which is
+        // what Rust does when it builds a String from the same bytes. A title
+        // of "﻿t Shroom" must not compare equal to "t Shroom": ord renders
+        // the mark, so dropping it silently changes the text we show.
+        return new TextDecoder('utf-8', { ignoreBOM: true }).decode(data);
       case 4:
         let retArray;
         if (length < 0) {
