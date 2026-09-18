@@ -110,6 +110,26 @@ export class AtomicalParserService {
         }
       }
 
+      // A non-empty payload that does not CBOR-decode, or does not decode to a
+      // map, makes the reference indexer `continue` past this input, so NO
+      // atomical is recorded for it at all (atomicals-electrumx,
+      // `parse_protocols_operations_from_witness_array`, util_atomicals.py:1306
+      // to 1317). Reporting one here would count an artifact the reference does
+      // not, and those counts reach ordpool_stats.
+      //
+      // An EMPTY payload is not an error there: the decode is skipped entirely
+      // and the operation still stands, so it still stands here.
+      //
+      // The reference ALSO rejects a payload whose `meta`, `args`, `ctx` or
+      // `init` is not a whitelisted dict (`is_sanitized_dict_whitelist_only`).
+      // That rule is not replicated yet and is tracked separately; it needs its
+      // own on-chain evidence, and the helper has a quirk worth matching
+      // deliberately rather than by accident (it returns on the FIRST nested
+      // dict instead of checking every key).
+      if (payloadRaw.length > 0 && decodePayload() === null) {
+        return null;
+      }
+
       return {
         type: DigitalArtifactType.Atomical,
         uniqueId: `${DigitalArtifactType.Atomical}-${transaction.txid}`,

@@ -1,6 +1,18 @@
 import { readTransaction } from '../../testdata/test.helper';
 import { AtomicalParserService } from '../atomical/atomical-parser.service';
+import { extractAtomicalEnvelopeFromWitness } from '../atomical/atomical-parser.service.helper';
 import { CBOR } from './cbor';
+
+/** Pull the raw atomicals payload straight from the witness, bypassing parse(). */
+function extractPayload(txn: { vin: { witness?: string[] }[] }): Uint8Array {
+  for (const vin of txn.vin) {
+    if (!vin.witness) continue;
+    const envelope = extractAtomicalEnvelopeFromWitness(vin.witness);
+    if (envelope) return envelope.payload;
+  }
+  throw new Error('no atomicals envelope in this fixture');
+}
+
 
 /**
  * A CBOR text string (major type 3) must be valid UTF-8. Every reference
@@ -61,24 +73,23 @@ describe('CBOR: strict UTF-8 for text strings, as every reference does', () => {
 
     const TXID = 'ddad7ef2931146579fdbbffa12595f2194107b1ce67081115679dcb2a07713b7';
 
-    it('should refuse to decode the payload, leaving no args and no files', () => {
-      const atomical = AtomicalParserService.parse(readTransaction(TXID))!;
-
-      expect(atomical.operation).toBe('nft');
-      expect(atomical.getPayloadRaw().length).toBe(1454);
-
-      // the reference drops this payload; so do we
-      expect(atomical.getArgs()).toBeNull();
-      expect(atomical.getFiles()).toEqual([]);
+    /**
+     * The reference `continue`s past an input whose non-empty payload does not
+     * decode, so it records NO atomical. Counting one here would inflate
+     * ordpool_stats by an artifact the reference does not have.
+     */
+    it('should report NO atomical at all, because the reference skips the input', () => {
+      expect(AtomicalParserService.parse(readTransaction(TXID))).toBeNull();
     });
 
-    it('should hold a payload that a lenient decode WOULD have accepted', () => {
-      const atomical = AtomicalParserService.parse(readTransaction(TXID))!;
-      const raw = atomical.getPayloadRaw();
+    it('should be a payload a lenient decode WOULD have accepted', () => {
+      // the envelope is really there and really carries 1454 bytes; this is a
+      // validity decision, not a failure to find the payload
+      const raw = extractPayload(readTransaction(TXID));
+      expect(raw.length).toBe(1454);
 
       // lenient: decodes, with the PNG bytes mangled into U+FFFD
-      const lenient = CBOR.decode(raw, undefined, undefined, true) as Record<string, unknown>;
-      expect(typeof lenient).toBe('object');
+      expect(typeof CBOR.decode(raw, undefined, undefined, true)).toBe('object');
 
       // strict: refuses, which is what every reference does
       expect(() => CBOR.decode(raw, undefined, undefined, true, false, true)).toThrow();
