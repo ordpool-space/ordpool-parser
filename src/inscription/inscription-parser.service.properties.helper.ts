@@ -139,7 +139,9 @@ export async function parseProperties(fields: { tag: number; value: Uint8Array }
     // decodeFirstFlag: ord decodes properties with minicbor
     // (`Properties::from_cbor`), which reads ONE item and does not object to
     // trailing bytes, exactly like ciborium does for metadata.
-    decoded = CBOR.decode(propertiesBytes, undefined, undefined, true, true);
+    // strictUtf8: ord decodes properties with minicbor into Rust Strings, so
+    // invalid UTF-8 fails the decode and unwrap_or_default() empties it.
+    decoded = CBOR.decode(propertiesBytes, undefined, undefined, true, true, true);
   } catch {
     return undefined;
   }

@@ -339,7 +339,9 @@ export class InscriptionParserService {
             const raw = metadataChunks.length === 1
               ? metadataChunks[0]
               : concatUint8Arrays(metadataChunks);
-            return CBOR.decodeFirst(raw);
+            // strictUtf8: ord decodes metadata with ciborium into a Rust String, so
+            // invalid UTF-8 fails the whole decode and `.ok()` leaves NO metadata.
+            return CBOR.decodeFirst(raw, undefined, undefined, true);
           } catch {
             return undefined;
           }

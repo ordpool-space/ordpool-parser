@@ -91,7 +91,10 @@ export class AtomicalParserService {
           return null;
         }
         try {
-          const raw: unknown = CBOR.decodeFirst(payloadRaw);
+          // strictUtf8: atomicals-electrumx decodes with cbor2, which raises
+          // CBORDecodeError on invalid UTF-8; its caller catches with a bare
+          // `except` and SKIPS the tx input (util_atomicals.py:1308).
+          const raw: unknown = CBOR.decodeFirst(payloadRaw, undefined, undefined, true);
           // The atomical envelope MUST decode to a CBOR map. Anything else
           // (array, primitive, raw bytes) is malformed and we treat as no payload.
           if (raw && typeof raw === 'object' && !Array.isArray(raw) && !ArrayBuffer.isView(raw)) {

@@ -588,7 +588,10 @@ function extractOrdEnvelopeData(elements: Array<number | Uint8Array>): Counterpa
   const combinedMetadata = concatUint8Arrays(metadataChunks);
   let decoded: unknown;
   try {
-    decoded = CBOR.decode(combinedMetadata);
+    // strictUtf8: counterparty-core decodes with serde_cbor into
+    // Value::Text(String) (counterparty-rs/src/indexer/bitcoin_client.rs),
+    // so invalid UTF-8 takes the Err branch.
+    decoded = CBOR.decode(combinedMetadata, undefined, undefined, false, false, true);
   } catch {
     return null;
   }

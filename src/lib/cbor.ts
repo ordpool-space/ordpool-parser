@@ -220,7 +220,23 @@ function decode(
   // integer-like string keys ("10" before "zeta") regardless of insertion
   // order, which loses the creator's trait order; a Map keeps it. Off by
   // default so existing callers are unchanged.
-  mapsAsMaps: boolean = false
+  mapsAsMaps: boolean = false,
+  // When true, a text string (major type 3) that is not valid UTF-8 throws
+  // instead of yielding U+FFFD replacement characters.
+  //
+  // Every reference implementation that reads these payloads builds a native
+  // string from the bytes and fails when they are not valid UTF-8:
+  //
+  //   metadata (tag 5)    ord      ciborium    -> Rust String, `.ok()` -> None
+  //   properties (tag 17) ord      minicbor    -> Rust String, unwrap_or_default()
+  //   atomicals           electrumx cbor2      -> raises CBORDecodeError, the
+  //                                               caller's bare `except` skips
+  //                                               the whole tx input
+  //   counterparty        core     serde_cbor  -> Value::Text(String), Err branch
+  //
+  // Decoding leniently reports content all four of them drop. Off by default
+  // so a caller with no strict reference is unchanged.
+  strictUtf8: boolean = false
 ): unknown {
   const dataByteLength = data.length;
   const dataView = new DataView(data.buffer, data.byteOffset, data.byteLength);
@@ -404,7 +420,9 @@ function decode(
         // what Rust does when it builds a String from the same bytes. A title
         // of "﻿t Shroom" must not compare equal to "t Shroom": ord renders
         // the mark, so dropping it silently changes the text we show.
-        return new TextDecoder('utf-8', { ignoreBOM: true }).decode(data);
+        // `fatal` throws on invalid UTF-8 rather than substituting U+FFFD,
+        // matching what every reference does with the same bytes.
+        return new TextDecoder('utf-8', { ignoreBOM: true, fatal: strictUtf8 }).decode(data);
       case 4:
         let retArray;
         if (length < 0) {
@@ -481,8 +499,11 @@ function decodeFirst(
   // the original library's call site at major-type 6 below.
   tagger?: (value: unknown, tag: number) => unknown,
   simpleValue?: ((value: number) => unknown),
+  // Forwarded to `decode`; see the strictUtf8 note there for why each caller
+  // with a strict reference implementation sets it.
+  strictUtf8: boolean = false,
 ): unknown {
-  return decode(data, tagger, simpleValue, true);
+  return decode(data, tagger, simpleValue, true, false, strictUtf8);
 }
 
 export const CBOR = { encode, decode, decodeFirst };
