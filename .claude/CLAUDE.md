@@ -1,159 +1,169 @@
 # CLAUDE.md
 
-## Overview
+`ordpool-parser`: zero-dependency TypeScript that parses Bitcoin digital artifacts (inscriptions, runes, BRC-20, SRC-20, CAT-21, atomicals, Labitbu, Counterparty, Stamps) out of Esplora-format transactions. Dual output: ESM `dist/`, CommonJS `dist-commonjs/`. Family-wide rules live in the workspace `CLAUDE.md`; this file is parser-specific.
 
-**ordpool-parser** is a zero-dependency TypeScript library that parses Bitcoin digital artifacts from raw transaction data. It detects Inscriptions, Runes, BRC-20, SRC-20, CAT-21, and Atomicals in the Esplora API transaction format.
+Version 2.x is the v2 rewrite. Consumers are ordpool.space and cat21.space only, so no CHANGELOG.
 
-- **Zero runtime dependencies** — works in Node.js AND browsers
-- **Dual output**: ESM (`dist/`) and CommonJS (`dist-commonjs/`)
-- **Version 2.x** is the v2 ecosystem rewrite. There are no external consumers — the only users are ordpool.space (frontend) and cat21.space (frontend + backend). No CHANGELOG needed.
+## ABSOLUTE RULE: Never change CAT-21 output
 
-## HARD RULE: Keep useful comments
+- The protocol is LIVE. Cats are minted and owned; every appearance and trait is derived from `SHA256(txId + blockId)` and is immutable forever.
+- Do NOT change `src/cat21/mooncat-parser.ts`, `src/cat21/mooncat-parser.traits.ts`, `src/cat21/mooncat-parser.designs.ts`, `src/cat21/mooncat-parser.colors.ts`, or any constant, magic number or byte offset in them. A bug fix that "improves" output is still forbidden.
+- If you find a bug in CAT-21, the bug IS the specification. Document it, do not fix it.
+- Safe changes only: NEW traits that do not affect existing output, refactors proven byte-identical by snapshot, perf work that changes no bytes, docs and comments.
+- Before touching any CAT-21 file, run the full suite and verify ALL existing cat images match their snapshots byte-for-byte.
 
-**Don't strip JSDoc or "why" inline comments under the banner of
-"simplification".** The text inside a comment can be trimmed (no
-bombast, no LLM-speak, no before-after history); the block itself
-stays. Wire-format notes, source citations to alkanes-rs / ord, and
-encoding details on parser entry points are exactly the kind of
-comment a future reader cannot reconstruct from code alone. Full
-decision tree in the workspace `CLAUDE.md` HARD RULE "Keep useful
-comments (JSDoc AND inline 'why')".
+## ABSOLUTE RULE: Never delete protocol support without the maintainer's consent
+
+- Never remove code, types, enum values, flags or routing because you could not find a test transaction. Say so instead; we find one together.
+- Push back when a `/simplify` agent calls protocol support "dead code". It is not dead, it is waiting for its first transaction.
+
+Why: the right response to missing evidence is to search harder for it, never to delete the support.
+
+## GOLDEN RULE: Tests assert against real mainnet data
+
+- Every test asserts against a real transaction, fetched by `npm run fetch-tx-testdata`, stored as `testdata/tx_<txid>.json` in Esplora format.
+- Never fabricate transaction data. Never mock the parser input.
+- Need data for a new feature? Find a real mainnet transaction that exercises it.
+
+<!-- long-rule: the carve-out has four criteria and dropping one makes it unsafe -->
+
+Scope: the rule governs transaction data and parser INPUT. A unit test of a pure helper taking bytes rather than a transaction (`bytesToStrictUnicodeString`, `readInstruction`, the CBOR reader) has no transaction to fake. Construct byte arrays freely there, preferring bytes lifted from a real inscription.
+
+The one carve-out: a constructed envelope or script, allowed only when ALL four hold.
+
+1. The shape is absent from a scan you RAN, not one you failed to find an example in. Name the block range in the file.
+2. It is relayable and cheap, so its absence is an accident of history rather than a rule of Bitcoin.
+3. What it pins is a hang, a crash, an unbounded read, or a field ord reads and we do not. A disagreement with ord about what a real inscription SAYS always needs a real transaction.
+4. It is marked `SYNTHETIC INPUT` in the `describe()` title AND a file header naming the scan that found nothing. The title matters: the marking must reach test output, not just the source.
+
+Replace a carve-out file with a mainnet fixture the day one appears. This is not permission to fabricate a transaction because finding the real one is tedious; that is the case the golden rule exists for.
+
+Current carve-out files: `inscription-parser.service.oversized-push.spec.ts`, `inscription-parser.service.fuzz.spec.ts`, `inscription-parser.service.tag-bytes.spec.ts`.
+
+## RULE: Claimed support needs a real transaction behind it
+
+- If the parser claims to detect a type or operation, `testdata/` holds a real mainnet transaction exercising it.
+- Cannot find one? Do not claim support for that type.
+
+## RULE: No lazy assertions
+
+- Assert exact deterministic values. Ranges and existence checks are forbidden.
+- Banned: `expect(result).not.toBeNull()`, `toBeGreaterThan(520)`, `toBeInstanceOf(Uint8Array)`, `toBeDefined()`.
+- Required: `expect(result.operation).toBe('dft')`, `expect(result.getPayloadRaw().length).toBe(9925)`, `expect(args.request_ticker).toBe('atom')`.
+
+Why: a payload that should be 9925 bytes but is 520 (first chunk only) still passes `toBeGreaterThan(0)`. Exact values catch what ranges miss.
+
+## RULE: Binary output is pinned byte-for-byte against a committed reference
+
+- Extract the file, inspect it VISUALLY, commit it to `testdata/`, then compare: `expect(files[0].data).toEqual(readBinaryFileAsUint8Array('atomical_dft_atom_image.png'))`.
+- Naming: `testdata/<artifact_type>_<description>_<content>.<ext>`, e.g. `atomical_nft_toothy_7579_image.png`, `inscription_<inscriptionId>.png`.
+
+Why: the visual check is what makes the byte comparison meaningful; without it you pin whatever the parser did the first time.
+
+## RULE: Every line of production code runs in Node AND the browser
+
+- `Uint8Array`, never `Buffer`. `Buffer` is Node-only.
+- `ArrayBuffer.isView(x)`, never `x instanceof Uint8Array`: `instanceof` fails across realms (iframes, workers), each having its own constructor.
+- `TextEncoder`/`TextDecoder` for strings, never `Buffer.from(str)`. `ArrayBuffer` + `DataView` for binary, never Node streams.
+- `Buffer` is allowed in test code only (`testdata/test.helper.ts`), wrapped in `new Uint8Array()` before comparing with parser output.
+
+## RULE: Zero runtime dependencies
+
+- All algorithms stay inline: brotli, CBOR, RC4. Never add an npm dependency.
+
+Why: the library ships to browsers and to third parties; a dependency there is a supply-chain surface we do not control.
+
+## RULE: Keep explanatory comments, and always decode hex
+
+- Keep flow comments. This code parses script opcodes, CBOR and envelope structures; comments like "Update startPosition for the next iteration" are navigation, not noise. Do not strip them as "unnecessary WHAT comments".
+- Every hex constant, test snippet and inline byte sequence carries its meaning: `'0063036f7264'` means nothing without `// OP_FALSE, OP_IF, OP_PUSHBYTES_3, 'o', 'r', 'd'`.
+- Trim text inside a comment (no bombast, no before/after history); keep the block.
+
+Why: humans cannot read hex, and a reader cannot reconstruct an opcode sequence from the bytes.
+
+## RULE: Never quote counts in docs or comments
+
+- No "436 tests", "39 suites", "63,000 cats" in any doc or comment. Describe the capability; anyone can run `npm test` for the number.
+
+Why: they rot on the next commit and invite invented numbers when unverifiable.
+
+## RULE: `parse()` returns null on error, silently
+
+- Every `parse()` returns `null` rather than throwing: most Bitcoin data is not a valid artifact, and a parser must never crash its caller on malformed input. `null` means "not what you are looking for".
+- Known trade-off: bugs in the parser itself are swallowed the same way. Log while developing, stay silent in production.
+
+## RULE: An artifact the reference implementation rejects is not counted
+
+- Before reporting an artifact, match the reference's validity decision, not just its parsing. A payload the reference refuses means NO artifact, not an artifact with empty fields.
+- Atomicals: a non-empty payload that fails to CBOR-decode, or does not decode to a map, makes `atomicals-electrumx` `continue` past that input and record nothing (`util_atomicals.py:1306-1317`).
+- Validate EAGERLY. Lazy decoding defeats this: the artifact gets built and counted before the payload is ever read.
+
+Why: these counts reach `ordpool_stats`, so a lenient parser inflates a statistic against its own reference.
+Ref: `70cf3b0`. Not yet replicated: the reference's `meta`/`args`/`ctx`/`init` whitelist check.
+
+## RULE: CBOR text strings are decoded strictly where a reference is strict
+
+- `CBOR.decode`/`decodeFirst` take an opt-in `strictUtf8`. It is set at metadata (tag 5), properties (tag 17), Atomicals and Counterparty.
+- Every one of those references builds a native string and rejects invalid UTF-8: ciborium and minicbor (Rust `String`), `cbor2` (raises `CBORDecodeError`), `serde_cbor` (`Value::Text(String)`).
+- A caller with no strict reference stays lenient. Do not make the decoder globally fatal.
+
+Ref: `d247fc8`.
 
 ## Commands
 
 ```bash
 npm install
-npm test                    # runs both node + browser test suites
-npm run test:node           # node tests only
-npm run test:browser        # jsdom browser tests only
-npm run build               # builds both ESM and CJS
-npm run build:cat21         # builds standalone cat21.js bundle (ESM + IIFE)
-npm run fetch-tx-testdata   # download raw tx JSON for testing
+npm test                    # node + browser suites
+npm run test:node           # node only
+npm run test:browser        # jsdom only
+npm run build               # ESM + CJS
+npm run build:cat21         # standalone cat21.js (ESM + IIFE)
+npm run fetch-tx-testdata   # download raw tx JSON for tests
 npm run create-link         # build + npm link for local development
 ```
 
 ## Releasing
 
-Two consumer paths, two ways to ship a change:
+Two consumer paths:
 
-**a) git SHA refs (preferred for backends).** `ordpool/backend` and
-`cat21-indexer/backend` pin via `"ordpool-parser":
-"github:ordpool-space/ordpool-parser#<sha>"`. The `prepare` script in
-`package.json` runs `npm run build` automatically when a git ref is
-installed, so no publish is needed. To ship a change to a backend
-consumer: commit + push to `main`, then bump the SHA in the consumer's
-`package.json` and `npm install`.
+**a) git SHA ref (backends).** `ordpool/backend` and `cat21-indexer/backend` pin `"ordpool-parser": "github:ordpool-space/ordpool-parser#<sha>"`. The `prepare` script builds on install, so no publish is needed: commit, push `main`, bump the SHA in the consumer's `package.json`, `npm install`, commit BOTH files.
 
-**b) npm publish (for `ordpool/frontend`, which still pins `^2.0.x`).**
-Every publish needs a matching git tag and GitHub release to keep
-sources in sync:
+**b) npm publish (`ordpool/frontend`, pinned `^2.0.x`).** Every publish needs a matching tag and GitHub release:
 
 ```bash
-# 1. Bump version in package.json
-# 2. Commit: "v2.0.x: <summary>"
-# 3. Push to main
-# 4. Tag and push tag
+# bump version in package.json, commit "v2.0.x: <summary>", push main
 git tag v2.0.x && git push origin v2.0.x
-# 5. Create GitHub release
 gh release create v2.0.x --title "v2.0.x" --notes "..."
-# 6. Publish to npm (requires OTP from authenticator)
 npm publish --otp=<code>
 ```
 
-## ABSOLUTE RULE: Never Change CAT-21 Output
-
-**This is the most important rule in this entire codebase.**
-
-The CAT-21 protocol is LIVE. Cats have been minted and are owned by real people. Every cat's appearance (SVG image) and traits are deterministically generated from `SHA256(txId + blockId)`. The generated output is **immutable forever**.
-
-**NEVER modify any code that affects CAT-21 image generation or trait computation.** Even bug fixes that "improve" the output are forbidden — they would change existing cats' appearances, breaking the protocol and upsetting holders.
-
-Specifically, DO NOT change:
-- `src/cat21/mooncat-parser.ts` — image generation algorithm
-- `src/cat21/mooncat-parser.traits.ts` — trait patterns (eyes, crown, glasses, etc.)
-- `src/cat21/mooncat-parser.designs.ts` — the 128 cat designs
-- `src/cat21/mooncat-parser.colors.ts` — color palette derivation
-- Any constant, magic number, or byte offset in these files
-
-If you suspect a bug in CAT-21: **the bug IS the specification.** Document it, don't fix it.
-
-The only safe changes to CAT-21 code:
-- Adding NEW traits/features that don't affect existing output (e.g., new metadata)
-- Refactoring that provably produces identical output (must be verified with snapshot tests)
-- Performance optimizations that don't change any bytes
-- Documentation and comments
-
-**Before touching any CAT-21 file**: Run the full test suite and verify ALL existing cat images match their snapshots byte-for-byte.
-
-## ABSOLUTE RULE: Never Delete Support Without User Consent
-
-**NEVER remove code, types, enum values, flags, or protocol support because you couldn't find a test transaction.** If you're struggling to find on-chain evidence, TELL THE USER. We will find a solution together. Deleting working code is never the answer.
-
-If a /simplify agent suggests removing "dead code" that represents protocol support (types, enum values, routing logic, flags), **push back**. The code is not dead -- it's waiting for its first transaction. The right response is to search harder for test data, not to delete the support.
-
-## General Rules
-
-- **Never brag with arbitrary numbers.** Don't write "436 tests" or "39 test suites" or "63,000 cats" in documentation or comments — these numbers change constantly and get stale. Anyone can run `npm test` and see the actual count.
-- **Zero runtime dependencies is a hard requirement.** All algorithms must be inline (brotli, CBOR, RC4, etc.). Never add an npm dependency.
-- **Pure functions preferred.** No DI, no classes with state where avoidable. No ILogger abstractions.
-- **Keep explanatory comments.** This codebase parses Bitcoin script opcodes, CBOR binary formats, and protocol-specific envelope structures. These are genuinely complicated. Comments that explain the flow ("No more inscriptions found", "Parse the inscription at the current position", "Update startPosition for the next iteration") help humans navigate the logic. Do NOT remove them as "unnecessary WHAT comments" — they are useful here.
-- **Humans can't read hex.** Always comment what hex values mean: `'0063036f7264'` is meaningless without `// OP_FALSE, OP_IF, OP_PUSHBYTES_3, 'o', 'r', 'd'`. Every hex constant, test data snippet, and inline byte sequence MUST have a human-readable explanation next to it. Never remove these comments.
-
 ## Architecture
+
+Helpers live in `*.helper.ts`, never inline in the service; services stay thin and delegate. Tests sit next to the code they test.
 
 ```
 src/
-├── index.ts                          # Public API exports
-├── atomical/                         # Atomicals parser
-│   ├── atomical-parser.service.ts    # Entry point: parse() → ParsedAtomical
-│   └── atomical-parser.service.helper.ts  # Detection, envelope extraction, operation types
-├── cat21/                            # CAT-21 parser (FROZEN — see rule above)
-│   ├── cat21-parser.service.ts       # Entry point: parse() → ParsedCat21
-│   ├── mooncat-parser.ts             # Image + trait generation (monolithic, by design)
-│   ├── mooncat-parser.traits.ts      # Trait patterns (eyes, crown, glasses, designs)
-│   ├── mooncat-parser.designs.ts     # 128 cat designs
-│   └── mooncat-parser.colors.ts      # Color palettes, backgrounds
-├── inscription/                      # Inscription parser (Ordinals)
-│   ├── inscription-parser.service.ts # Parses envelopes from witness data
-│   ├── inscription-parser.service.helper.ts  # Field extraction, content decoding
-│   └── inscription-parser.service.properties.helper.ts  # Gallery/properties (tag 17) parsing
-├── labitbu/                          # Labitbu parser (WebP in Taproot control blocks)
-│   ├── labitbu-parser.service.ts     # Entry point: parse() → ParsedLabitbu
-│   └── labitbu-parser.service.helper.ts  # NUMS key detection, image extraction
-├── rune/                             # Rune parser
-│   ├── index.ts
-│   └── src/                          # Forked from a JS rune library, heavily trimmed
-├── src20/                            # SRC-20 parser (Stamps)
-│   └── src20-parser.service.ts       # RC4 decryption of stamp data from multisig outputs
-├── types/                            # TypeScript interfaces
-│   ├── digital-artifact.ts           # Base type for all artifacts
-│   ├── parsed-inscription.ts         # ParsedInscription + GalleryItem + InscriptionProperties
-│   ├── parsed-atomical.ts            # ParsedAtomical + AtomicalFile
-│   ├── parsed-labitbu.ts             # ParsedLabitbu
-│   └── ...
-├── lib/                              # Shared utilities
-│   ├── reader.ts                     # Binary reader for Bitcoin script (readPushdata)
-│   ├── conversions.ts                # Hex/byte conversions, concatUint8Arrays, isStringInArrayOfStrings
-│   ├── cbor.ts                       # CBOR encoder + decoder (for metadata and Atomicals payloads)
-│   └── brotli-decode.ts              # Brotli decompression (inline, zero-dep)
-└── digital-artifact-analyser.service.ts  # Unified: parse all artifact types at once
+├── index.ts                        # public API exports
+├── atomical/                       # `atom` envelope, CBOR payload, operation types
+├── cat21/                          # FROZEN: mooncat-parser{,.traits,.designs,.colors}.ts
+├── counterparty/                   # CBOR metadata from ord and OP_RETURN envelopes
+├── inscription/                    # envelopes from witness data; .properties.helper.ts = tag 17
+├── labitbu/                        # WebP in Taproot control blocks, NUMS key detection
+├── rune/src/                       # forked JS rune lib, trimmed; nesting is original, do not "fix"
+├── src20/                          # RC4 decryption of stamp data from multisig outputs
+├── stamp/                          # Stamps / SRC-721 / SRC-101
+├── types/                          # digital-artifact.ts, parsed-*.ts
+├── lib/                            # reader.ts, conversions.ts, cbor.ts, brotli-decode.ts
+└── digital-artifact-analyser.service.ts   # parses every artifact type at once
 ```
 
-## Integration contract: functional, not side-channel
-
-`analyseTransaction(tx, flags) -> Promise<bigint>` is the canonical entry point. It takes the consumer's existing flag bigint (typically the upstream-mempool-style transaction flags), ORs in the ordpool artifact bits the parser detected, and returns the merged bigint. Both the ordpool backend (`backend/src/api/common.ts::Common.getTransactionFlags`) and the ordpool frontend (`frontend/src/app/shared/transaction.utils.ts::getTransactionFlags`) call it the same way and rely on the **return value**, not a side-channel.
-
-Both `analyseTransactions()` (per-block) and `analyseTransaction()` (per-tx) DO still assign `tx._ordpoolFlags = Number(combinedOrdpoolFlags)` on the tx object as a side effect. This is no longer load-bearing for the flag-classification path -- callers no longer read it -- but it is kept because the backend's OTS pre-enrichment helper (`backend/src/api/ordpool-ots-flag.ts`) mutates this field to inject the indexer-derived `ordpool_ots` bit before `Common.getTransactionFlags`'s final analyser call. Removing the assignment would silently break OTS flagging.
-
-History: the original integration was synchronous-only on the backend's `getTransactionFlags`. The parser had to mutate `tx._ordpoolFlags` because it couldn't make the consumer async. That constraint is gone -- both consumers are async now -- but the side-effect mutation remains because OTS is now the legitimate user.
+Style: TypeScript strict, pure functions, no DI, no `ILogger` abstractions, `XxxParserService` static classes with `parse()`.
 
 ## Public API
 
 ```typescript
-// Parse all digital artifacts in a transaction
 DigitalArtifactsParserService.parse(tx): DigitalArtifact[]
 
-// Parse specific types
 InscriptionParserService.parse(tx): ParsedInscription[]
 Cat21ParserService.parse(tx): ParsedCat21 | null
 RuneParserService.parse(tx): ParsedRunestone | null
@@ -161,209 +171,39 @@ AtomicalParserService.parse(tx): ParsedAtomical | null
 LabitbuParserService.parse(tx): ParsedLabitbu | null
 Src20ParserService.parse(tx): ParsedSrc20 | null
 
-// Analyse a full block: returns OrdpoolStats (per-block aggregate).
-// Also assigns tx._ordpoolFlags per tx, kept solely for OTS pre-enrichment
-// (see "Integration contract" above) -- flag classification reads the
-// return value, not the side-effect.
 DigitalArtifactAnalyserService.analyseTransactions(txs): Promise<OrdpoolStats>
-
-// Analyse a single tx: takes the consumer's current flags bigint, returns
-// (flags | ordpool-bits). Both backend Common.getTransactionFlags and
-// frontend transaction.utils.getTransactionFlags use this return-value
-// contract directly.
 DigitalArtifactAnalyserService.analyseTransaction(tx, flags): Promise<bigint>
 ```
 
-## Error Handling Convention
+## Integration contract: functional, not side-channel
 
-All `parse()` methods return `null` on error — silently. This is intentional:
-- Bitcoin transactions contain arbitrary data, most of which is not valid digital artifacts
-- A parser must never crash the caller over malformed input
-- `null` = "this transaction doesn't contain what you're looking for"
+`analyseTransaction(tx, flags) -> Promise<bigint>` takes the consumer's flag bigint, ORs in the artifact bits and returns the merged value. Both `backend/src/api/common.ts::Common.getTransactionFlags` and `frontend/src/app/shared/transaction.utils.ts::getTransactionFlags` rely on the RETURN VALUE, never a side-channel.
 
-**However**: errors in the PARSER ITSELF (bugs) are also silently swallowed. This is a known trade-off. If you add new parsing logic, consider logging errors during development but ensure they're silent in production.
+`analyseTransactions()` and `analyseTransaction()` still assign `tx._ordpoolFlags`. Flag classification no longer reads it, but **removing the assignment silently breaks OTS flagging**: `backend/src/api/ordpool-ots-flag.ts` mutates that field to inject the indexer-derived `ordpool_ots` bit before the final analyser call.
 
-## Testing
+## Lazy evaluation, and where it must not apply
 
-### GOLDEN RULE: All Tests Use Real Blockchain Data
+Expensive work (CBOR decode, decompression) is deferred to method calls so a consumer needing only `contentType` skips it: `getContent()`, `getDataRaw()`, `getMetadata()`, `getArgs()`, `getFiles()`, `getPayloadRaw()`.
 
-**Every test MUST assert against real transaction data downloaded from the Bitcoin blockchain. Zero exceptions.**
+Laziness stops at validity. See "An artifact the reference implementation rejects is not counted": whether an artifact EXISTS is decided eagerly in `parse()`.
 
-- Test data lives in `testdata/` as JSON files (`tx_<txid>.json`)
-- Fetched via `npm run fetch-tx-testdata` from Esplora API (pipes txid to the interactive script)
-- **NEVER use synthetic/fabricated transaction data** — always use a real txid
-- **NEVER mock the parser input** — use the actual Esplora API format
-- If you need test data for a new feature, find a real mainnet transaction that exercises it
+## Content serving
 
-#### What the rule covers, and the one carve-out
+`ordpool/backend` serves `/content/:inscriptionId` and `/preview/:inscriptionId`. Every parser returning binary content provides all four:
 
-The rule governs **transaction data and parser input**. A unit test of a pure helper that takes bytes rather than a transaction (`bytesToStrictUnicodeString`, `readInstruction`, the CBOR reader) is not an exception to it: there is no transaction to fake. Construct byte arrays there freely, and prefer bytes lifted from a real inscription when one exists.
+| member | returns | purpose |
+|---|---|---|
+| `getDataRaw()` | `Uint8Array` | raw bytes, NO decompression; the backend ships them with `Content-Encoding` and the browser decompresses |
+| `getContent()` | `Promise<string>` | UTF-8, decompressed, for JSON/HTML/SVG/code |
+| `getDataUri()` | `Promise<string>` | base64 data URI, decompressed, for HTML previews without a second request |
+| `contentType` | property | the `Content-Type` header |
 
-The actual carve-out is narrow. A constructed **envelope or script** is allowed only when **a chain scan proves no mainnet transaction has that shape**, and the shape is cheap enough that anyone could write it tomorrow. Such a test pins a crash or a hang, not a feature, so waiting for the first real occurrence means shipping the bug until an attacker supplies the fixture.
+## Parser notes
 
-The bar, all four:
-
-1. The shape is **absent from a scan you ran**, not merely one you could not find an example of. Name the block range in the file.
-2. It is **relayable and cheap**, so absence is an accident of history rather than a rule of Bitcoin.
-3. The failure it pins is **a hang, a crash, an unbounded read, or a field ord reads and we do not**. A disagreement with ord about what a real inscription *says* always needs a real transaction.
-4. It is **marked `SYNTHETIC INPUT` in the `describe()` title and in a file header** that states which scan found nothing and why the test stays anyway. The title matters: the marking has to survive into test output, not just sit in the source.
-
-Current carve-out files: `inscription-parser.service.oversized-push.spec.ts`, `inscription-parser.service.fuzz.spec.ts`, `inscription-parser.service.tag-bytes.spec.ts`. The first exists because an `OP_PUSHDATA4` length with the high bit set made `parse()` never return on an eight-byte witness element, which would have taken down every consumer parsing mempool transactions.
-
-**Replace a carve-out file with a mainnet fixture the day one appears.** And do not read this as permission to fabricate a transaction because finding the real one is tedious: that is the case the golden rule is about.
-
-### Test Coverage Rule
-
-If the parser claims to detect a specific type or operation, there MUST be a real mainnet transaction in `testdata/` that exercises it. No exceptions. If you can't find a real transaction, don't claim support for that type.
-
-### NO LAZY ASSERTIONS
-
-**Every assertion must use exact, deterministic values. Ranges and existence checks are forbidden.**
-
-Bad (lazy):
-```typescript
-expect(result).not.toBeNull();               // just proves it exists
-expect(payload.length).toBeGreaterThan(520);  // what IS the length?
-expect(files[0].data.length).toBeGreaterThan(1000);  // vague
-expect(files[0].data).toBeInstanceOf(Uint8Array);    // proves nothing useful
-expect(args).toBeDefined();                   // weakest possible check
-```
-
-Good (exact):
-```typescript
-expect(result.operation).toBe('dft');
-expect(result.getPayloadRaw().length).toBe(9925);
-expect(files[0].data.length).toBe(8496);
-expect(args.mint_amount).toBe(1000);
-expect(args.request_ticker).toBe('atom');
-```
-
-**Why?** Lazy assertions pass even when the code is wrong. If the payload is supposed to be 9925 bytes but a bug makes it 520 (first chunk only), `toBeGreaterThan(0)` still passes. Exact values catch regressions that ranges miss.
-
-### Binary Content: Save Reference Files and Compare Byte-for-Byte
-
-When the parser extracts binary data (images, etc.), save the extracted file to `testdata/` as a reference and compare against it in tests:
-
-```typescript
-// Save once (during development): extract the image, visually verify it, commit to testdata/
-// Then in tests:
-const expectedImage = readBinaryFileAsUint8Array('atomical_dft_atom_image.png');
-expect(files[0].data).toEqual(expectedImage);
-```
-
-Naming convention: `testdata/<artifact_type>_<description>_<content>.<ext>`
-- `atomical_dft_atom_image.png`
-- `atomical_nft_toothy_7579_image.png`
-- `inscription_<inscriptionId>.png`
-
-**The developer MUST visually inspect the image before committing it as a reference.** The test proves the parser reproduces the exact same bytes every time.
-
-### Other Testing Rules
-
-- Both Node.js and browser (jsdom) environments tested
-- Some tests marked `xit()` as SLOW — these are stress tests, not needed for regular development
-
-## Code Style
-
-- TypeScript strict mode enabled
-- Pure functions preferred (no DI, no classes with state where avoidable)
-- Service pattern: `XxxParserService` as static classes with `parse()` methods
-- Zero runtime dependencies — all algorithms inline (brotli, CBOR, RC4, etc.)
-
-### File Organization
-
-Helper functions go in separate `*.helper.ts` files, NOT inline in the service file. Tests live next to the code they test.
-
-```
-src/inscription/
-├── inscription-parser.service.ts            # Main service (thin, delegates to helpers)
-├── inscription-parser.service.helper.ts     # Helpers: field extraction, content decoding, etc.
-├── inscription-parser.service.spec.ts       # Tests for the main service
-├── inscription-parser.service.helper.spec.ts # Tests for the helpers
-├── inscription-parser.service.parent.spec.ts # Tests for parent/child parsing
-└── inscription-parser.service.properties.helper.ts  # Properties/gallery parsing helpers
-```
-
-Keep service files thin. Move complex logic to helper files where it can be tested independently.
-
-### Browser Compatibility (CRITICAL)
-
-This library runs in **both Node.js and browsers**. Every line of production code must work in both.
-
-- **Use `Uint8Array`**, never Node's `Buffer`. `Buffer` is Node-only and fails in browsers.
-- **Use `ArrayBuffer.isView(x)`** to check for binary data, never `x instanceof Uint8Array`. The `instanceof` check fails across realms (iframes, web workers) because each realm has its own `Uint8Array` constructor. `ArrayBuffer.isView()` works everywhere.
-- **Use `TextEncoder`/`TextDecoder`** for string encoding, never `Buffer.from(str)`.
-- **Use `ArrayBuffer` + `DataView`** for binary manipulation, never Node streams.
-- `Buffer` is acceptable in **test code only** (`testdata/test.helper.ts`), but must be wrapped in `new Uint8Array()` before comparison with parser output.
-
-### Lazy Evaluation Pattern
-
-Expensive operations (CBOR decoding, decompression) are deferred to method calls, not computed eagerly in `parse()`. This way consumers who only need metadata skip the heavy work.
-
-```typescript
-// Inscription pattern:
-contentType     // cheap: direct property
-getContent()    // lazy: decompresses + decodes on demand
-getDataRaw()    // lazy: returns raw bytes
-getMetadata()   // lazy: CBOR-decodes metadata field
-
-// Atomicals pattern (same idea):
-operation       // cheap: direct property
-getArgs()       // lazy: CBOR-decodes and returns args
-getFiles()      // lazy: CBOR-decodes and extracts file attachments
-getPayloadRaw() // lazy: returns raw CBOR bytes
-```
-
-### Content Serving Pattern (for parsers that return files)
-
-The ordpool backend serves inscription content via `/content/:inscriptionId` and `/preview/:inscriptionId`. These routes use three data access methods, each serving a different purpose:
-
-- **`getDataRaw()`** → `Uint8Array` — Raw bytes, NO decompression. Used by the backend to serve content with `Content-Encoding` header (browser decompresses). This is the main approach for server-side content delivery.
-- **`getContent()`** → `Promise<string>` — UTF-8 string, decompressed. For text-based content (JSON, HTML, SVG, code).
-- **`getDataUri()`** → `Promise<string>` — Base64 data URI, decompressed. For embedding in HTML previews (`<img src="data:image/png;base64,...">`) without a second network request.
-
-**Every parser that returns binary content MUST provide all three access methods:**
-
-1. `getDataRaw()` → `Uint8Array` — raw bytes for server-side content delivery
-2. `getContent()` → `Promise<string>` — UTF-8 string for text-based content
-3. `getDataUri()` → `Promise<string>` — base64 data URI for embedding in HTML previews
-4. `contentType` as a direct property — needed for `Content-Type` header
-
-## Parser-Specific Notes
-
-### CAT-21 (FROZEN)
-- Trait probabilities use byte values from SHA-256 hash (e.g., byte[4] 0-50 = orange laser eyes = ~20%)
-- Genesis byte is `byte[0] === 79` — this is the hash of the actual genesis cat transaction
-- SVG is a 22x22 pixel grid rendered as `<rect>` elements
-- The mooncat-parser originates from the original MoonCat algorithm, heavily adapted
-
-### Inscriptions
-- Supports: single, batch (pointer field), parent-child, delegate, CBOR metadata
-- Decompression: brotli (inline decoder), gzip (via native APIs)
-- Content types detected from inscription envelope
-
-### Runes
-- Forked from a JavaScript rune library (which was inspired by the official Rust `ord` implementation)
-- Stripped down: removed all write operations and external dependencies to make it run in the browser
-- Custom u128 integer type (JavaScript doesn't have native 128-bit ints)
-- The `src/rune/src/` nesting is from the original fork structure — don't "fix" it
-
-### SRC-20
-- Uses RC4 decryption to decode stamp data from multisig outputs
-- Detects both SRC-20 deploy and mint operations
-
-### Atomicals
-- Detects the `atom` envelope marker in witness data (similar to inscriptions' `ord` marker)
-- Extracts operation type and CBOR-encoded payload (multi-chunk, same as inscription body)
-- Two CBOR file formats on mainnet: `{$ct, $b}` wrapper (old) and raw binary (new)
-- Lazy API: `getArgs()`, `getFiles()`, `getPayloadRaw()`
-- See `atomical-parser.service.helper.ts` for full documentation of operation types and terminology
-
-### Labitbu
-- 10,000 WebP images stored in Taproot witness control blocks (blocks 908,072–908,196)
-- Detection: witness[2] == 4129 bytes + contains NUMS key (SHA-256 of "Labitbu")
-- Extraction: find RIFF header in control block, take 4096 bytes of WebP data
-- No inscription envelope — data lives in the control block's sibling hashes (128 × 32 bytes)
-- Tracking uses ordinal theory (same as inscriptions) — the image lives on the first sat
-- This approach inspired the CAT-21 fake inscription technique
-- See https://github.com/labitbu/pathologies (ord fork) and https://github.com/stutxo/labitbu-maker
+- **CAT-21** (frozen): trait probabilities read bytes of the SHA-256 (byte[4] 0-50 = orange laser eyes, ~20%); genesis byte is `byte[0] === 79`; SVG is a 22x22 grid of `<rect>`. Adapted from the original MoonCat algorithm.
+- **Inscriptions**: single, batch (pointer), parent-child, delegate, CBOR metadata. Brotli inline, gzip via native APIs.
+- **Runes**: custom u128 (JS has no 128-bit int). Write operations and external deps removed so it runs in a browser.
+- **SRC-20**: RC4 decryption from multisig outputs; deploy and mint.
+- **Atomicals**: `atom` marker, multi-chunk CBOR payload. Two mainnet file formats: `{$ct, $b}` wrapper (old) and raw binary (new). See `atomical-parser.service.helper.ts` for operation types.
+- **Labitbu**: 10,000 WebP images in Taproot control blocks, blocks 908072-908196. Detect `witness[2] == 4129` bytes containing the NUMS key (SHA-256 of "Labitbu"); take 4096 bytes of WebP after the RIFF header. No envelope: the data rides in the control block's 128 x 32 sibling hashes. Tracked by ordinal theory on the first sat. Refs: https://github.com/labitbu/pathologies, https://github.com/stutxo/labitbu-maker
+- Some stress tests are marked `xit()` as SLOW and are not needed for regular development.
