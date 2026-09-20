@@ -97,9 +97,10 @@ Why: they rot on the next commit and invite invented numbers when unverifiable.
 - Before reporting an artifact, match the reference's validity decision, not just its parsing. A payload the reference refuses means NO artifact, not an artifact with empty fields.
 - Atomicals: a non-empty payload that fails to CBOR-decode, or does not decode to a map, makes `atomicals-electrumx` `continue` past that input and record nothing (`util_atomicals.py:1306-1317`).
 - Validate EAGERLY. Lazy decoding defeats this: the artifact gets built and counted before the payload is ever read.
+- Incomplete: the reference also rejects a payload whose `meta`, `args`, `ctx` or `init` is not a whitelisted dict. Replicating it means copying `is_sanitized_dict_whitelist_only`, which returns on the FIRST nested dict instead of checking every key.
 
 Why: these counts reach `ordpool_stats`, so a lenient parser inflates a statistic against its own reference.
-Ref: `70cf3b0`. Not yet replicated: the reference's `meta`/`args`/`ctx`/`init` whitelist check.
+Ref: `70cf3b0`
 
 ## RULE: CBOR text strings are decoded strictly where a reference is strict
 
