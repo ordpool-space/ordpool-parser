@@ -1,3 +1,12 @@
+/**
+ * @test-kind unit
+ * Real:   parser, analyser and RuneParserService.validateRune over the transactions of block 840000
+ *         (testdata/block_840000_txns.ts, testdata/block_84000_from_rpc.ts)
+ * Faked:  the parent transactions of the block's rune etchings -> testdata/block_840000_etching_parents.ts
+ *         (`status` of GET https://api.ordpool.space/api/tx/<txid>, captured 2026-10-10)
+ * Proves: the artifact counts of block 840000, and that rune validation rejects exactly the
+ *         66 invalid etchings and accepts the 689 expected runes in block order
+ */
 import { log, warn } from 'console';
 
 import { getBlock840000Txns } from '../testdata/block_840000_txns';
@@ -12,6 +21,7 @@ import { ParsedRunestone } from './types/parsed-runestone';
 import { OrdpoolStats } from './types/ordpool-stats';
 import { getRawBlock840000 } from '../testdata/block_84000_from_rpc';
 import { convertVerboseBlockToSimplePlus } from './lib/bitcoin-rpc';
+import { block840000EtchingParents } from '../testdata/block_840000_etching_parents';
 
 describe('DigitalArtifacts Parser', () => {
 
@@ -268,7 +278,7 @@ describe('DigitalArtifacts Parser', () => {
    * Invalid rune in 00c2896d35bec83eb5467fcbda422e70b1f683b9d893711973128ae8900ba6ce – PEPE•ON•BITCOIN – NameAlreadyTaken
    * Invalid rune in 67491a9ad5f911aa038a3bfa8d9b9e9602806e1582c21a447891621ce0cb0482 – RUNNING•BITCOIN – NameAlreadyTaken
    */
-  xit('SLOW: should identify all 66 invalid runestones of block 840000', async () => {
+  it('should identify all 66 invalid runestones of block 840000', async () => {
 
     var transactions = getBlock840000Txns();
 
@@ -987,18 +997,18 @@ describe('DigitalArtifacts Parser', () => {
 
       const runeName = runestone?.runestone?.etching.runeName!;
       const myTxn = transactions.find(x => x.txid === runestone.transactionId)!;
-      const vinTxns: IEsploraApi.Transaction[] = [];
+      const vinTxns: { txid: string; status: IEsploraApi.Status }[] = [];
 
       for (let i = 0; i < myTxn.vin.length; i++) {
         const vin = myTxn.vin[i];
 
-        // wait to not hit rate limits
-        await new Promise(resolve => setTimeout(resolve, 50));
-
-        // console.log('Fetching vin.txid')
-        const response = await fetch(`https://api.ordpool.space/api/tx/${vin.txid}`);
-        const transaction = (await response.json()) as IEsploraApi.Transaction;
-        vinTxns.push(transaction);
+        // Parent status comes from the captured fixture. A missing parent fails loudly:
+        // validateRune treats an unknown commitment height as valid, so a silent gap would pass.
+        const status = block840000EtchingParents[vin.txid];
+        if (!status) {
+          throw new Error(`Parent ${vin.txid} of etching ${myTxn.txid} is missing from testdata/block_840000_etching_parents.ts`);
+        }
+        vinTxns.push({ txid: vin.txid, status });
       }
 
       const validationResult = RuneParserService.validateRune(myTxn, vinTxns, Network.MAINNET, runestone?.runestone?.etching);
@@ -1030,5 +1040,7 @@ describe('DigitalArtifacts Parser', () => {
     // 755 - 66 == 689 🎉🎉
     expect(755 - invalidRunestones.length).toBe(689)
 
-  }, 30 * 60 * 1000);
+    // the valid etchings are exactly the expected runes, in block order
+    expect(validRunestones.map(x => x.runestone?.etching?.runeName)).toEqual(expectedRunes);
+  });
 });
