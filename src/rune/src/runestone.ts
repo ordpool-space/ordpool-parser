@@ -26,6 +26,24 @@ export type RunestoneTx = {
 
 type Payload = Uint8Array | Flaw;
 
+/**
+ * Decodes a rune SYMBOL code point to a single-character string, matching ord's
+ * `char::from_u32`: it returns `None` for the UTF-16 surrogate range
+ * (0xD800..=0xDFFF) and for values above U+10FFFF. `String.fromCodePoint`
+ * returns a lone surrogate for the former and throws a RangeError for the
+ * latter, so the surrogate range needs an explicit guard to agree with ord.
+ */
+export function symbolFromCodePoint(codePoint: number): Option<string> {
+  if (codePoint >= 0xd800 && codePoint <= 0xdfff) {
+    return None;
+  }
+  try {
+    return Some(String.fromCodePoint(codePoint));
+  } catch (e) {
+    return None;
+  }
+}
+
 export class Runestone {
   readonly type = 'runestone';
 
@@ -89,13 +107,7 @@ export class Runestone {
           );
 
           const symbol = Tag.take(Tag.SYMBOL, fields, 1, ([value]) =>
-            u128.tryIntoU32(value).andThen((value) => {
-              try {
-                return Some(String.fromCodePoint(Number(value)));
-              } catch (e) {
-                return None;
-              }
-            })
+            u128.tryIntoU32(value).andThen((value) => symbolFromCodePoint(Number(value)))
           );
 
           const termsResult = Flag.take(flags, Flag.TERMS);
