@@ -130,8 +130,8 @@ describe('parseJsonObject', () => {
 });
 
 describe('convertToActivities', () => {
-  it('should convert an object to Activities format', () => {
-    const data = { id1: 10, id2: 20, id3: 30 };
+  it('should convert a Map to Activities format', () => {
+    const data = new Map<string, number>([['id1', 10], ['id2', 20], ['id3', 30]]);
     const result = convertToActivities(data);
     expect(result).toEqual([
       ['id1', 10],
@@ -140,10 +140,36 @@ describe('convertToActivities', () => {
     ]);
   });
 
-  it('should return an empty array for an empty object', () => {
-    const data = {};
+  it('should return an empty array for an empty Map', () => {
+    const data = new Map<string, number>();
     const result = convertToActivities(data);
     expect(result).toEqual([]);
+  });
+
+  // A BRC-20/SRC-20 tick is arbitrary text, so a mint can carry a tick that
+  // names an Object.prototype member. On a plain object `data['constructor']`
+  // reads the Object constructor, `data['__proto__']` writes the prototype, and
+  // the count becomes a string or vanishes; the value then fails an INT column
+  // downstream and stalls the block's stats save. A Map keys them literally.
+  it('keeps prototype-member ticks as ordinary keys with numeric counts', () => {
+    const data = new Map<string, number>([
+      ['constructor', 2],
+      ['__proto__', 5],
+      ['toString', 1],
+      ['hasOwnProperty', 7],
+    ]);
+
+    const result = convertToActivities(data);
+
+    expect(result).toEqual([
+      ['constructor', 2],
+      ['__proto__', 5],
+      ['toString', 1],
+      ['hasOwnProperty', 7],
+    ]);
+    for (const [, count] of result) {
+      expect(typeof count).toBe('number');
+    }
   });
 });
 

@@ -176,8 +176,13 @@ export class DigitalArtifactAnalyserService {
 
 
     // Rune mint activity tracking
-    const runeMintActivity: { [key: string]: number } = {};
-    const runeNonUncommonGoodsActivity: { [key: string]: number } = {};
+    // Maps, not plain objects: a mint identifier that collides with an
+    // Object.prototype member must count as an ordinary key. Rune keys are
+    // block:txid (safe), but BRC-20/SRC-20 ticks below are arbitrary text, so
+    // "constructor"/"__proto__"/"toString" are valid ticks; keeping all four as
+    // Maps makes the tally prototype-safe uniformly.
+    const runeMintActivity = new Map<string, number>();
+    const runeNonUncommonGoodsActivity = new Map<string, number>();
     let totalRuneMintFees = 0;
     let totalNonUncommonRuneMintFees = 0;
     let mostActiveRuneMint = null;
@@ -186,13 +191,13 @@ export class DigitalArtifactAnalyserService {
     let mostActiveNonUncommonRuneMintCount = 0;
 
     // BRC-20 mint activity tracking
-    const brc20MintActivity: { [key: string]: number } = {};
+    const brc20MintActivity = new Map<string, number>();
     let totalBrc20MintFees = 0;
     let mostActiveBrc20Mint = null;
     let mostActiveBrc20MintCount = 0;
 
     // SRC-20 mint activity tracking
-    const src20MintActivity: { [key: string]: number } = {};
+    const src20MintActivity = new Map<string, number>();
     let totalSrc20MintFees = 0;
     let mostActiveSrc20Mint = null;
     let mostActiveSrc20MintCount = 0;
@@ -316,19 +321,21 @@ export class DigitalArtifactAnalyserService {
             const mintKey = `${block.toString()}:${mintTx}`;
 
             // Track Rune mint activity
-            runeMintActivity[mintKey] = (runeMintActivity[mintKey] ?? 0) + 1;
-            if (runeMintActivity[mintKey] > mostActiveRuneMintCount) {
+            const runeCount = (runeMintActivity.get(mintKey) ?? 0) + 1;
+            runeMintActivity.set(mintKey, runeCount);
+            if (runeCount > mostActiveRuneMintCount) {
               mostActiveRuneMint = mintKey;
-              mostActiveRuneMintCount = runeMintActivity[mintKey];
+              mostActiveRuneMintCount = runeCount;
             }
 
             const isUncommonGoods = isUncommonGoodsMint(runestone.runestone);
             // Track non-UNCOMMON•GOODS Rune mints
             if (!isUncommonGoods) {
-              runeNonUncommonGoodsActivity[mintKey] = (runeNonUncommonGoodsActivity[mintKey] ?? 0) + 1;
-              if (runeNonUncommonGoodsActivity[mintKey] > mostActiveNonUncommonRuneMintCount) {
+              const nonUncommonCount = (runeNonUncommonGoodsActivity.get(mintKey) ?? 0) + 1;
+              runeNonUncommonGoodsActivity.set(mintKey, nonUncommonCount);
+              if (nonUncommonCount > mostActiveNonUncommonRuneMintCount) {
                 mostActiveNonUncommonRuneMint = mintKey;
-                mostActiveNonUncommonRuneMintCount = runeNonUncommonGoodsActivity[mintKey];
+                mostActiveNonUncommonRuneMintCount = nonUncommonCount;
               }
             }
 
@@ -350,10 +357,11 @@ export class DigitalArtifactAnalyserService {
 
           // Activity counts every mint artifact, so a tx batching mints of
           // different ticks records each one (matches stats.amounts.brc20Mint).
-          brc20MintActivity[mintKey] = (brc20MintActivity[mintKey] ?? 0) + 1;
-          if (brc20MintActivity[mintKey] > mostActiveBrc20MintCount) {
+          const brc20Count = (brc20MintActivity.get(mintKey) ?? 0) + 1;
+          brc20MintActivity.set(mintKey, brc20Count);
+          if (brc20Count > mostActiveBrc20MintCount) {
             mostActiveBrc20Mint = mintKey;
-            mostActiveBrc20MintCount = brc20MintActivity[mintKey];
+            mostActiveBrc20MintCount = brc20Count;
           }
 
           // Fees accumulate once per transaction.
@@ -369,10 +377,11 @@ export class DigitalArtifactAnalyserService {
 
           // Activity counts every mint artifact, so a tx batching mints of
           // different ticks records each one (matches stats.amounts.src20Mint).
-          src20MintActivity[mintKey] = (src20MintActivity[mintKey] ?? 0) + 1;
-          if (src20MintActivity[mintKey] > mostActiveSrc20MintCount) {
+          const src20Count = (src20MintActivity.get(mintKey) ?? 0) + 1;
+          src20MintActivity.set(mintKey, src20Count);
+          if (src20Count > mostActiveSrc20MintCount) {
             mostActiveSrc20Mint = mintKey;
-            mostActiveSrc20MintCount = src20MintActivity[mintKey];
+            mostActiveSrc20MintCount = src20Count;
           }
 
           // Fees accumulate once per transaction.
@@ -542,8 +551,8 @@ export class DigitalArtifactAnalyserService {
     // "most active" / "top mint count" stat in ~every block.
     stats.runes.mostActiveMint = mostActiveRuneMint;
     stats.runes.mostActiveNonUncommonMint = mostActiveNonUncommonRuneMint;
-    stats.runes.uniqueMintsCount = Object.keys(runeMintActivity).length;
-    stats.runes.uniqueMintsCountNonUncommon = Object.keys(runeNonUncommonGoodsActivity).length;
+    stats.runes.uniqueMintsCount = runeMintActivity.size;
+    stats.runes.uniqueMintsCountNonUncommon = runeNonUncommonGoodsActivity.size;
     stats.runes.topMintCount = mostActiveRuneMintCount;
     stats.runes.topMintCountNonUncommon = mostActiveNonUncommonRuneMintCount;
     stats.fees.runeMints = totalRuneMintFees;

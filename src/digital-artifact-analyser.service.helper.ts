@@ -76,13 +76,18 @@ export function parseJsonObject(content: string): Record<string, unknown> | null
  * @param data - An object where the keys represent identifiers and the values represent counts.
  * @returns A multi-dimensional array of Activities, where each entry is [identifier, count].
  *
+ * Takes a `Map` rather than a plain object so a mint identifier that collides
+ * with an `Object.prototype` member (a BRC-20/SRC-20 tick is arbitrary text, so
+ * "constructor", "__proto__", "toString" are all valid ticks) counts as an
+ * ordinary key instead of walking the prototype chain and corrupting the tally.
+ *
  * @example
- * const data = { 'id1': 10, 'id2': 20 };
+ * const data = new Map([['id1', 10], ['id2', 20]]);
  * const result = convertToActivities(data);
  * // result: [['id1', 10], ['id2', 20]]
  */
-export function convertToActivities(data: { [key: string]: number }): MintActivities {
-  return Object.entries(data);
+export function convertToActivities(data: Map<string, number>): MintActivities {
+  return [...data.entries()];
 }
 
 /**
