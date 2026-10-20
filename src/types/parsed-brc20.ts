@@ -55,6 +55,12 @@ export function parseBrc20Content(content: string): BrC20Parsed | null {
  * cenotaphs still get the top-level ordpool_brc20 flag, but operation-specific
  * flags (deploy/mint/transfer) are NOT set, so they don't pollute stats or DB inserts.
  */
+/* jscpd:ignore-start -- BRC-20 and SRC-20 are independent token protocols. Their
+   flaw validators (getBrc20Flaws / getSrc20Flaws) read alike today but enforce
+   per-protocol rules that diverge: ticker length, required fields (SRC-20 needs
+   lim, BRC-20 does not), and max/amt validation (SRC-20 uses isCanonicalSrc20Numeric).
+   A shared validator would couple two protocols that must evolve separately, so the
+   parallel structure is deliberate, not accidental duplication. */
 export function getBrc20Flaws(parsed: BrC20Parsed): BrC20Flaw[] {
   const flaws: BrC20Flaw[] = [];
 
@@ -93,3 +99,4 @@ export function getBrc20Flaws(parsed: BrC20Parsed): BrC20Flaw[] {
 
   return flaws;
 }
+/* jscpd:ignore-end */

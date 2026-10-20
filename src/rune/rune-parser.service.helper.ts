@@ -264,33 +264,7 @@ export function sanitizeU8(value: number | undefined): number | null {
  * @returns A bigint between 0n and 2^64 - 1, or `null` for invalid, out-of-range, or empty inputs.
  */
 export function sanitizeU64(value: number | bigint | string | undefined): bigint | null {
-  if (value === undefined) {
-    return null;
-  }
-
-  if (typeof value === 'string') {
-    if (!/^\d+$/.test(value)) {
-      return null; // Invalid string
-    }
-    value = BigInt(value);
-  }
-
-  if (typeof value === 'number') {
-    try {
-      value = BigInt(value);
-    } catch {
-      return null;
-    }
-  }
-
-  if (typeof value === 'bigint') {
-    if (value < 0n || value > U64_MAX_BIGINT) {
-      return null;
-    }
-    return value;
-  }
-
-  return null;
+  return sanitizeUintUpTo(value, U64_MAX_BIGINT);
 }
 
 /**
@@ -301,6 +275,16 @@ export function sanitizeU64(value: number | bigint | string | undefined): bigint
  * @returns A bigint between 0n and 2^128 - 1, or `null` for invalid, out-of-range, or empty inputs.
  */
 export function sanitizeU128(value: number | bigint | string | undefined): bigint | null {
+  return sanitizeUintUpTo(value, U128_MAX_BIGINT);
+}
+
+/**
+ * Shared range check for the unsigned-integer sanitizers: accepts a number,
+ * bigint, or decimal string and returns it as a bigint in [0, max], or null
+ * for anything invalid, out of range, or undefined. The caller fixes `max` to
+ * the width it needs (2^64 - 1 or 2^128 - 1).
+ */
+function sanitizeUintUpTo(value: number | bigint | string | undefined, max: bigint): bigint | null {
   if (value === undefined) {
     return null;
   }
@@ -321,7 +305,7 @@ export function sanitizeU128(value: number | bigint | string | undefined): bigin
   }
 
   if (typeof value === 'bigint') {
-    if (value < 0n || value > U128_MAX_BIGINT) {
+    if (value < 0n || value > max) {
       return null;
     }
     return value;

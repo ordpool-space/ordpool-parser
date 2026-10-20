@@ -99,3 +99,26 @@ export function assertEsploraShape(tx: unknown, callerName = 'parser'): void {
     );
   }
 }
+
+/**
+ * True if ANY input's witness satisfies `detector`. The per-artifact quick
+ * checks (`hasInscription`, `hasAtomical`, ...) share this scan: iterate the
+ * vins, run the detector on each present witness, and swallow a malformed
+ * transaction as "no match" rather than throwing into the caller.
+ */
+export function someVinWitness(
+  transaction: { vin: { witness?: string[] }[] },
+  detector: (witness: string[]) => boolean,
+): boolean {
+  try {
+    for (let i = 0; i < transaction.vin.length; i++) {
+      const vin = transaction.vin[i];
+      if (vin.witness && detector(vin.witness)) {
+        return true;
+      }
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}

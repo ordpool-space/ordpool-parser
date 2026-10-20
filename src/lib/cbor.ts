@@ -375,47 +375,38 @@ function decode(
     if (length < 0 && (majorType < 2 || 6 < majorType))
       throw "Invalid length";
 
+    // Major types 2 (byte string) and 3 (text string) share one payload
+    // reader: a definite length reads that many bytes; a negative length marks
+    // an indefinite-length string, whose chunks are concatenated until the
+    // break. Major type 3 then decodes the resulting bytes as UTF-8.
+    const readStringBytes = (len: number): Uint8Array => {
+      if (len < 0) {
+        const elements = [];
+        let fullArrayLength = 0;
+        while ((len = readIndefiniteStringLength(majorType)) >= 0) {
+          fullArrayLength += len;
+          elements.push(readArrayBuffer(len));
+        }
+        const fullArray = new Uint8Array(fullArrayLength);
+        let fullArrayOffset = 0;
+        for (let i = 0; i < elements.length; ++i) {
+          fullArray.set(elements[i], fullArrayOffset);
+          fullArrayOffset += elements[i].length;
+        }
+        return fullArray;
+      }
+      return readArrayBuffer(len);
+    };
+
     switch (majorType) {
       case 0:
         return length;
       case 1:
         return -1 - length;
       case 2:
-        if (length < 0) {
-          const elements = [];
-          let fullArrayLength = 0;
-          while ((length = readIndefiniteStringLength(majorType)) >= 0) {
-            fullArrayLength += length;
-            elements.push(readArrayBuffer(length));
-          }
-          const fullArray = new Uint8Array(fullArrayLength);
-          let fullArrayOffset = 0;
-          for (let i = 0; i < elements.length; ++i) {
-            fullArray.set(elements[i], fullArrayOffset);
-            fullArrayOffset += elements[i].length;
-          }
-          return fullArray;
-        }
-        return readArrayBuffer(length);
+        return readStringBytes(length);
       case 3:
-        const data = (() => { // copy from case 2
-          if (length < 0) {
-            const elements = [];
-            let fullArrayLength = 0;
-            while ((length = readIndefiniteStringLength(majorType)) >= 0) {
-              fullArrayLength += length;
-              elements.push(readArrayBuffer(length));
-            }
-            const fullArray = new Uint8Array(fullArrayLength);
-            let fullArrayOffset = 0;
-            for (let i = 0; i < elements.length; ++i) {
-              fullArray.set(elements[i], fullArrayOffset);
-              fullArrayOffset += elements[i].length;
-            }
-            return fullArray;
-          }
-          return readArrayBuffer(length);
-        })();
+        const data = readStringBytes(length);
         // ignoreBOM keeps a leading U+FEFF instead of swallowing it, which is
         // what Rust does when it builds a String from the same bytes. A title
         // of "﻿t Shroom" must not compare equal to "t Shroom": ord renders

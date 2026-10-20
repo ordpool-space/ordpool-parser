@@ -131,6 +131,10 @@ function isCanonicalSrc20Numeric(v: unknown): boolean {
  * Validates a parsed SRC-20 object and returns a list of flaws (cenotaph-style).
  * Empty array = valid SRC-20. Non-empty = cenotaph (parsed but structurally invalid).
  */
+/* jscpd:ignore-start -- deliberately parallel to getBrc20Flaws (see parsed-brc20.ts):
+   SRC-20 and BRC-20 are independent token protocols whose validators must evolve
+   separately. SRC-20 requires lim and uses isCanonicalSrc20Numeric for max/amt, where
+   BRC-20 does not. A shared validator would couple them, so this is intentional. */
 export function getSrc20Flaws(parsed: Src20Parsed): Src20Flaw[] {
   const flaws: Src20Flaw[] = [];
 
@@ -173,4 +177,5 @@ export function getSrc20Flaws(parsed: Src20Parsed): Src20Flaw[] {
 
   return flaws;
 }
+/* jscpd:ignore-end */
 

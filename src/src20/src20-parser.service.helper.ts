@@ -37,4 +37,4 @@ export function hasKeyBurn(transaction: {
 }
 
 // Re-export shared script utilities for backwards compatibility
-export { parseScript, extractPubkeys, extractPubkeysRaw } from '../lib/script';
+export { parseScript, extractPubkeys, extractPubkeysRaw, concatenateMultisigPubkeys } from '../lib/script';

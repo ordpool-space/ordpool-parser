@@ -2,7 +2,7 @@ import { Arc4 } from "../lib/arc4";
 import { bigEndianBytesToNumber, hexToBytes, unicodeStringToBytes } from "../lib/conversions";
 import { bytesToUnicodeString } from '../lib/conversions';
 import { assertEsploraShape } from '../lib/transaction-shape';
-import { extractPubkeys, hasKeyBurn } from './src20-parser.service.helper';
+import { concatenateMultisigPubkeys, hasKeyBurn } from './src20-parser.service.helper';
 import { DigitalArtifactType } from "../types/digital-artifact";
 import { OnParseError } from '../types/parser-options';
 import { ParsedSrc20 } from "../types/parsed-src20";
@@ -94,17 +94,9 @@ export class Src20ParserService {
       // 1. The transaction ID is the ARC4 key
       const arc4Key = hexToBytes(transaction.vin[0].txid);
 
-      const concatenatedPubkeys = transaction.vout
-        // 2. Extract the first two pubkeys from multisig scripts
-        .filter(vout => vout.scriptpubkey_type === 'multisig' || vout.scriptpubkey_type === 'unknown')
-        .map(vout => {
-          const pubkeys = extractPubkeys(vout.scriptpubkey);
-          return [pubkeys[0], pubkeys[1]];
-        })
-        .flat()
-        // 3. We strip the sign and nonce bytes (first and last bytes from each string)
-        .map(key => key.substring(2, 64))
-        .join('');
+      // 2. The payload rides in the first two pubkeys of each multisig output,
+      //    sign + nonce bytes stripped (shared with STAMP, same wire format).
+      const concatenatedPubkeys = concatenateMultisigPubkeys(transaction.vout);
 
       // 4. Decrypt using RC4
       const cipher = new Arc4(arc4Key);

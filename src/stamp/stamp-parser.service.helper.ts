@@ -1,6 +1,6 @@
 import { Arc4 } from '../lib/arc4';
 import { bigEndianBytesToNumber, bytesToUnicodeString, hexToBytes, concatUint8Arrays, unicodeStringToBytes } from '../lib/conversions';
-import { extractPubkeys } from '../lib/script';
+import { concatenateMultisigPubkeys } from '../lib/script';
 import { hasKeyBurn } from '../src20/src20-parser.service.helper';
 
 // "stamp:" in ASCII (hex: 7374616d703a) -- used by SRC-20/SRC-101 OLGA encoding
@@ -196,16 +196,9 @@ export function decryptStampMultisig(transaction: {
   // ARC4 key = vin[0].txid (NOT reversed, unlike Counterparty)
   const arc4Key = hexToBytes(transaction.vin[0].txid);
 
-  // Extract first 2 pubkeys from each multisig output, strip sign + nonce bytes
-  const concatenatedPubkeys = transaction.vout
-    .filter(vout => vout.scriptpubkey_type === 'multisig' || vout.scriptpubkey_type === 'unknown')
-    .map(vout => {
-      const pubkeys = extractPubkeys(vout.scriptpubkey);
-      return [pubkeys[0], pubkeys[1]];
-    })
-    .flat()
-    .map(key => key.substring(2, 64))
-    .join('');
+  // First 2 pubkeys of each multisig output, sign + nonce bytes stripped
+  // (shared with SRC-20, same wire format).
+  const concatenatedPubkeys = concatenateMultisigPubkeys(transaction.vout);
 
   if (!concatenatedPubkeys) {
     return null;

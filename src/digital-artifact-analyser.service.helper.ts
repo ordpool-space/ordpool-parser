@@ -249,26 +249,33 @@ export function brc20DeployAttemptsToCompact(data: Brc20DeployAttempt[]): string
 }
 
 /**
+ * Shared scaffolding for the compact deploy-attempt decoders: an empty string
+ * is no attempts, otherwise each comma-separated `txId|ticker|maxSupply|mintLimit|decimals`
+ * entry is split into at most five fields and handed to the per-protocol
+ * `build`, which keeps its own field-coercion rules.
+ */
+function splitCompactEntries<T>(data: string, build: (fields: string[]) => T): T[] {
+  if (!data) {
+    return [];
+  }
+
+  return data.split(',').map((entry) => build(entry.split('|', 5)));
+}
+
+/**
  * Converts a compact comma-separated string of BRC-20 deploy attempts into an array of BRC-20 deploy attempts.
  *
  * @param data - A comma-separated string where each attempt is represented as `txId|ticker|maxSupply|mintLimit|decimals`.
  * @returns An array of BRC-20 deploy attempts.
  */
 export function compactToBrc20DeployAttempts(data: string): Brc20DeployAttempt[] {
-  if (!data) {
-    return [];
-  }
-
-  return data.split(',').map((entry) => {
-    const [txId, ticker, maxSupply, mintLimit, decimals] = entry.split('|', 5);
-    return {
-      txId,
-      ticker,
-      maxSupply,
-      mintLimit: mintLimit || undefined,
-      decimals: decimals || undefined
-    };
-  });
+  return splitCompactEntries(data, ([txId, ticker, maxSupply, mintLimit, decimals]) => ({
+    txId,
+    ticker,
+    maxSupply,
+    mintLimit: mintLimit || undefined,
+    decimals: decimals || undefined
+  }));
 }
 
 /**
@@ -291,20 +298,13 @@ export function src20DeployAttemptsToCompact(data: Src20DeployAttempt[]): string
  * @returns An array of SRC-20 deploy attempts.
  */
 export function compactToSrc20DeployAttempts(data: string): Src20DeployAttempt[] {
-  if (!data) {
-    return [];
-  }
-
-  return data.split(',').map((entry) => {
-    const [txId, ticker, maxSupply, mintLimit, decimals] = entry.split('|', 5);
-    return {
-      txId,
-      ticker,
-      maxSupply,
-      mintLimit,
-      decimals: decimals || undefined
-    };
-  });
+  return splitCompactEntries(data, ([txId, ticker, maxSupply, mintLimit, decimals]) => ({
+    txId,
+    ticker,
+    maxSupply,
+    mintLimit,
+    decimals: decimals || undefined
+  }));
 }
 
 /**

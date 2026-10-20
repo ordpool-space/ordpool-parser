@@ -1,6 +1,6 @@
 import { CBOR } from '../lib/cbor';
 import { bytesToBase64, bytesToDataUri, bytesToUnicodeString } from '../lib/conversions';
-import { assertEsploraShape } from '../lib/transaction-shape';
+import { assertEsploraShape, someVinWitness } from '../lib/transaction-shape';
 import { DigitalArtifactType } from "../types/digital-artifact";
 import { AtomicalFile, ParsedAtomical } from "../types/parsed-atomical";
 import { OnParseError } from '../types/parser-options';
@@ -211,19 +211,6 @@ export class AtomicalParserService {
   static hasAtomical(transaction: {
     vin: { witness?: string[] }[]
   }): boolean {
-
-    try {
-
-      for (let i = 0; i < transaction.vin.length; i++) {
-        const vin = transaction.vin[i];
-        if (vin.witness && hasAtomical(vin.witness)) {
-          return true;
-        }
-      }
-      return false;
-
-    } catch (ex) {
-      return false;
-    }
+    return someVinWitness(transaction, hasAtomical);
   }
 }

@@ -91,6 +91,27 @@ export function extractPubkeys(hex: string): string[] {
 }
 
 /**
+ * The SRC-20 / STAMP wire format packs its payload into the first two public
+ * keys of each multisig output. Concatenate those keys into the hex string the
+ * ARC4 layer decrypts, stripping the one-byte sign prefix and the trailing
+ * nonce byte from every key (`substring(2, 64)`). `unknown` script types are
+ * included because a bare multisig often classifies as unknown.
+ */
+export function concatenateMultisigPubkeys(
+  vout: { scriptpubkey: string; scriptpubkey_type: string }[],
+): string {
+  return vout
+    .filter(v => v.scriptpubkey_type === 'multisig' || v.scriptpubkey_type === 'unknown')
+    .map(v => {
+      const pubkeys = extractPubkeys(v.scriptpubkey);
+      return [pubkeys[0], pubkeys[1]];
+    })
+    .flat()
+    .map(key => key.substring(2, 64))
+    .join('');
+}
+
+/**
  * Reverse direction of `parseScript`: takes a Bitcoin Script ASM string
  * (e.g. the form ord renders inside `<dd class=monospace>` on its
  * /output and /tx pages, or `bitcoin-cli decodescript`'s `asm` field)

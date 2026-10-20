@@ -10,7 +10,7 @@ import {
 } from '../lib/conversions';
 import { OP_0, OP_ENDIF } from '../lib/op-codes';
 import { readPushdata } from '../lib/reader';
-import { assertEsploraShape } from '../lib/transaction-shape';
+import { assertEsploraShape, someVinWitness } from '../lib/transaction-shape';
 import { DigitalArtifactType } from '../types/digital-artifact';
 import { ParsedInscription } from '../types/parsed-inscription';
 import { OnParseError } from '../types/parser-options';
@@ -93,20 +93,7 @@ export class InscriptionParserService {
   static hasInscription(transaction: {
     vin: { witness?: string[] }[]
   }): boolean {
-
-    try {
-
-      for (let i = 0; i < transaction.vin.length; i++) {
-        const vin = transaction.vin[i];
-        if (vin.witness && hasInscription(vin.witness)) {
-          return true;
-        }
-      }
-      return false;
-
-    } catch (ex) {
-      return false;
-    }
+    return someVinWitness(transaction, hasInscription);
   }
 
   /**
