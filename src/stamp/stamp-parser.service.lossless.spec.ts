@@ -19,11 +19,19 @@ import { StampParserService } from './stamp-parser.service';
  * https://api.ordpool.space/api/tx/c18be47b3dc5c7a74487dd8baec7c1c4c5ff664235b757260864cc7b34250ef8
  * on 2026-10-24. Its payload is 435 bytes, so the prefix is 01 b3.
  *
- * Found by scanning blocks 871120 to 871400 for a stamp whose length prefix has
- * a high byte: 551 of 1544 stamps there qualify. The earlier window 871000 to
- * 871120 has none, because those 133 stamps are templated SRC-20 JSON of 60 to
- * 90 bytes, structurally below 128. The reachable case is a STAMP image, whose
- * size varies freely.
+ * Which payloads are hit is decided by the length alone, never by the content:
+ * the prefix's low byte is `len % 256`, so its high bit is set exactly when
+ * `floor(len / 128)` is odd. Affected stamps therefore fall in alternating
+ * 128-byte-wide bands, and any payload of 32768 bytes or upwards is always hit,
+ * because then the high byte moves into the prefix's first byte.
+ *
+ * Measured over blocks 871120 to 871400, running the old decode against the
+ * current one for all 1544 stamps there: 551 fall in an odd band, and every one
+ * of those was recognised as no stamp at all rather than as a corrupted one.
+ * Bands 128-255 and 384-511 lost every stamp they held, bands 0-127, 256-383
+ * and 1280-1407 lost none. The earlier window 871000 to 871120 holds no case,
+ * because its 133 stamps are templated SRC-20 JSON of 60 to 90 bytes, below
+ * 128. The reachable case is a STAMP image, whose size varies freely.
  */
 describe('STAMP and SRC-20 decrypt in bytes: real fixture with a high-byte length prefix', () => {
 
