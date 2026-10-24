@@ -98,13 +98,19 @@ export class Src20ParserService {
       //    sign + nonce bytes stripped (shared with STAMP, same wire format).
       const concatenatedPubkeys = concatenateMultisigPubkeys(transaction.vout);
 
-      // 4. Decrypt using RC4
-      const cipher = new Arc4(arc4Key);
-      const decryptedStr = cipher.decodeString(concatenatedPubkeys);
-
-      // This is finally in hex:
+      // 4. Decrypt using RC4, staying in bytes.
+      //
+      // The payload is arbitrary binary, so it must never pass through a
+      // string. Decoding it as UTF-8 and re-encoding replaces every byte that
+      // is not valid UTF-8 with U+FFFD (EF BF BD), which both corrupts the
+      // content and moves the big-endian length prefix read below: a payload
+      // of 128 bytes (00 80) reads back as 239 (00 EF). Counterparty already
+      // decrypts via processBytes for this reason.
+      //
+      // The decrypted bytes are, in hex:
       // 00457374616d703a7b2270223a227372632d3230222c226f70223a227472616e73666572222c227469636b223a225354455645222c22616d74223a22313030303030303030227d0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-      const decrypted = unicodeStringToBytes(decryptedStr);
+      const cipher = new Arc4(arc4Key);
+      const decrypted = cipher.processBytes(hexToBytes(concatenatedPubkeys));
 
       // Extract the first two bytes to determine the length
       // The first two bytes, is the expected length of the decoded data in hex

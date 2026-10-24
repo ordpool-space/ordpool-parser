@@ -204,10 +204,13 @@ export function decryptStampMultisig(transaction: {
     return null;
   }
 
-  // ARC4 decrypt
+  // ARC4 decrypt, staying in bytes. A STAMP payload is usually a binary image,
+  // so it must never pass through a string: decoding as UTF-8 and re-encoding
+  // replaces every non-UTF-8 byte with U+FFFD (EF BF BD), corrupting the image
+  // and shifting the big-endian length prefix read below. Counterparty already
+  // decrypts via processBytes for this reason.
   const cipher = new Arc4(arc4Key);
-  const decryptedStr = cipher.decodeString(concatenatedPubkeys);
-  const decrypted = unicodeStringToBytes(decryptedStr);
+  const decrypted = cipher.processBytes(hexToBytes(concatenatedPubkeys));
 
   // First 2 bytes = big-endian content length
   const expectedLength = bigEndianBytesToNumber(decrypted.slice(0, 2));

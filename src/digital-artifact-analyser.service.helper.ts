@@ -71,9 +71,9 @@ export function parseJsonObject(content: string): Record<string, unknown> | null
 }
 
 /**
- * Converts a key-value object into Activities format.
+ * Converts a Map of identifier to count into Activities format.
  *
- * @param data - An object where the keys represent identifiers and the values represent counts.
+ * @param data - A Map whose keys are identifiers and whose values are counts.
  * @returns A multi-dimensional array of Activities, where each entry is [identifier, count].
  *
  * Takes a `Map` rather than a plain object so a mint identifier that collides
