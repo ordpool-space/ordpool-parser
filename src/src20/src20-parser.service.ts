@@ -117,10 +117,24 @@ export class Src20ParserService {
       // (less any trailing zeros) for data validation.
       const expectedLength = bigEndianBytesToNumber(decrypted.slice(0, 2));
 
+      // The declared length must fit the payload. `slice` clamps past the end
+      // instead of throwing, so an implausible length silently yields the rest
+      // of the buffer and the marker test below still runs against it. A
+      // Counterparty message carries no Stamps length prefix at all, so its
+      // first two bytes are message content and declare a nonsense length
+      // (e.g. 3d 43, '=' and 'C' of CNTRPRTY, declaring 15683 for 124 bytes).
+      if (expectedLength + 2 > decrypted.length) {
+        return null;
+      }
+
       const data = decrypted.slice(2, 2 + expectedLength);
 
+      // The marker has to LEAD, not merely be present: a Counterparty message
+      // holds `stamp:<base64>` somewhere inside it, and a substring test would
+      // report every Counterparty-encoded stamp as SRC-20 with the undecoded
+      // message as its content. Those belong to the Counterparty parser.
       const result = bytesToUnicodeString(data);
-      if (!result || !result.includes('stamp:')) {
+      if (!result || !result.startsWith('stamp:')) {
         return null;
       }
 
