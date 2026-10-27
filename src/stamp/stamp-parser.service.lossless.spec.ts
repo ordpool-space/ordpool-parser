@@ -25,6 +25,15 @@ import { StampParserService } from './stamp-parser.service';
  * 128-byte-wide bands, and any payload of 32768 bytes or upwards is always hit,
  * because then the high byte moves into the prefix's first byte.
  *
+ * The length reasoning holds only where the prefix really is a length. In the
+ * earliest ARC4 era the payload is a Counterparty message with no Stamps
+ * length prefix at all, so the two prefix bytes eat message content instead,
+ * and there the round trip can go the other way and make the OLD decode match
+ * where the current one correctly does not. Block 793069 holds both shapes:
+ * `1db33fe1..a4d3` is `0x80` followed by `stamp:{...}`, where the prefix eats
+ * the `s` and leaves `tamp:`, and `d90721e3..3958` is a `CNTRPRTY` message
+ * whose `C` the prefix eats. A count moving DOWN in that era is not this bug.
+ *
  * Measured over blocks 871120 to 871400, running the old decode against the
  * current one for all 1544 stamps there: 551 fall in an odd band, and every one
  * of those was recognised as no stamp at all rather than as a corrupted one.
