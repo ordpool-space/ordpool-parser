@@ -110,6 +110,17 @@ Ref: `70cf3b0`
 
 Ref: `d247fc8`.
 
+## RULE: Absence needs a census, presence does not
+
+- One hit proves a shape exists on chain. Only a gapless scan proves it does not, so never report "none found" from a strided or sampled scan.
+- A stride aliases against clustered populations. Four scans here reported a clean range and were wrong, the worst by nearly 14,000 blocks.
+- Run the instrument against a block known to hold the shape before trusting any zero. A scanner that silently does nothing reports the same zero as a clean range.
+- A scan that claims to replicate the parser carries no guard the parser lacks. A bounds check added for safety hid an entire era of payloads.
+- Report the covered range with every count. A number without its range invites being read as chain-wide.
+
+Why: a sampled zero and a measured zero read identically in a report, and a decision made on the wrong one cannot be recovered from the number.
+Ref: `22d6ef8`.
+
 ## Commands
 
 ```bash
