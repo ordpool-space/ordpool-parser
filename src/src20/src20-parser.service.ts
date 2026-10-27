@@ -117,16 +117,12 @@ export class Src20ParserService {
       // (less any trailing zeros) for data validation.
       const expectedLength = bigEndianBytesToNumber(decrypted.slice(0, 2));
 
-      // The declared length must fit the payload. `slice` clamps past the end
-      // instead of throwing, so an implausible length silently yields the rest
-      // of the buffer and the marker test below still runs against it. A
-      // Counterparty message carries no Stamps length prefix at all, so its
-      // first two bytes are message content and declare a nonsense length
-      // (e.g. 3d 43, '=' and 'C' of CNTRPRTY, declaring 15683 for 124 bytes).
-      if (expectedLength + 2 > decrypted.length) {
-        return null;
-      }
-
+      // Deliberately NO bounds check on expectedLength. An unpadded real
+      // payload declares 1 to 2 bytes more than the buffer holds, and `slice`
+      // clamps instead of throwing, so its content still reads correctly. A
+      // bounds check here rejects those real mints. The leading-marker test
+      // below is the discriminator: a Counterparty message overruns by
+      // thousands of bytes AND fails that test, so it is already excluded.
       const data = decrypted.slice(2, 2 + expectedLength);
 
       // The marker has to LEAD, not merely be present: a Counterparty message

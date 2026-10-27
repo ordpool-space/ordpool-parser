@@ -215,14 +215,9 @@ export function decryptStampMultisig(transaction: {
   // First 2 bytes = big-endian content length
   const expectedLength = bigEndianBytesToNumber(decrypted.slice(0, 2));
 
-  // The declared length must fit the payload. `slice` clamps past the end
-  // instead of throwing, so an implausible length silently yields the rest of
-  // the buffer. A Counterparty message carries no Stamps length prefix, so its
-  // first two bytes are message content and declare a nonsense length.
-  if (expectedLength + 2 > decrypted.length) {
-    return null;
-  }
-
+  // Deliberately NO bounds check on expectedLength: an unpadded real payload
+  // declares 1 to 2 bytes more than the buffer holds, and `slice` clamps
+  // instead of throwing. The leading-marker test below is the discriminator.
   const data = decrypted.slice(2, 2 + expectedLength);
 
   // Must contain "stamp:" prefix
