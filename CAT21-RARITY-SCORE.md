@@ -105,21 +105,27 @@ Each cat belongs to exactly one category, derived from its `catNumber`:
 | `< 1 000 000`          | `sub1M`  | 500 000 cats               |
 | `≥ 1 000 000`          | (TBD)    | unbounded — opens at #1 000 000 |
 
-Category derivation lives in the indexer at
-`cat21-indexer/backend/src/modules/sync/sync.service.ts` —
-`deriveCategory(catNumber)`. The community first encountered these
-band names on the Dune dashboard at `dune.com/ethspresso/cat21`,
-which counts cats cumulatively: a `sub10k` query returns every cat
-with `cat_number < 10000`. ordpool partitions the same supply so
-rarity can be scored inside disjoint collections — each cat is
-assigned to its smallest applicable band and only that band. Two
-complementary views of the same data.
+Category derivation lives in this repo, in
+`src/cat21/cat21-category.ts`: `CATEGORY_RANGES` maps each band to
+`[minCatNumber, maxCatNumber inclusive, dropSize]`, and
+`deriveCategory(catNumber)` assigns the band. Consumers import it
+from here rather than re-declaring the mapping; the indexer does so
+through `cat21-indexer/backend/src/modules/shared/categories.ts`.
+The community first encountered these band names on the Dune
+dashboard at `dune.com/ethspresso/cat21`, which counts cats
+cumulatively: a `sub10k` query returns every cat with
+`cat_number < 10000`. ordpool partitions the same supply so rarity
+can be scored inside disjoint collections, each cat assigned to its
+smallest applicable band and only that band. Two complementary views
+of the same data.
 
-The CASE WHEN falls through smallest-first, so cat #0 is `sub1` (and
-only `sub1`), cat #500 is `sub1k` (and only `sub1k`), never also
-`sub10k`. The `sub10k` label reads cumulatively in English ("any cat
-under 10k") but the storage model is mutually exclusive. The Cat
-detail page on cat21.space spells out the ranges on hover.
+`deriveCategory` walks the bands smallest-first and returns the first
+one whose inclusive maximum covers the number, so cat #0 is `sub1`
+(and only `sub1`), cat #500 is `sub1k` (and only `sub1k`), never also
+`sub10k`. A cat above every defined range gets `''`. The `sub10k`
+label reads cumulatively in English ("any cat under 10k") but the
+storage model is mutually exclusive. The Cat detail page on
+cat21.space spells out the ranges on hover.
 
 **Categories partition the supply — each cat sits on exactly one
 shelf.** Holding the Genesis Cat is membership in a 1-cat closed drop
@@ -271,10 +277,10 @@ The `rarityBits` field reports cat #0's natural trait-math score
 - The rarity algorithm is **open source** (`src/rarity/open-rarity.ts`)
   and a faithful port of OpenRarity's Python reference. Tests pin the
   exact-float behaviour against the upstream test vectors.
-- The category derivation is **a single CASE WHEN** — the eight
-  thresholds listed in the "Categories" section above. The whole
-  function is ten lines, and the Genesis Cat's `1 of 1` rank falls
-  out of the `< 1` row directly.
+- The category derivation is **a table of eight bands**, the
+  thresholds listed in the "Categories" section above, walked
+  smallest-first. The Genesis Cat's `1 of 1` rank falls out of the
+  `sub1` band directly.
 - Bits and ranks are computed the same way for every cat in every
   category, including cat #0.
 
