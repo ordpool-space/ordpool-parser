@@ -8,9 +8,19 @@ But you still want to know what's inside your blocks, don't you? Know your enemy
 
 Works in **Node.js** and **browsers** out of the box. Used by [ordpool.space](https://ordpool.space).
 
+## Install
+
 ```
-npm install ordpool-parser
+npm install github:ordpool-space/ordpool-parser#<full-40-character-commit-sha>
 ```
+
+The package on the npm registry lags this repository and does not carry every
+protocol listed below, so installs pin a commit of this repository instead.
+Pick the sha from the commit history and write all 40 characters: npm resolves a
+short sha, pnpm does not, because `git ls-remote` cannot see a sha that is an
+ancestor rather than a ref tip.
+
+The package name stays `ordpool-parser`, so every import below works unchanged.
 
 ## What does it parse?
 
