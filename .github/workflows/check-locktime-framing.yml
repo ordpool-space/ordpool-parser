@@ -1,0 +1,26 @@
+name: Check locktime framing
+
+# Fails the build if any banned "nLockTime=21 orphans the cat" style
+# phrase appears in tracked source/tests/docs. See workspace HQ RULE
+# "`nLockTime=21` is PROTOCOL for a mint, CONVENTION everywhere else"
+# and scripts/check-locktime-framing.sh for the full list.
+#
+# Runs on every push to main and every PR, not on a path filter: the
+# phrases can land in any file this repo owns, including a doc. This
+# repo defines the mint itself (`tx.locktime === 21` in the CAT-21
+# parser), so its comments are the ones most likely to overstate what
+# the locktime guarantees on a later transfer.
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches: [ main ]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run locktime-framing guard
+        run: scripts/check-locktime-framing.sh
